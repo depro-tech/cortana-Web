@@ -2,15 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply font-sans antialiased bg-background text-foreground;
-  }
-}
-
 :root {
   --background: 0 0% 100%;
   --foreground: 0 0% 3.9%;
@@ -37,6 +28,14 @@
   --chart-4: 43 74% 66%;
   --chart-5: 27 87% 67%;
   --radius: 0.5rem;
+  --sidebar: 0 0% 100%;
+  --sidebar-foreground: 0 0% 3.9%;
+  --sidebar-primary: 0 0% 9%;
+  --sidebar-primary-foreground: 0 0% 98%;
+  --sidebar-accent: 0 0% 96.1%;
+  --sidebar-accent-foreground: 0 0% 9%;
+  --sidebar-border: 0 0% 89.8%;
+  --sidebar-ring: 0 0% 3.9%;
 }
 
 .dark {
@@ -64,11 +63,30 @@
   --chart-3: 30 80% 55%;
   --chart-4: 280 65% 60%;
   --chart-5: 340 75% 55%;
+  --sidebar: 0 0% 3.9%;
+  --sidebar-foreground: 0 0% 98%;
+  --sidebar-primary: 0 0% 98%;
+  --sidebar-primary-foreground: 0 0% 9%;
+  --sidebar-accent: 0 0% 14.9%;
+  --sidebar-accent-foreground: 0 0% 98%;
+  --sidebar-border: 0 0% 14.9%;
+  --sidebar-ring: 0 0% 83.1%;
+}
+
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+  body {
+    font-family: 'Courier New', monospace;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
 }
 
 /* Custom Styles from User HTML */
 body {
-    font-family: 'Courier New', monospace;
     background: #000;
     color: #fff;
     overflow-x: hidden;
@@ -256,7 +274,7 @@ nav::-webkit-scrollbar {
     animation: bounce 2s infinite;
 }
 
-/* Contact Icons - Real Colors */
+/* Contact Icons */
 .contact-icons {
     position: fixed;
     bottom: 70px;
@@ -293,7 +311,6 @@ nav::-webkit-scrollbar {
     box-shadow: 0 0 20px currentColor;
 }
 
-/* Real Brand Colors */
 .whatsapp { 
     border-color: #25D366;
     background: #25D366;
@@ -312,7 +329,6 @@ nav::-webkit-scrollbar {
 }
 .tiktok { 
     border-color: #69C9D0;
-    background: #000;
     background: linear-gradient(45deg, #69C9D0, #EE1D52);
 }
 
@@ -407,7 +423,7 @@ nav::-webkit-scrollbar {
     height: 3px;
 }
 
-/* MD Page Snow */
+/* Snowflake */
 .snowflake {
     position: fixed;
     color: #00a8ff;
@@ -418,7 +434,7 @@ nav::-webkit-scrollbar {
     text-shadow: 0 0 10px #00a8ff;
 }
 
-/* Bug Page Effects */
+/* Matrix Background */
 .matrix-bg {
     position: fixed;
     top: 0;
@@ -436,7 +452,7 @@ nav::-webkit-scrollbar {
     animation: glitch 0.5s infinite;
 }
 
-/* Music Control Button */
+/* Music Control */
 .music-control {
     position: fixed;
     top: 20px;
@@ -501,7 +517,7 @@ nav::-webkit-scrollbar {
     transform: rotate(90deg);
 }
 
-/* Payment Methods */
+/* Payment Options */
 .payment-options {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -542,7 +558,7 @@ nav::-webkit-scrollbar {
     color: #FFD700;
 }
 
-/* Payment Pages Styling */
+/* Payment Pages */
 .payment-page {
     position: fixed;
     top: 0;
@@ -609,7 +625,6 @@ nav::-webkit-scrollbar {
     padding: 25px;
     margin: 30px 0;
     font-family: monospace;
-    position: relative;
 }
 
 .receipt-title {
@@ -670,12 +685,8 @@ nav::-webkit-scrollbar {
 
 /* Animations */
 @keyframes ticker {
-    0% {
-        transform: translateX(100%);
-    }
-    100% {
-        transform: translateX(-100%);
-    }
+    0% { transform: translateX(100%); }
+    100% { transform: translateX(-100%); }
 }
 
 @keyframes fadeIn {
@@ -699,9 +710,7 @@ nav::-webkit-scrollbar {
 }
 
 @keyframes fall {
-    to {
-        transform: translateY(100vh);
-    }
+    to { transform: translateY(100vh); }
 }
 
 @keyframes bounce {
@@ -727,13 +736,11 @@ nav::-webkit-scrollbar {
         padding: 8px 12px;
         gap: 6px;
         max-width: 90vw;
-        overflow-x: auto;
     }
     
     .nav-btn {
         padding: 6px 12px;
         font-size: 12px;
-        min-width: max-content;
     }
     
     .section-container {
@@ -753,20 +760,6 @@ nav::-webkit-scrollbar {
         padding: 0 15px;
     }
     
-    .tip-container {
-        padding: 20px 15px;
-        min-height: 250px;
-    }
-    
-    .cyber-tip {
-        font-size: 18px;
-        padding: 0 15px;
-    }
-    
-    .squirrel {
-        font-size: 50px;
-    }
-    
     .contact-icons {
         bottom: 60px;
         right: 15px;
@@ -779,91 +772,7 @@ nav::-webkit-scrollbar {
         font-size: 20px;
     }
     
-    .music-control {
-        top: 15px;
-        left: 15px;
-        width: 35px;
-        height: 35px;
-        font-size: 14px;
-    }
-    
-    .character {
-        right: -40px;
-        bottom: -30px;
-        width: 140px;
-        height: 140px;
-    }
-    
-    .product-title {
-        font-size: 15px;
-    }
-    
-    .product-price {
-        font-size: 20px;
-    }
-    
-    .checkout-content {
-        width: 95%;
-        padding: 20px;
-    }
-    
     .payment-options {
         grid-template-columns: 1fr;
-    }
-    
-    .payment-content {
-        padding: 20px;
-    }
-}
-
-@media (max-width: 480px) {
-    nav {
-        padding: 6px 10px;
-        gap: 4px;
-    }
-    
-    .nav-btn {
-        padding: 5px 10px;
-        font-size: 11px;
-    }
-    
-    .cyber-tip {
-        font-size: 16px;
-    }
-    
-    .section-container {
-        padding: 15px;
-    }
-    
-    .ticker-item {
-        font-size: 11px;
-        padding: 0 12px;
-    }
-    
-    .music-control {
-        top: 12px;
-        left: 12px;
-    }
-}
-
-/* Landscape mode for mobile */
-@media (max-height: 600px) and (orientation: landscape) {
-    nav {
-        top: 5px;
-        padding: 6px 10px;
-    }
-    
-    .section-container {
-        top: 50%;
-        max-height: 85vh;
-    }
-    
-    .ticker-container {
-        bottom: 10px;
-        height: 30px;
-    }
-    
-    .contact-icons {
-        bottom: 50px;
     }
 }
