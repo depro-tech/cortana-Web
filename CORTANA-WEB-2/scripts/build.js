@@ -1,4 +1,3 @@
-
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { rm, mkdir, copyFile, readdir } from 'fs/promises';
@@ -22,6 +21,24 @@ async function runCommand(command) {
   }
 }
 
+async function copyDir(src, dest) {
+  if (!existsSync(src)) return;
+  
+  await mkdir(dest, { recursive: true });
+  const entries = await readdir(src, { withFileTypes: true });
+  
+  for (const entry of entries) {
+    const srcPath = join(src, entry.name);
+    const destPath = join(dest, entry.name);
+    
+    if (entry.isDirectory()) {
+      await copyDir(srcPath, destPath);
+    } else {
+      await copyFile(srcPath, destPath);
+    }
+  }
+}
+
 async function build() {
   console.log('Starting build process...');
   
@@ -39,8 +56,7 @@ async function build() {
   
   // Create simple production server
   console.log('Creating production server...');
-  const serverCode = `
-import express from 'express';
+  const serverCode = `import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
@@ -54,7 +70,6 @@ const PORT = process.env.PORT || 5000;
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Logging
 app.use((req, res, next) => {
   const start = Date.now();
   res.on('finish', () => {
@@ -70,25 +85,20 @@ app.use((req, res, next) => {
   next();
 });
 
-// Serve static files
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
-// API routes placeholder
 app.get('/api/test', (req, res) => {
   res.json({ message: 'API is working' });
 });
 
-// SPA fallback
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public/index.html'));
 });
 
-// Error handling
 app.use((err, req, res, next) => {
   console.error('Error:', err);
   const status = err.status || err.statusCode || 500;
@@ -98,8 +108,7 @@ app.use((err, req, res, next) => {
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(\`Server running on port \${PORT} in \${process.env.NODE_ENV || 'production'} mode\`);
-});
-`;
+});`;
   
   // Create dist directory structure
   await mkdir('dist/public', { recursive: true });
@@ -108,34 +117,7 @@ app.listen(PORT, '0.0.0.0', () => {
   const fs = await import('fs');
   fs.writeFileSync('dist/server.js', serverCode);
   
-  // Copy client files
-  console.log('Copying client files...');
-  if (existsSync('client/dist')) {
-    await copyDir('client/dist', 'dist/public');
-  } else if (existsSync('dist/public')) {
-    // Vite already built to dist/public
-    console.log('Vite already built to dist/public');
-  }
-  
   console.log('Build completed successfully!');
-}
-
-async function copyDir(src, dest) {
-  if (!existsSync(src)) return;
-  
-  await mkdir(dest, { recursive: true });
-  const entries = await readdir(src, { withFileTypes: true });
-  
-  for (const entry of entries) {
-    const srcPath = join(src, entry.name);
-    const destPath = join(dest, entry.name);
-    
-    if (entry.isDirectory()) {
-      await copyDir(srcPath, destPath);
-    } else {
-      await copyFile(srcPath, destPath);
-    }
-  }
 }
 
 build().catch(error => {
