@@ -3,11 +3,7 @@ import { promisify } from 'util';
 import { rm, mkdir, copyFile, readdir } from 'fs/promises';
 import { existsSync } from 'fs';
 import { join } from 'path';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 const execAsync = promisify(exec);
 
 async function runCommand(command) {
@@ -22,31 +18,6 @@ async function runCommand(command) {
     console.error(error.message);
     if (error.stderr) console.error(error.stderr);
     return false;
-  }
-}
-
-async function copyNonTsFiles(srcDir, destDir) {
-  if (!existsSync(srcDir)) return;
-  
-  if (!existsSync(destDir)) {
-    await mkdir(destDir, { recursive: true });
-  }
-  
-  const files = await readdir(srcDir);
-  for (const file of files) {
-    const srcPath = join(srcDir, file);
-    const destPath = join(destDir, file);
-    
-    // Skip TypeScript files and certain directories
-    if (file.endsWith('.ts') && !file.endsWith('.d.ts')) continue;
-    if (file === 'node_modules' || file === 'dist') continue;
-    
-    const stat = await import('fs').then(fs => fs.promises.stat(srcPath));
-    if (stat.isDirectory()) {
-      await copyNonTsFiles(srcPath, destPath);
-    } else {
-      await copyFile(srcPath, destPath);
-    }
   }
 }
 
@@ -65,96 +36,105 @@ async function build() {
     process.exit(1);
   }
   
+  // Create simple production server
+  console.log('Creating production server...');
+  const serverCode = `
+import express from 'express';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+const app = express();
+const PORT = process.env.PORT || 5000;
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+
+// Logging
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    const time = new Date().toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true,
+    });
+    console.log(\`\${time} [express] \${req.method} \${req.path} \${res.statusCode} in \${duration}ms\`);
+  });
+  next();
+});
+
+// Serve static files
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Health check
+app.get('/health', (req, res) => {
+  res.json({ status: 'OK', timestamp: new Date().toISOString() });
+});
+
+// API routes placeholder
+app.get('/api/test', (req, res) => {
+  res.json({ message: 'API is working' });
+});
+
+// SPA fallback
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public/index.html'));
+});
+
+// Error handling
+app.use((err, req, res, next) => {
+  console.error('Error:', err);
+  const status = err.status || err.statusCode || 500;
+  const message = err.message || 'Internal Server Error';
+  res.status(status).json({ message });
+});
+
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(\`Server running on port \${PORT} in \${process.env.NODE_ENV || 'production'} mode\`);
+});
+`;
+  
   // Create dist directory structure
   await mkdir('dist/public', { recursive: true });
-  await mkdir('dist/server', { recursive: true });
   
-  // Copy client build to dist/public
+  // Write server file
+  const fs = await import('fs');
+  fs.writeFileSync('dist/server.js', serverCode);
+  
+  // Copy client files
   console.log('Copying client files...');
   if (existsSync('client/dist')) {
-    await copyNonTsFiles('client/dist', 'dist/public');
+    await copyDir('client/dist', 'dist/public');
+  } else if (existsSync('dist/public')) {
+    // Vite already built to dist/public
+    console.log('Vite already built to dist/public');
   }
-  
-  // Build server using esbuild (simpler, no complex tsconfig)
-  console.log('Building server with esbuild...');
-  const esbuildCommand = `
-    npx esbuild server/index.ts \
-      --bundle \
-      --platform=node \
-      --target=node20 \
-      --format=esm \
-      --outfile=dist/server/index.js \
-      --external:express \
-      --external:pg \
-      --external:drizzle-orm \
-      --external:drizzle-zod \
-      --external:zod \
-      --external:express-session \
-      --external:passport \
-      --external:passport-local \
-      --external:connect-pg-simple \
-      --external:memorystore \
-      --external:ws \
-      --external:axios \
-      --external:pino \
-      --external:date-fns \
-      --minify \
-      --sourcemap
-  `;
-  
-  const serverBuilt = await runCommand(esbuildCommand);
-  if (!serverBuilt) {
-    console.error('Server build failed');
-    process.exit(1);
-  }
-  
-  // Copy shared files
-  console.log('Copying shared files...');
-  await copyNonTsFiles('shared', 'dist/shared');
-  
-  // Copy package.json to dist for production
-  console.log('Creating production package.json...');
-  const packageJson = JSON.parse(await import('fs').then(fs => 
-    fs.promises.readFile('package.json', 'utf-8')
-  ));
-  
-  // Create minimal package.json for production
-  const productionPackage = {
-    name: packageJson.name,
-    version: packageJson.version,
-    type: packageJson.type,
-    main: 'server/index.js',
-    dependencies: {
-      'express': packageJson.dependencies.express,
-      'pg': packageJson.dependencies.pg,
-      'drizzle-orm': packageJson.dependencies['drizzle-orm'],
-      'drizzle-zod': packageJson.dependencies['drizzle-zod'],
-      'zod': packageJson.dependencies.zod,
-      'express-session': packageJson.dependencies['express-session'],
-      'passport': packageJson.dependencies.passport,
-      'passport-local': packageJson.dependencies['passport-local'],
-      'connect-pg-simple': packageJson.dependencies['connect-pg-simple'],
-      'memorystore': packageJson.dependencies.memorystore,
-      'ws': packageJson.dependencies.ws,
-      'axios': packageJson.dependencies.axios,
-      'pino': packageJson.dependencies.pino,
-      'date-fns': packageJson.dependencies['date-fns']
-    }
-  };
-  
-  await import('fs').then(fs => 
-    fs.promises.writeFile(
-      'dist/package.json',
-      JSON.stringify(productionPackage, null, 2)
-    )
-  );
   
   console.log('Build completed successfully!');
-  console.log('Output structure:');
-  console.log('  dist/public/     - Client files');
-  console.log('  dist/server/     - Server files');
-  console.log('  dist/shared/     - Shared files');
-  console.log('  dist/package.json - Production dependencies');
+}
+
+async function copyDir(src, dest) {
+  if (!existsSync(src)) return;
+  
+  await mkdir(dest, { recursive: true });
+  const entries = await readdir(src, { withFileTypes: true });
+  
+  for (const entry of entries) {
+    const srcPath = join(src, entry.name);
+    const destPath = join(dest, entry.name);
+    
+    if (entry.isDirectory()) {
+      await copyDir(srcPath, destPath);
+    } else {
+      await copyFile(srcPath, destPath);
+    }
+  }
 }
 
 build().catch(error => {
