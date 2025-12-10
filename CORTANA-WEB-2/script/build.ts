@@ -1,85 +1,92 @@
-import { build as esbuild } from "esbuild";
 import { build as viteBuild } from "vite";
-import { rm, readFile } from "fs/promises";
+import { exec } from "child_process";
+import { promisify } from "util";
+import { rm, copyFile, readdir, mkdir } from "fs/promises";
+import { existsSync } from "fs";
+import { join } from "path";
 
-// server deps to bundle to reduce openat(2) syscalls
-// which helps cold start times
-const allowlist = [
-  "@google/generative-ai",
-  "axios",
-  "connect-pg-simple",
-  "cors",
-  "date-fns",
-  "drizzle-orm",
-  "drizzle-zod",
-  "express",
-  "express-rate-limit",
-  "express-session",
-  "jsonwebtoken",
-  "memorystore",
-  "multer",
-  "nanoid",
-  "nodemailer",
-  "openai",
-  "passport",
-  "passport-local",
-  "pg",
-  "stripe",
-  "uuid",
-  "ws",
-  "xlsx",
-  "zod",
-  "zod-validation-error",
-];
+const execAsync = promisify(exec);
 
 async function buildAll() {
+  // Clean dist directory
   await rm("dist", { recursive: true, force: true });
 
-  console.log("building client...");
+  console.log("Building client...");
   await viteBuild();
 
-  console.log("building server...");
-  const pkg = JSON.parse(await readFile("package.json", "utf-8"));
-  const allDeps = [
-    ...Object.keys(pkg.dependencies || {}),
-    ...Object.keys(pkg.devDependencies || {}),
-  ];
-  const externals = allDeps.filter((dep) => !allowlist.includes(dep));
+  console.log("Building server...");
+  
+  // Create tsconfig for server compilation
+  const tsconfig = {
+    extends: "./tsconfig.json",
+    compilerOptions: {
+      "module": "ESNext",
+      "moduleResolution": "bundler",
+      "target": "ES2022",
+      "outDir": "dist",
+      "rootDir": ".",
+      "allowSyntheticDefaultImports": true,
+      "esModuleInterop": true,
+      "skipLibCheck": true,
+      "noEmit": false,
+      "sourceMap": true,
+      "declaration": false
+    },
+    "include": ["server/**/*", "shared/**/*"],
+    "exclude": ["node_modules", "client/**/*", "dist"]
+  };
 
-  await esbuild({
-    entryPoints: ["server/index.ts"],
-    platform: "node",
-    bundle: true,
-    format: "esm", // Change from "cjs" to "esm" to match package.json type
-    outfile: "dist/index.js", // Change from .cjs to .js
-    define: {
-      "process.env.NODE_ENV": '"production"',
-    },
-    minify: false, // Disable minification for debugging
-    keepNames: true, // Keep function names for better stack traces
-    external: externals,
-    logLevel: "info",
-    sourcemap: true, // Add sourcemaps for debugging
-    target: "node20", // Target Node.js 20
-    banner: {
-      js: `
-        import { fileURLToPath } from 'url';
-        import { dirname } from 'path';
-        import { createRequire } from 'module';
-        
-        // Polyfill for CommonJS modules
-        if (typeof __filename === 'undefined') {
-          global.__filename = fileURLToPath(import.meta.url);
-        }
-        if (typeof __dirname === 'undefined') {
-          global.__dirname = dirname(__filename);
-        }
-        if (typeof require === 'undefined') {
-          global.require = createRequire(import.meta.url);
-        }
-      `,
-    },
-  });
+  // Write temporary tsconfig
+  const fs = await import("fs");
+  fs.writeFileSync("tsconfig.build.json", JSON.stringify(tsconfig, null, 2));
+
+  try {
+    // Compile TypeScript
+    await execAsync("npx tsc --project tsconfig.build.json");
+    
+    // Clean up temporary tsconfig
+    fs.unlinkSync("tsconfig.build.json");
+    
+    // Copy any non-TypeScript files from server directory
+    if (existsSync("server")) {
+      await copyNonTsFiles("server", "dist/server");
+    }
+    
+    // Copy shared files
+    if (existsSync("shared")) {
+      await copyNonTsFiles("shared", "dist/shared");
+    }
+    
+    console.log("Build completed successfully!");
+  } catch (error) {
+    console.error("Build failed:", error);
+    process.exit(1);
+  }
+}
+
+async function copyNonTsFiles(srcDir: string, destDir: string) {
+  if (!existsSync(destDir)) {
+    await mkdir(destDir, { recursive: true });
+  }
+  
+  const files = await readdir(srcDir);
+  for (const file of files) {
+    const srcPath = join(srcDir, file);
+    const destPath = join(destDir, file);
+    
+    // Skip TypeScript files (they're compiled)
+    if (file.endsWith(".ts")) continue;
+    
+    // Skip node_modules and dist directories
+    if (file === "node_modules" || file === "dist") continue;
+    
+    const stat = await import("fs").then(fs => fs.promises.stat(srcPath));
+    if (stat.isDirectory()) {
+      await copyNonTsFiles(srcPath, destPath);
+    } else {
+      await copyFile(srcPath, destPath);
+    }
+  }
 }
 
 buildAll().catch((err) => {
