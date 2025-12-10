@@ -1,8 +1,8 @@
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import { rm, mkdir, copyFile, readdir } from 'fs/promises';
+import { rm, mkdir, copyFile } from 'fs/promises';
 import { existsSync } from 'fs';
-import { join } from 'path';
+import path from 'path';
 
 const execAsync = promisify(exec);
 
@@ -18,24 +18,6 @@ async function runCommand(command) {
     console.error(error.message);
     if (error.stderr) console.error(error.stderr);
     return false;
-  }
-}
-
-async function copyDir(src, dest) {
-  if (!existsSync(src)) return;
-  
-  await mkdir(dest, { recursive: true });
-  const entries = await readdir(src, { withFileTypes: true });
-  
-  for (const entry of entries) {
-    const srcPath = join(src, entry.name);
-    const destPath = join(dest, entry.name);
-    
-    if (entry.isDirectory()) {
-      await copyDir(srcPath, destPath);
-    } else {
-      await copyFile(srcPath, destPath);
-    }
   }
 }
 
@@ -110,10 +92,7 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(\`Server running on port \${PORT} in \${process.env.NODE_ENV || 'production'} mode\`);
 });`;
   
-  // Create dist directory structure
-  await mkdir('dist/public', { recursive: true });
-  
-  // Write server file
+  // Write server file to dist
   const fs = await import('fs');
   fs.writeFileSync('dist/server.js', serverCode);
   
