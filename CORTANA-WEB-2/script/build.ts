@@ -50,14 +50,35 @@ async function buildAll() {
     entryPoints: ["server/index.ts"],
     platform: "node",
     bundle: true,
-    format: "cjs",
-    outfile: "dist/index.cjs",
+    format: "esm", // Change from "cjs" to "esm" to match package.json type
+    outfile: "dist/index.js", // Change from .cjs to .js
     define: {
       "process.env.NODE_ENV": '"production"',
     },
-    minify: true,
+    minify: false, // Disable minification for debugging
+    keepNames: true, // Keep function names for better stack traces
     external: externals,
     logLevel: "info",
+    sourcemap: true, // Add sourcemaps for debugging
+    target: "node20", // Target Node.js 20
+    banner: {
+      js: `
+        import { fileURLToPath } from 'url';
+        import { dirname } from 'path';
+        import { createRequire } from 'module';
+        
+        // Polyfill for CommonJS modules
+        if (typeof __filename === 'undefined') {
+          global.__filename = fileURLToPath(import.meta.url);
+        }
+        if (typeof __dirname === 'undefined') {
+          global.__dirname = dirname(__filename);
+        }
+        if (typeof require === 'undefined') {
+          global.require = createRequire(import.meta.url);
+        }
+      `,
+    },
   });
 }
 
