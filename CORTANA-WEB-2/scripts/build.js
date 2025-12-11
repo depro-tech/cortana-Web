@@ -38,6 +38,12 @@ async function build() {
   
   // Create simple production server
   console.log('Creating production server...');
+  
+  // Ensure dist directory exists
+  if (!existsSync('dist')) {
+    await mkdir('dist', { recursive: true });
+  }
+  
   const serverCode = `import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
