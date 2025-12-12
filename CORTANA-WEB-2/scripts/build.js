@@ -1,6 +1,6 @@
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import { rm } from 'fs/promises';
+import { rm, cp, mkdir } from 'fs/promises';
 import { existsSync } from 'fs';
 
 const execAsync = promisify(exec);
@@ -26,6 +26,7 @@ async function build() {
   // Clean dist directory
   console.log('Cleaning dist directory...');
   await rm('dist', { recursive: true, force: true });
+  await mkdir('dist', { recursive: true });
   
   // Build client with Vite
   console.log('Building client...');
@@ -35,12 +36,14 @@ async function build() {
     process.exit(1);
   }
   
-  // Build server TypeScript to dist
-  console.log('Building server...');
-  const serverBuilt = await runCommand('npx tsc --project tsconfig.server.json');
-  if (!serverBuilt) {
-    console.error('Server build failed');
-    process.exit(1);
+  // Copy server source files
+  console.log('Copying server files...');
+  await cp('server', 'dist/server', { recursive: true });
+  
+  // Copy shared files
+  if (existsSync('shared')) {
+    console.log('Copying shared files...');
+    await cp('shared', 'dist/shared', { recursive: true });
   }
   
   console.log('Build completed successfully!');
