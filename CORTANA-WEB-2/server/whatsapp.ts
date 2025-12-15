@@ -59,7 +59,7 @@ export async function requestPairingCode(phoneNumber: string): Promise<{ session
       keys: makeCacheableSignalKeyStore(state.keys, logger),
     },
     msgRetryCounterCache,
-    browser: ['Ubuntu', 'Chrome', '20.0.04'], // Critical for pairing success
+    browser: ["Chrome (Linux)", "Chrome", "131.0.6778.204"],
     generateHighQualityLinkPreview: true,
     getMessage: async (key) => {
       return { conversation: '' };
@@ -105,7 +105,7 @@ export async function requestPairingCode(phoneNumber: string): Promise<{ session
         activeSockets.delete(sessionId);
         pairingCodes.delete(sessionId);
         await storage.updateSession(sessionId, { status: "disconnected" });
-      } 
+      }
       // If stream error after successful pairing, reconnect automatically
       else if (currentStatus?.status === "connected" && statusCode === 515) {
         console.log(`Session ${sessionId} stream error after pairing - reconnecting...`);
@@ -205,7 +205,7 @@ export async function requestPairingCode(phoneNumber: string): Promise<{ session
       activeSockets.delete(sessionId);
       try {
         sock.end(undefined);
-      } catch {}
+      } catch { }
       throw new Error("Failed to generate pairing code. Please try again.");
     }
   } else {
@@ -213,7 +213,7 @@ export async function requestPairingCode(phoneNumber: string): Promise<{ session
     await storage.updateSession(sessionId, { status: "connected" });
     try {
       sock.end(undefined);
-    } catch {}
+    } catch { }
     throw new Error("This number is already linked. Please disconnect first.");
   }
 }
@@ -234,13 +234,13 @@ async function handleMessage(sock: ReturnType<typeof makeWASocket>, msg: any, se
   let text = "";
   if (msg.message) {
     text = msg.message.conversation ||
-           msg.message.extendedTextMessage?.text ||
-           msg.message.imageMessage?.caption ||
-           msg.message.videoMessage?.caption ||
-           msg.message.buttonsResponseMessage?.selectedButtonId ||
-           msg.message.listResponseMessage?.singleSelectReply?.selectedRowId ||
-           msg.message.templateButtonReplyMessage?.selectedId ||
-           "";
+      msg.message.extendedTextMessage?.text ||
+      msg.message.imageMessage?.caption ||
+      msg.message.videoMessage?.caption ||
+      msg.message.buttonsResponseMessage?.selectedButtonId ||
+      msg.message.listResponseMessage?.singleSelectReply?.selectedRowId ||
+      msg.message.templateButtonReplyMessage?.selectedId ||
+      "";
   }
 
   console.log(`[${sessionId}] Received message from ${jid}: "${text}"`);
@@ -286,8 +286,8 @@ async function handleMessage(sock: ReturnType<typeof makeWASocket>, msg: any, se
         }
         break;
       case "owner":
-        await sock.sendMessage(jid, { 
-          text: `👑 *Bot Owner*\n\n📞 Number: ${settings?.ownerNumber || "Not set"}\n🤖 Bot: ${BOT_NAME}` 
+        await sock.sendMessage(jid, {
+          text: `👑 *Bot Owner*\n\n📞 Number: ${settings?.ownerNumber || "Not set"}\n🤖 Bot: ${BOT_NAME}`
         });
         break;
       case "alive":
@@ -297,8 +297,8 @@ async function handleMessage(sock: ReturnType<typeof makeWASocket>, msg: any, se
         const hours = Math.floor(uptime / 3600);
         const minutes = Math.floor((uptime % 3600) / 60);
         const seconds = Math.floor(uptime % 60);
-        await sock.sendMessage(jid, { 
-          text: `🎄 *${BOT_NAME}*\n\n✅ Bot is alive!\n⏱️ Runtime: ${hours}h ${minutes}m ${seconds}s\n⚡ Speed: Fast\n🌐 Status: Online` 
+        await sock.sendMessage(jid, {
+          text: `🎄 *${BOT_NAME}*\n\n✅ Bot is alive!\n⏱️ Runtime: ${hours}h ${minutes}m ${seconds}s\n⚡ Speed: Fast\n🌐 Status: Online`
         });
         break;
 
@@ -461,8 +461,8 @@ async function handleMessage(sock: ReturnType<typeof makeWASocket>, msg: any, se
         await sock.sendMessage(jid, { text: '🌐 Public mode enabled!' });
         break;
       case "repo":
-        await sock.sendMessage(jid, { 
-          text: `📦 *CORTANA MD - Christmas Edition 2025*\n\n🎄 GitHub: https://github.com/Eduqariz/Cortana-MD\n👨‍💻 Owner: ${settings?.ownerNumber}\n⭐ Star the repo!` 
+        await sock.sendMessage(jid, {
+          text: `📦 *CORTANA MD - Christmas Edition 2025*\n\n🎄 GitHub: https://github.com/Eduqariz/Cortana-MD\n👨‍💻 Owner: ${settings?.ownerNumber}\n⭐ Star the repo!`
         });
         break;
 
@@ -673,7 +673,7 @@ async function handleSticker(sock: ReturnType<typeof makeWASocket>, msg: any, ji
     try {
       if (inputFile && fs.existsSync(inputFile)) fs.unlinkSync(inputFile);
       if (outputFile && fs.existsSync(outputFile)) fs.unlinkSync(outputFile);
-    } catch {}
+    } catch { }
   }
 }
 
@@ -756,8 +756,8 @@ async function handle8Ball(sock: ReturnType<typeof makeWASocket>, jid: string, q
   ];
 
   const answer = responses[Math.floor(Math.random() * responses.length)];
-  await sock.sendMessage(jid, { 
-    text: `🎱 *Magic 8 Ball*\n\n❓ Question: ${question}\n\n✨ Answer: ${answer}` 
+  await sock.sendMessage(jid, {
+    text: `🎱 *Magic 8 Ball*\n\n❓ Question: ${question}\n\n✨ Answer: ${answer}`
   });
 }
 
@@ -908,8 +908,8 @@ async function toggleAntilink(sock: ReturnType<typeof makeWASocket>, jid: string
     await storage.updateGroupSettings(jid, { antilink: enabled });
   }
 
-  await sock.sendMessage(jid, { 
-    text: enabled ? "🔗 Antilink enabled! Links will be deleted." : "🔗 Antilink disabled." 
+  await sock.sendMessage(jid, {
+    text: enabled ? "🔗 Antilink enabled! Links will be deleted." : "🔗 Antilink disabled."
   });
 }
 
@@ -964,8 +964,8 @@ async function handleGPT(sock: ReturnType<typeof makeWASocket>, jid: string, pro
     });
 
     if (response.data && response.data.result) {
-      await sock.sendMessage(jid, { 
-        text: `🤖 *GPT Response*\n\n${response.data.result}` 
+      await sock.sendMessage(jid, {
+        text: `🤖 *GPT Response*\n\n${response.data.result}`
       });
     } else {
       await sock.sendMessage(jid, { text: "❌ Could not get a response. Please try again." });
@@ -997,8 +997,8 @@ async function handleGemini(sock: ReturnType<typeof makeWASocket>, jid: string, 
       if (response.data) {
         const result = response.data.result || response.data.answer || response.data.data || response.data.response;
         if (result) {
-          await sock.sendMessage(jid, { 
-            text: `💎 *Gemini Response*\n\n${result}` 
+          await sock.sendMessage(jid, {
+            text: `💎 *Gemini Response*\n\n${result}`
           });
           return;
         }
@@ -1178,9 +1178,9 @@ async function hideTag(sock: ReturnType<typeof makeWASocket>, msg: any, jid: str
     const groupMetadata = await sock.groupMetadata(jid);
     const participants = groupMetadata.participants.map(p => p.id);
 
-    await sock.sendMessage(jid, { 
-      text: message || "📢 Hidden tag message", 
-      mentions: participants 
+    await sock.sendMessage(jid, {
+      text: message || "📢 Hidden tag message",
+      mentions: participants
     });
   } catch (error) {
     await sock.sendMessage(jid, { text: "❌ Failed to send hidden tag." });
