@@ -4,12 +4,14 @@ const { Pool } = pkg;
 import * as schema from "@shared/schema";
 
 if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL environment variable is not set");
+  console.log("DATABASE_URL not set. Running in standalone mode.");
 }
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }, // Required for Render & Self-signed certs
-});
+const pool = process.env.DATABASE_URL
+  ? new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false },
+  })
+  : null;
 
-export const db = drizzle(pool, { schema });
+export const db = pool ? drizzle(pool, { schema }) : null;

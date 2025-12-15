@@ -104,12 +104,54 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-export class MemStorage implements IStorage {
+// Basic File Persistence Adapter
+import { promises as fs } from "fs";
+
+class FileStorage implements IStorage {
   private users: Map<string, User> = new Map();
   private sessions: Map<string, Session> = new Map();
   private botSettings: Map<string, BotSettings> = new Map();
   private groupSettings: Map<string, GroupSettings> = new Map();
   private currentId = 0;
+  private filePath = path.join(process.cwd(), "database.json");
+  private initialized = false;
+
+  constructor() {
+    this.init();
+  }
+
+  private async init() {
+    if (this.initialized) return;
+    try {
+      const data = await fs.readFile(this.filePath, "utf-8");
+      const json = JSON.parse(data);
+      this.currentId = json.currentId || 0;
+      // Hydrate maps (simplified)
+      this.users = new Map(json.users || []);
+      this.sessions = new Map(json.sessions || []);
+      this.botSettings = new Map(json.botSettings || []);
+      this.groupSettings = new Map(json.groupSettings || []);
+      console.log("Database loaded from local file.");
+    } catch (e) {
+      console.log("No local database found, starting fresh.");
+    }
+    this.initialized = true;
+  }
+
+  private async save() {
+    try {
+      const data = JSON.stringify({
+        currentId: this.currentId,
+        users: Array.from(this.users.entries()),
+        sessions: Array.from(this.sessions.entries()),
+        botSettings: Array.from(this.botSettings.entries()),
+        groupSettings: Array.from(this.groupSettings.entries())
+      }, null, 2);
+      await fs.writeFile(this.filePath, data);
+    } catch (e) {
+      console.error("Failed to save database:", e);
+    }
+  }
 
   async getUser(id: string): Promise<User | undefined> {
     return Array.from(this.users.values()).find(u => u.id.toString() === id);
@@ -122,7 +164,8 @@ export class MemStorage implements IStorage {
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = (++this.currentId).toString();
     const user = { ...insertUser, id, createdAt: new Date() };
-    this.users.set(id, user);
+    this.users.set(id.toString(), user); // Ensure key string consistency
+    await this.save();
     return user;
   }
 
@@ -138,6 +181,7 @@ export class MemStorage implements IStorage {
     const id = session.id;
     const newSession = { ...session, createdAt: new Date(), updatedAt: new Date() };
     this.sessions.set(id, newSession);
+    await this.save();
     return newSession;
   }
 
@@ -146,11 +190,13 @@ export class MemStorage implements IStorage {
     if (!session) return undefined;
     const updated = { ...session, ...data, updatedAt: new Date() };
     this.sessions.set(id, updated);
+    await this.save();
     return updated;
   }
 
   async deleteSession(id: string): Promise<void> {
     this.sessions.delete(id);
+    await this.save();
   }
 
   async getAllSessions(): Promise<Session[]> {
@@ -165,6 +211,7 @@ export class MemStorage implements IStorage {
     const id = (++this.currentId).toString();
     const newSettings = { ...settings, id, createdAt: new Date(), updatedAt: new Date() };
     this.botSettings.set(id, newSettings);
+    await this.save();
     return newSettings;
   }
 
@@ -173,6 +220,7 @@ export class MemStorage implements IStorage {
     if (!settings) return undefined;
     const updated = { ...settings, ...data, updatedAt: new Date() };
     this.botSettings.set(id, updated);
+    await this.save();
     return updated;
   }
 
@@ -184,6 +232,7 @@ export class MemStorage implements IStorage {
     const id = (++this.currentId).toString();
     const newSettings = { ...settings, id, createdAt: new Date(), updatedAt: new Date() };
     this.groupSettings.set(id, newSettings);
+    await this.save();
     return newSettings;
   }
 
@@ -192,9 +241,10 @@ export class MemStorage implements IStorage {
     if (!settings) return undefined;
     const updated = { ...settings, ...data, updatedAt: new Date() };
     this.groupSettings.set(settings.id.toString(), updated);
+    await this.save();
     return updated;
   }
 }
 
-// Check if we have a database URL, otherwise use memory storage
-export const storage = process.env.DATABASE_URL ? new DatabaseStorage() : new MemStorage();
+// Prefer FileStorage to avoid SSL errors, or if DB is missing
+export const storage = new FileStorage();
