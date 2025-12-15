@@ -1,11 +1,16 @@
-import makeWASocket, {
+import { createRequire } from "module";
+const require = createRequire(import.meta.url);
+const Baileys = require("@whiskeysockets/baileys");
+
+const makeWASocket = Baileys.default?.default || Baileys.default || Baileys;
+const {
   DisconnectReason,
   useMultiFileAuthState,
   fetchLatestBaileysVersion,
   makeCacheableSignalKeyStore,
   Browsers,
   downloadMediaMessage
-} from "@whiskeysockets/baileys";
+} = Baileys;
 import { Boom } from "@hapi/boom";
 import pino from "pino";
 import NodeCache from "node-cache";
