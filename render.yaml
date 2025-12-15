@@ -1,0 +1,14 @@
+
+services:
+  - type: web
+    name: cortana-web-2
+    env: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    rootDir: CORTANA-WEB-2
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000

@@ -1,0 +1,897 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { useToast } from "@/hooks/use-toast";
+
+const PRODUCTS = [
+    { name: "Premium Bug Bots Scripts", price: 200, desc: "Advanced automation scripts" },
+    { name: "Ban Checker", price: 0, desc: "Free basic checker" },
+    { name: "Customized Ban Checkers", price: 100, desc: "Personalized checking tools" },
+    { name: "Unlimited Panels", price: 150, desc: "Access to all panels" },
+    { name: "Admin Panel", price: 400, desc: "Standard admin access" },
+    { name: "Private Admin Panel", price: 600, desc: "Exclusive admin panel" },
+    { name: "VPS 4GB", price: 300, desc: "30 days access" },
+    { name: "VPS 8GB", price: 550, desc: "30 days access" },
+    { name: "VPS 16GB", price: 990, desc: "30 days access" }
+];
+
+const TICKER_MESSAGES = [
+    "PREMIUM BUG BOTS SCRIPTS @200",
+    "BAN CHECKER KSH 0",
+    "CUSTOMIZED BAN CHECKERS @100",
+    "UNLIMITED PANELS 150",
+    "ADMIN PANEL 400",
+    "PRIVATE ADMIN PANEL 600",
+    "VPS 8GB 550",
+    "VPS 4GB 300",
+    "VPS 16GB 990 VALID FOR 30 DAYS",
+    "DEVELOPER TOOLS & SERVICES",
+    "M-PESA & AIRTEL MONEY PAYMENTS",
+    "INTERNATIONAL PAYMENTS AVAILABLE",
+    "WHATSAPP BOT LINKING",
+    "REAL-TIME SESSIONS MONITORING",
+    "CONTACT DEV FOR SUPPORT"
+];
+
+const CYBER_TIPS = [
+    "Use strong, unique passwords for every account",
+    "Enable two-factor authentication whenever possible",
+    "Keep your software and systems updated",
+    "Be cautious of phishing emails and suspicious links",
+    "Use a VPN on public Wi-Fi networks",
+    "Regularly backup your important data",
+    "Install and update antivirus software",
+    "Monitor your accounts for unusual activity",
+    "Use firewall protection on all devices",
+    "Educate yourself about latest security threats"
+];
+
+const MENU_TEXT = `🌺❀──────────────────────────────❀🌺
+           CORTANA MD 
+         C H R I S T M A S  E D.
+🌺❀──────────────────────────────❀🌺
+
+
+🌸🌼 O W N E R   M E N U 🌼🌸
+⮞ Block
+⮞ Unblock
+⮞ Dev
+⮞ Self
+⮞ Public
+⮞ BC
+⮞ Report
+⮞ SetBio
+⮞ Settings
+⮞ Features
+⮞ Antileft
+⮞ Autostatus
+⮞ AddPrem
+⮞ AddOwner
+⮞ DelPrem
+⮞ DelOwner
+⮞ Events
+⮞ VV
+⮞ Stats
+⮞ Shell
+🌸───────────────────────────────🌸
+
+
+🌷🌹 G R O U P   M A N A G E 🌹🌷
+⮞ Add
+⮞ Promote
+⮞ Demote
+⮞ Kick
+⮞ Open
+⮞ Close
+⮞ Link
+⮞ TagAll
+⮞ TagAdmin
+⮞ TotalMembers
+⮞ HideTag
+⮞ VCF
+⮞ ApproveAll
+⮞ RejectAll
+🌷───────────────────────────────🌷
+
+
+🌺🌼 A I   &   C H A T B O T S 🌼🌺
+⮞ GPT
+⮞ ChatGPT
+⮞ DeepSeek
+⮞ Imagine
+⮞ LLaMA
+⮞ Jokes
+⮞ Advice
+⮞ Trivia
+⮞ Inspire
+⮞ GenImage
+⮞ Gemini
+🌺───────────────────────────────🌺
+
+
+🌹🌸 U T I L I T I E S 🌸🌹
+⮞ Menu
+⮞ Ping
+⮞ Uptime
+⮞ ListGC
+⮞ ListPC
+⮞ React
+⮞ LeaveGC
+⮞ Delete
+⮞ BankCek
+⮞ Bansos
+⮞ Me
+⮞ Roket
+⮞ Repair
+⮞ PetStore
+⮞ Alarm
+⮞ AutoRead
+⮞ MyIP
+⮞ MathQuiz
+⮞ Shazam
+⮞ AntiDelete
+⮞ Instagram
+⮞ Repo
+🌹───────────────────────────────🌹
+
+
+🌼🌻 M E D I A   &   D O W N L O A D 🌻🌼
+⮞ Song
+⮞ Play
+⮞ SSweb
+⮞ IDch
+⮞ APK
+⮞ Weather
+⮞ Lyrics
+⮞ Tour
+⮞ ToMP3
+⮞ ToVN
+⮞ ToOnce
+⮞ ToAnime
+⮞ TTDL
+⮞ IGDLV
+⮞ Fetch
+🌼───────────────────────────────🌼
+
+
+🌸🌺 W A L L P A P E R S 🌺🌸
+⮞ Best-WallP
+⮞ Random
+🌸───────────────────────────────🌸
+
+
+🌷🌹 A N T I – F E A T U R E S 🌹🌷
+⮞ AntiLink
+⮞ AntiBadWord
+⮞ AntiBot
+⮞ AntiTagAdmin
+⮞ AntiLinkGC
+⮞ AntiDemote
+⮞ AntiPromote
+⮞ AntiForeign
+⮞ AntiVirus
+🌷───────────────────────────────🌷
+
+
+🌺🌼 A L L O W   M A N A G E 🌼🌺
+⮞ Allow
+⮞ DelAllowed
+⮞ ListAllowed
+🌺───────────────────────────────🌺
+
+
+🌹🌸 C O U N T R Y   F I L T E R S 🌸🌹
+⮞ AddCode
+⮞ DelCode
+⮞ ListCode
+🌹───────────────────────────────🌹
+
+
+❀──────────────────────────────❀
+      🌸 Powered by CORTANA MD 
+         🎄 Èdûqarîz 2025
+❀──────────────────────────────❀`;
+
+export default function Landing() {
+    const { toast } = useToast();
+    const [activeSection, setActiveSection] = useState('home');
+    const [currentTipIndex, setCurrentTipIndex] = useState(0);
+    const [showContact, setShowContact] = useState(false);
+    const [musicPlaying, setMusicPlaying] = useState(false);
+    const [checkoutOpen, setCheckoutOpen] = useState(false);
+    const [paymentPage, setPaymentPage] = useState<string | null>(null);
+    const [cart, setCart] = useState<{name: string, price: number}[]>([]);
+    const [showCartPage, setShowCartPage] = useState(false);
+    const audioRef = useRef<HTMLAudioElement | null>(null);
+    const [activeSessions, setActiveSessions] = useState(0);
+
+    // MD Link State
+    const [whatsappNumber, setWhatsappNumber] = useState('');
+    const [generatedCode, setGeneratedCode] = useState('');
+    const [isLinking, setIsLinking] = useState(false);
+    const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+    const [connectedNumber, setConnectedNumber] = useState('');
+    const [sessionId, setSessionId] = useState<string | null>(null);
+    const [linkError, setLinkError] = useState('');
+
+    // Matrix Canvas Ref
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+
+    useEffect(() => {
+        // Ticker Animation handled by CSS
+        // Tips Cycle
+        const interval = setInterval(() => {
+            setCurrentTipIndex((prev) => (prev + 1) % CYBER_TIPS.length);
+        }, 4000);
+
+        // Poll active sessions every 5 seconds
+        const sessionInterval = setInterval(async () => {
+            try {
+                const res = await fetch('/api/sessions/active/count');
+                const data = await res.json();
+                setActiveSessions(data.count);
+            } catch (err) {
+                console.error('Failed to fetch active sessions:', err);
+            }
+        }, 5000);
+
+        // Initial fetch
+        fetch('/api/sessions/active/count')
+            .then(res => res.json())
+            .then(data => setActiveSessions(data.count))
+            .catch(err => console.error('Failed to fetch active sessions:', err));
+
+        return () => {
+            clearInterval(interval);
+            clearInterval(sessionInterval);
+        };
+    }, []);
+
+    const addToCart = (product: typeof PRODUCTS[0]) => {
+        setCart(prev => [...prev, { name: product.name, price: product.price }]);
+        toast({
+            title: "✅ Item Added to Cart",
+            description: `${product.name} has been successfully added to cart`,
+            duration: 3000,
+        });
+    };
+
+    const removeFromCart = (index: number) => {
+        setCart(prev => prev.filter((_, i) => i !== index));
+    };
+
+    const getTotalPrice = () => {
+        return cart.reduce((sum, item) => sum + item.price, 0);
+    };
+
+    useEffect(() => {
+        // Music Init
+        audioRef.current = new Audio('https://files.catbox.moe/hy068y.mp3');
+        audioRef.current.loop = true;
+        audioRef.current.volume = 0.3;
+
+        return () => {
+            if (audioRef.current) {
+                audioRef.current.pause();
+                audioRef.current = null;
+            }
+        };
+    }, []);
+
+    useEffect(() => {
+        if (activeSection === 'bug' && canvasRef.current) {
+            initMatrix(canvasRef.current);
+        }
+    }, [activeSection]);
+
+    const toggleMusic = () => {
+        if (audioRef.current) {
+            if (musicPlaying) {
+                audioRef.current.pause();
+            } else {
+                audioRef.current.play().catch(e => console.log("Audio play failed", e));
+            }
+            setMusicPlaying(!musicPlaying);
+        }
+    };
+
+    const generateLinkCode = async () => {
+        if (!whatsappNumber) {
+            alert('Please enter a WhatsApp number');
+            return;
+        }
+        setIsLinking(true);
+        setGeneratedCode('GENERATING...');
+        setLinkError('');
+
+        try {
+            const response = await fetch('/api/pairing/request', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phoneNumber: whatsappNumber })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to generate pairing code');
+            }
+
+            setGeneratedCode(data.pairingCode);
+            setSessionId(data.sessionId);
+            setIsLinking(false);
+
+            // Start polling for connection status every 10 seconds
+            const pollStatus = setInterval(async () => {
+                try {
+                    const statusRes = await fetch(`/api/pairing/status/${data.sessionId}`);
+                    const statusData = await statusRes.json();
+
+                    if (statusData.status === 'connected') {
+                        clearInterval(pollStatus);
+                        setConnectedNumber(whatsappNumber);
+                        setShowSuccessMessage(true);
+                        setGeneratedCode('');
+                        setWhatsappNumber('');
+                        
+                        // Hide success message after 5 seconds
+                        setTimeout(() => {
+                            setShowSuccessMessage(false);
+                            setConnectedNumber('');
+                        }, 5000);
+                    }
+                } catch (err) {
+                    console.error('Status poll error:', err);
+                }
+            }, 10000); // Poll every 10 seconds
+
+            // Stop polling after 5 minutes
+            setTimeout(() => clearInterval(pollStatus), 300000);
+
+        } catch (error: any) {
+            setLinkError(error.message);
+            setGeneratedCode('');
+            setIsLinking(false);
+        }
+    };
+
+    const handleChatSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!chatInput.trim()) return;
+
+        const userMsg = chatInput;
+        setChatMessages(prev => [...prev, {sender: 'user', text: userMsg}]);
+        setChatInput('');
+
+        setTimeout(() => {
+            if (userMsg.toLowerCase() === '.menu' || userMsg.toLowerCase() === 'menu') {
+                setChatMessages(prev => [...prev, {sender: 'bot', text: MENU_TEXT}]);
+            } else {
+                setChatMessages(prev => [...prev, {sender: 'bot', text: 'Command not found. Type .menu for list.'}]);
+            }
+        }, 500);
+    };
+
+    const initMatrix = (canvas: HTMLCanvasElement) => {
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ123456789@#$%^&*()*&^%';
+        const fontSize = 16;
+        const columns = canvas.width / fontSize;
+        const drops: number[] = [];
+
+        for (let i = 0; i < columns; i++) {
+            drops[i] = 1;
+        }
+
+        const draw = () => {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#0F0';
+            ctx.font = fontSize + 'px monospace';
+
+            for (let i = 0; i < drops.length; i++) {
+                const text = letters.charAt(Math.floor(Math.random() * letters.length));
+                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+                if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                    drops[i] = 0;
+                }
+                drops[i]++;
+            }
+        };
+
+        const interval = setInterval(draw, 33);
+        return () => clearInterval(interval);
+    };
+
+    return (
+        <div className="min-h-screen text-white font-mono overflow-hidden">
+            {/* Background Videos */}
+            {activeSection === 'md' ? (
+                 <video autoPlay muted loop className="md-bg-video" key="md-bg">
+                    <source src="https://files.catbox.moe/402rz6.mp4" type="video/mp4" />
+                </video>
+            ) : (
+                <video autoPlay muted loop className="bg-video" key="main-bg">
+                    <source src="https://files.catbox.moe/sqr2k3.mp4" type="video/mp4" />
+                </video>
+            )}
+
+            {/* Music Control */}
+            <div 
+                className="music-control hover:scale-110 active:scale-95" 
+                onClick={toggleMusic}
+                title="Toggle Music"
+            >
+                <i className={`fas ${musicPlaying ? 'fa-pause' : 'fa-music'}`}></i>
+            </div>
+
+            {/* Navigation */}
+            <nav className="flex items-center">
+                {[
+                    { id: 'home', label: 'Home' },
+                    { id: 'catalogue', label: 'Catalogue' },
+                    { id: 'md', label: 'MD Link' },
+                    { id: 'bug', label: 'Bug Link' },
+                    { id: 'about', label: 'About' },
+                    { id: 'login', label: 'Login' }
+                ].map((item) => (
+                    <button
+                        key={item.id}
+                        className={`nav-btn ${activeSection === item.id ? 'active' : ''}`}
+                        onClick={() => setActiveSection(item.id)}
+                    >
+                        {item.label}
+                    </button>
+                ))}
+                <button 
+                    className={`nav-btn ${showContact ? 'active' : ''}`} 
+                    onClick={() => setShowContact(!showContact)}
+                >
+                    Contact
+                </button>
+            </nav>
+
+            {/* Content Sections */}
+
+            {/* Home Section */}
+            {activeSection === 'home' && (
+                <div className="section-container section-enter">
+                    <div className="tip-container">
+                        <div className="cyber-tip show text-cyan-400">
+                            {CYBER_TIPS[currentTipIndex]}
+                        </div>
+                        <div className="squirrel show text-6xl mt-8">🐿️</div>
+                    </div>
+                </div>
+            )}
+
+            {/* Catalogue Section */}
+            {activeSection === 'catalogue' && (
+                <div className="section-container section-enter">
+                    <h2 className="text-cyan-400 mb-5 text-center text-2xl font-bold">
+                        <i className="fas fa-shopping-cart mr-2"></i> PRODUCT CATALOGUE
+                    </h2>
+
+                    <div className="catalogue-grid">
+                        {PRODUCTS.map((product, idx) => (
+                            <div key={idx} className="product-item">
+                                <div className="product-title">{product.name}</div>
+                                <div className="text-gray-400 text-sm mb-2">{product.desc}</div>
+                                <div className="product-price">KSH {product.price}</div>
+                                <button className="cart-btn" onClick={() => addToCart(product)}>
+                                    <i className="fas fa-cart-plus mr-2"></i> ADD TO CART
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="mt-8 p-5 bg-cyan-900/20 rounded-lg border-l-4 border-cyan-400">
+                        <div className="flex justify-between items-center mb-4">
+                            <p className="text-white font-bold">
+                                <i className="fas fa-mobile-alt mr-2"></i> M-Pesa & Airtel Money payments available
+                            </p>
+                            <div className="text-cyan-400 font-bold">
+                                <i className="fas fa-shopping-cart mr-2"></i> {cart.length} items
+                            </div>
+                        </div>
+                        <button onClick={() => setShowCartPage(true)} className="cart-btn bg-cyan-500/20 border-cyan-500 hover:bg-cyan-500/40 w-full">
+                            <i className="fas fa-shopping-bag mr-2"></i> VIEW CART & CHECKOUT
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* MD Link Section */}
+            {activeSection === 'md' && (
+                <div className="section-container section-enter">
+                    <h2 className="text-cyan-400 mb-5 text-center text-2xl font-bold">
+                        <i className="fab fa-whatsapp mr-2"></i> MD WHATSAPP BOT
+                    </h2>
+
+                    <div className="max-w-[500px] mx-auto">
+                        {/* Success Message */}
+                        {showSuccessMessage && (
+                            <div className="mb-6 bg-green-900/30 border border-green-500/50 p-6 rounded-lg text-center animate-in fade-in zoom-in duration-500">
+                                <div className="text-5xl text-green-400 mb-4">
+                                    <i className="fas fa-check-circle"></i>
+                                </div>
+                                <h3 className="text-2xl font-bold text-green-400 mb-2">SUCCESSFULLY LINKED!</h3>
+                                <p className="text-gray-300 mb-2">
+                                    Number <span className="font-mono text-cyan-400">{connectedNumber}</span> has been equipped with Cortana MD
+                                </p>
+                                <p className="text-green-400 font-bold">Happy Usage! 🎄</p>
+                            </div>
+                        )}
+
+                        {/* Link Form */}
+                        <div className="mb-5">
+                            <label className="text-cyan-400 block mb-2 font-bold">
+                                WhatsApp Number (254xxxxxxxxx)
+                            </label>
+                            <input 
+                                type="text" 
+                                placeholder="254712345678" 
+                                value={whatsappNumber}
+                                onChange={(e) => setWhatsappNumber(e.target.value)}
+                                className="w-full p-3 bg-white/10 border-2 border-cyan-500/50 text-white rounded-lg font-mono"
+                            />
+                        </div>
+
+                        <button 
+                            onClick={generateLinkCode} 
+                            className="cart-btn"
+                            disabled={isLinking}
+                            data-testid="button-generate-code"
+                        >
+                            <i className={`fas ${isLinking ? 'fa-spinner fa-spin' : 'fa-bolt'} mr-2`}></i> 
+                            {isLinking ? 'GENERATING...' : 'GENERATE LINK CODE'}
+                        </button>
+
+                        {linkError && (
+                            <div className="mt-4 p-4 bg-red-500/20 border border-red-500/50 rounded-lg text-red-400" data-testid="text-link-error">
+                                <i className="fas fa-exclamation-circle mr-2"></i> {linkError}
+                            </div>
+                        )}
+
+                        {generatedCode && !linkError && (
+                            <div className="mt-6 p-5 bg-cyan-500/15 rounded-lg border border-cyan-500/30">
+                                <div className="text-cyan-400 mb-2 font-bold">YOUR LINK CODE:</div>
+                                <div className="text-3xl tracking-widest text-white font-mono p-4 bg-black/50 rounded text-center">
+                                    {generatedCode}
+                                </div>
+                                <div className="text-sm text-gray-300 mt-4 leading-relaxed">
+                                    <strong>Instructions:</strong><br/>
+                                    1. Open WhatsApp on your phone<br/>
+                                    2. Go to Settings → Linked Devices<br/>
+                                    3. Tap "Link a Device"<br/>
+                                    4. Tap "Link with phone number instead"<br/>
+                                    5. Enter the code above
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="mt-8 text-center">
+                            <div className="text-cyan-400 mb-2 font-bold">
+                                <i className="fas fa-chart-line mr-2"></i> ACTIVE SESSIONS
+                            </div>
+                            <div className="text-4xl text-green-400 font-bold animate-pulse">{activeSessions}</div>
+                        </div>
+
+                        <div className="text-center mt-8">
+                            <a href="https://wa.me/254113374182" target="_blank" className="icon whatsapp inline-flex mb-4 w-16 h-16 mx-auto">
+                                <i className="fab fa-whatsapp"></i>
+                            </a>
+                            <div className="text-cyan-400 font-bold">
+                                Need help? Contact Developer
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Bug Link Section */}
+            {activeSection === 'bug' && (
+                <div className="section-container section-enter relative overflow-hidden">
+                    <canvas ref={canvasRef} className="absolute inset-0 z-[-1] opacity-30 pointer-events-none" />
+
+                    <h2 className="glitch-text mb-5 text-center text-3xl font-bold">
+                        <i className="fas fa-bug mr-2"></i> CORTANA EXPLOIT MODE
+                    </h2>
+
+                    <div className="text-center mb-8">
+                        <div className="text-6xl text-red-400 mb-5">
+                            <i className="fas fa-user-secret"></i>
+                        </div>
+                        <div className="text-gray-300 text-lg">Login Required for Full Access</div>
+                    </div>
+
+                    <div className="max-w-[500px] mx-auto">
+                        <div className="mb-5">
+                            <label className="text-red-400 block mb-2 font-bold">
+                                Target Identifier
+                            </label>
+                            <input 
+                                type="text" 
+                                placeholder="Enter after login" 
+                                className="w-full p-3 bg-white/10 border-2 border-red-400/50 text-white rounded-lg cursor-not-allowed"
+                                disabled
+                            />
+                        </div>
+
+                        <button 
+                            className="cart-btn bg-red-500/20 border-red-500/50 text-white hover:bg-red-500/40 cursor-not-allowed opacity-50"
+                            disabled
+                        >
+                            <i className="fas fa-play mr-2"></i> INITIATE EXPLOIT
+                        </button>
+
+                        <div className="mt-6 p-5 bg-red-500/15 rounded-lg border-l-4 border-red-500">
+                            <div className="text-red-400 mb-2 font-bold">
+                                <i className="fas fa-exclamation-triangle mr-2"></i> WARNING
+                            </div>
+                            <div className="text-sm text-gray-300 leading-relaxed">
+                                Educational use only. Unauthorized access is prohibited. You are responsible for any violation of law involved.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* About Section */}
+            {activeSection === 'about' && (
+                <div className="section-container section-enter">
+                    <h2 className="text-cyan-400 mb-5 text-center text-2xl font-bold">
+                        <i className="fas fa-info-circle mr-2"></i> ABOUT US
+                    </h2>
+                    <div className="bg-white/5 p-8 rounded-lg border-l-4 border-cyan-400">
+                        <p className="leading-loose text-gray-300 mb-5 text-lg">
+                            We are developers designing education tools, not meant to harm anyone and hence you will be responsible for any violation of law involved. Use our tools responsibly.
+                        </p>
+                        <div className="text-right text-cyan-400 italic text-xl mt-8">
+                            $signed by dev.edu$
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Login Section */}
+            {activeSection === 'login' && (
+                <div className="section-container section-enter">
+                    <div className="character">
+                         <div className="eye bg-cyan-400 shadow-[0_0_15px_#00a8ff]"></div>
+                         <div className="eye bg-cyan-400 shadow-[0_0_15px_#00a8ff] left-[55%]"></div>
+                    </div>
+
+                    <h2 className="text-cyan-400 mb-6 text-center text-2xl font-bold">
+                        <i className="fas fa-lock mr-2"></i> SECURE LOGIN
+                    </h2>
+
+                    <div className="max-w-[400px] mx-auto">
+                        <div className="mb-5">
+                            <label className="text-cyan-400 block mb-2 font-bold">Username</label>
+                            <input type="text" placeholder="Enter username" className="w-full p-3 bg-white/10 border-2 border-cyan-500/50 text-white rounded-lg" />
+                        </div>
+
+                        <div className="mb-8 relative">
+                            <label className="text-cyan-400 block mb-2 font-bold">Password</label>
+                            <input type="password" placeholder="Enter password" className="w-full p-3 bg-white/10 border-2 border-cyan-500/50 text-white rounded-lg" />
+                        </div>
+
+                        <button className="cart-btn" onClick={() => alert("Login simulated.")}>
+                            <i className="fas fa-sign-in-alt mr-2"></i> LOGIN
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Contact Icons */}
+            {showContact && (
+                <div className="contact-icons contact-icons-enter">
+                    <a href="https://wa.me/254113374182" target="_blank" className="icon whatsapp">
+                        <i className="fab fa-whatsapp"></i>
+                    </a>
+                    <a href="https://t.me/eduqariz" target="_blank" className="icon telegram">
+                        <i className="fab fa-telegram"></i>
+                    </a>
+                    <a href="#" className="icon instagram">
+                        <i className="fab fa-instagram"></i>
+                    </a>
+                    <a href="#" className="icon youtube">
+                        <i className="fab fa-youtube"></i>
+                    </a>
+                    <a href="#" className="icon tiktok">
+                        <i className="fab fa-tiktok"></i>
+                    </a>
+                </div>
+            )}
+
+            {/* Checkout Modal */}
+            {checkoutOpen && !paymentPage && (
+                <div className="checkout-modal checkout-modal-enter">
+                    <div className="checkout-content relative">
+                        <span className="close-checkout" onClick={() => setCheckoutOpen(false)}>&times;</span>
+
+                        <h2 className="text-cyan-400 mb-5 text-center text-2xl font-bold">
+                            <i className="fas fa-credit-card mr-2"></i> CHECKOUT
+                        </h2>
+
+                        <div className="text-center mb-5">
+                            <div className="text-2xl text-green-400 font-bold">Total: KSH {getTotalPrice()}</div>
+                            <div className="text-gray-400 mt-2">{cart.length} item{cart.length !== 1 ? 's' : ''} in cart</div>
+                        </div>
+
+                        <h3 className="text-cyan-400 my-5 text-center font-bold">SELECT PAYMENT METHOD</h3>
+
+                        <div className="payment-options">
+                            <div className="payment-method" onClick={() => setPaymentPage('mpesa')}>
+                                <div className="payment-icon mpesa-icon text-green-600"><i className="fas fa-mobile-alt"></i></div>
+                                <div className="text-green-600 font-bold">M-PESA</div>
+                                <div className="text-xs text-gray-400 mt-1">Safaricom Users</div>
+                            </div>
+
+                            <div className="payment-method" onClick={() => setPaymentPage('airtel')}>
+                                <div className="payment-icon airtel-icon text-red-600"><i className="fas fa-signal"></i></div>
+                                <div className="text-red-600 font-bold">AIRTEL MONEY</div>
+                                <div className="text-xs text-gray-400 mt-1">Airtel Users</div>
+                            </div>
+
+                            <div className="payment-method" onClick={() => alert("International payment simulated.")}>
+                                <div className="payment-icon international-icon text-yellow-400"><i className="fas fa-globe"></i></div>
+                                <div className="text-yellow-400 font-bold">INTERNATIONAL</div>
+                                <div className="text-xs text-gray-400 mt-1">Outside Kenya</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* M-Pesa Page */}
+            {checkoutOpen && paymentPage === 'mpesa' && (
+                <div className="payment-page block">
+                     <div className="payment-header mpesa-header border-green-600">
+                        <h1 className="text-green-600 text-3xl font-bold">
+                            <i className="fas fa-mobile-alt mr-2"></i> M-PESA PAYMENT
+                        </h1>
+                        <p className="text-gray-400">Complete your payment via M-Pesa</p>
+                    </div>
+                    <div className="payment-content">
+                        <div className="mb-5">
+                            <label className="text-green-600 block mb-2 font-bold">Safaricom Phone Number</label>
+                            <input type="text" placeholder="07xxxxxxxx" className="w-full p-3 bg-white/10 border-2 border-green-600 text-white rounded-lg font-mono" />
+                        </div>
+                        <div className="mb-5">
+                            <label className="text-green-600 block mb-2 font-bold">Amount (KSH)</label>
+                            <input type="text" value="0" readOnly className="w-full p-3 bg-white/10 border-2 border-green-600 text-white rounded-lg font-mono" />
+                        </div>
+                        <button className="cart-btn bg-green-900/50 border-green-600 hover:bg-green-800" onClick={() => alert("STK Push simulated!")}>
+                            INITIATE PAYMENT
+                        </button>
+                        <button className="back-btn w-full mt-4" onClick={() => setPaymentPage(null)}>
+                            BACK TO CHECKOUT
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Airtel Page */}
+             {checkoutOpen && paymentPage === 'airtel' && (
+                <div className="payment-page block">
+                     <div className="payment-header airtel-header border-red-600">
+                        <h1 className="text-red-600 text-3xl font-bold">
+                            <i className="fas fa-signal mr-2"></i> AIRTEL MONEY PAYMENT
+                        </h1>
+                        <p className="text-gray-400">Complete your payment via Airtel Money</p>
+                    </div>
+                    <div className="payment-content">
+                        <div className="mb-5">
+                            <label className="text-red-600 block mb-2 font-bold">Airtel Phone Number</label>
+                            <input type="text" placeholder="07xxxxxxxx" className="w-full p-3 bg-white/10 border-2 border-red-600 text-white rounded-lg font-mono" />
+                        </div>
+                        <div className="mb-5">
+                            <label className="text-red-600 block mb-2 font-bold">Amount (KSH)</label>
+                            <input type="text" value="0" readOnly className="w-full p-3 bg-white/10 border-2 border-red-600 text-white rounded-lg font-mono" />
+                        </div>
+                        <button className="cart-btn bg-red-900/50 border-red-600 hover:bg-red-800" onClick={() => alert("Payment simulated!")}>
+                            INITIATE PAYMENT
+                        </button>
+                        <button className="back-btn w-full mt-4" onClick={() => setPaymentPage(null)}>
+                            BACK TO CHECKOUT
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Cart Page Modal */}
+            {showCartPage && (
+                <div className="checkout-modal checkout-modal-enter">
+                    <div className="checkout-content relative max-w-2xl">
+                        <span className="close-checkout" onClick={() => setShowCartPage(false)}>&times;</span>
+
+                        <h2 className="text-cyan-400 mb-5 text-center text-2xl font-bold">
+                            <i className="fas fa-shopping-cart mr-2"></i> YOUR SHOPPING CART
+                        </h2>
+
+                        {cart.length === 0 ? (
+                            <div className="text-center py-12">
+                                <div className="text-6xl mb-4 opacity-50">🛒</div>
+                                <p className="text-gray-400 text-lg">Your cart is empty</p>
+                                <button 
+                                    onClick={() => setShowCartPage(false)} 
+                                    className="mt-6 cart-btn"
+                                >
+                                    <i className="fas fa-arrow-left mr-2"></i> CONTINUE SHOPPING
+                                </button>
+                            </div>
+                        ) : (
+                            <>
+                                <div className="mb-6 max-h-96 overflow-y-auto">
+                                    {cart.map((item, index) => (
+                                        <div 
+                                            key={index} 
+                                            className="bg-white/5 p-4 rounded-lg mb-3 flex justify-between items-center border border-white/10 hover:border-cyan-500/50 transition-all"
+                                        >
+                                            <div>
+                                                <div className="text-white font-bold">{item.name}</div>
+                                                <div className="text-cyan-400 text-sm">KSH {item.price}</div>
+                                            </div>
+                                            <button 
+                                                onClick={() => removeFromCart(index)}
+                                                className="px-4 py-2 bg-red-500/20 border-2 border-red-500/50 text-red-400 rounded-lg hover:bg-red-500/40 transition-all"
+                                            >
+                                                <i className="fas fa-trash mr-2"></i> Remove
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <div className="border-t border-white/20 pt-4 mb-6">
+                                    <div className="flex justify-between items-center text-xl">
+                                        <span className="text-white font-bold">Total:</span>
+                                        <span className="text-cyan-400 font-bold">KSH {getTotalPrice()}</span>
+                                    </div>
+                                    <div className="text-gray-400 text-sm mt-2">
+                                        {cart.length} item{cart.length !== 1 ? 's' : ''} in cart
+                                    </div>
+                                </div>
+
+                                <div className="flex gap-3">
+                                    <button 
+                                        onClick={() => setShowCartPage(false)} 
+                                        className="flex-1 px-6 py-3 bg-white/10 border-2 border-white/20 text-white rounded-lg hover:bg-white/20 transition-all"
+                                    >
+                                        <i className="fas fa-arrow-left mr-2"></i> Continue Shopping
+                                    </button>
+                                    <button 
+                                        onClick={() => {
+                                            setShowCartPage(false);
+                                            setCheckoutOpen(true);
+                                        }} 
+                                        className="flex-1 cart-btn bg-green-500/20 border-green-500 hover:bg-green-500/40"
+                                    >
+                                        <i className="fas fa-credit-card mr-2"></i> PROCEED TO CHECKOUT
+                                    </button>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* Ticker */}
+            <div className="ticker-container">
+                <div className="ticker">
+                    {TICKER_MESSAGES.map((msg, idx) => (
+                        <div key={idx} className="ticker-item">{msg}</div>
+                    ))}
+                    {TICKER_MESSAGES.map((msg, idx) => (
+                        <div key={`dup-${idx}`} className="ticker-item">{msg}</div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+}
