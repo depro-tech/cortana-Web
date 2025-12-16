@@ -54,7 +54,7 @@ async function startSocket(sessionId: string, phoneNumber?: string) {
         keys: makeCacheableSignalKeyStore(state.keys, logger),
       },
       msgRetryCounterCache,
-      browser: ["Ubuntu", "Chrome", "20.0.04"],
+      browser: ["Ubuntu", "Chrome", "120.0.0"],
       generateHighQualityLinkPreview: true,
       getMessage: async (key: any) => {
         return messageCache.get(key.id) || { conversation: '' };
