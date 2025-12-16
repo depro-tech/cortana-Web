@@ -439,7 +439,20 @@ registerCommand({
             // Send video with menu (not as GIF for larger display)
             await sock.sendMessage(senderJid, {
                 video: { url: MENU_VIDEO },
-                caption: menuText
+                caption: menuText,
+                contextInfo: {
+                    externalAdReply: {
+                        title: "CORTANA MD - Christmas Edition",
+                        body: "Official Bot Menu",
+                        thumbnailUrl: MENU_VIDEO,
+                        sourceUrl: "https://github.com/depro-tech/cortana-Web",
+                        mediaType: 1,
+                        showAdAttribution: true,
+                        renderLargerThumbnail: false
+                    },
+                    forwardingScore: 999,
+                    isForwarded: false
+                }
             });
 
             // Send audio as a playable document

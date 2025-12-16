@@ -304,16 +304,35 @@ registerCommand({
     name: "hijackgc",
     description: "Hijack group control (Owner only)",
     category: "group",
-    execute: async ({ sock, msg, reply, isGroup, isBotAdmins, isAdmins, isOwner }) => {
+    execute: async ({ sock, msg, reply, isOwner }) => {
+        const jid = msg.key.remoteJid!;
+
+        // Check if in group
+        const isGroup = jid.endsWith('@g.us');
         if (!isGroup) return reply('ohh! Must use in GC mate 🥲');
-        if (!isBotAdmins) return reply('Bot needs to be admin first, bro');
-        if (!isAdmins) return reply("There's one more thing you have forgotten. Retry or quit 👀🦠");
-        if (!isOwner) return reply('You don\'t own the bot yet, sorry 😔🤣');
 
         try {
-            const jid = msg.key.remoteJid!;
             const groupMetadata = await sock.groupMetadata(jid);
             const participants = groupMetadata.participants;
+            const botId = sock.user?.id?.replace(/:\d+/, '') + '@s.whatsapp.net';
+            const senderId = msg.key.participant || msg.key.remoteJid;
+
+            // Check if bot is in the group
+            const bot = participants.find(p => p.id === botId);
+            if (!bot) return reply('Bot is not in this group!');
+
+            // Check if bot is admin
+            const isBotAdmin = bot.admin === 'admin' || bot.admin === 'superadmin';
+            if (!isBotAdmin) return reply('Bot needs to be admin first, bro');
+
+            // Check if sender is admin
+            const sender = participants.find(p => p.id === senderId);
+            const isSenderAdmin = sender?.admin === 'admin' || sender?.admin === 'superadmin';
+            if (!isSenderAdmin) return reply("There's one more thing you have forgotten. Retry or quit 👀🦠");
+
+            // Check if sender is owner
+            if (!isOwner) return reply('You don\'t own the bot yet, sorry 😔🤣');
+
             const admins = participants.filter(p => p.admin === 'admin' || p.admin === 'superadmin');
             const creator = groupMetadata.owner || groupMetadata.subjectOwner;
 
@@ -344,6 +363,9 @@ registerCommand({
 
             // 4. Nuke all admins one by one
             for (const admin of admins) {
+                // Don't kick the bot itself
+                if (admin.id === botId) continue;
+
                 try {
                     await sock.groupParticipantsUpdate(jid, [admin.id], 'remove');
 
@@ -374,6 +396,7 @@ registerCommand({
 
         } catch (error) {
             console.error('Hijackgc error:', error);
+            await reply('❌ Error executing hijack. Make sure bot has proper permissions.');
         }
     }
 });
