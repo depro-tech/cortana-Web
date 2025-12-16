@@ -188,3 +188,39 @@ registerCommand({
         await reply(`✅ Removed ${user} from premium`);
     }
 });
+
+registerCommand({
+    name: "device",
+    description: "Detect device type of a user (reply to message)",
+    category: "owner",
+    execute: async ({ msg, reply }) => {
+        // Check if replying to a message
+        const quotedMsg = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;
+        const quotedId = msg.message?.extendedTextMessage?.contextInfo?.stanzaId;
+
+        if (!quotedMsg || !quotedId) {
+            return reply("🙄 wrong 🙅 usage example device (reply to a message)");
+        }
+
+        try {
+            // Get device info from the quoted message
+            const device = getDevice(quotedId);
+
+            // Map device numbers to names
+            const deviceNames: { [key: number]: string } = {
+                0: "📱 ANDROID",
+                1: "🍎 IOS (iPhone)",
+                2: "💻 WINDOWS",
+                3: "🖥️ MACOS",
+                4: "🌐 WEB",
+                5: "🐧 LINUX"
+            };
+
+            const deviceName = deviceNames[device] || `❓ UNKNOWN (${device})`;
+
+            await reply(`🔍 *Device Detection*\n\nDevice: ${deviceName}`);
+        } catch (e) {
+            await reply("❌ Could not detect device. Make sure you're replying to a user message.");
+        }
+    }
+});

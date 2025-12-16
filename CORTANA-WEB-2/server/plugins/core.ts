@@ -436,11 +436,10 @@ registerCommand({
 ❀──────────────────────────────❀`;
 
         try {
-            // Send video with menu
+            // Send video with menu (not as GIF for larger display)
             await sock.sendMessage(senderJid, {
                 video: { url: MENU_VIDEO },
-                caption: menuText,
-                gifPlayback: true
+                caption: menuText
             });
 
             // Send audio as a playable document
