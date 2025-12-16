@@ -9,427 +9,427 @@ registerCommand({
     category: "core",
     execute: async ({ sock, msg, senderJid, reply }) => {
         const menuText = `🌺❀──────────────────────────────❀🌺
-           CORTANA MD 
+           C̷O̷R̷T̷A̷N̷A̷ ̷M̷D̷ 
          C H R I S T M A S  E D.
 🌺❀──────────────────────────────❀🌺
 
 
 🌸🌼 O W N E R   M E N U 🌼🌸
-⮞ .block - Block user
-⮞ .unblock - Unblock user  
-⮞ .dev - Developer mode
-⮞ .self - Private bot mode
-⮞ .public - Public bot mode
-⮞ .bc - Broadcast message
-⮞ .setbio - Set bot bio
-⮞ .settings - Bot settings
-⮞ .addprem - Add premium user
-⮞ .delprem - Remove premium
-⮞ .addowner - Add owner
-⮞ .delowner - Remove owner
-⮞ .shell - Execute shell command
-⮞ .eval - Execute JavaScript
-⮞ .restart - Restart bot
-⮞ .update - Update bot
-⮞ .backup - Backup data
-⮞ .restore - Restore backup
-⮞ .setpp - Set bot profile picture
-⮞ .setname - Set bot name
-⮞ .setstatus - Set bot status
-⮞ .listprem - List premium users
-⮞ .listban - List banned users
+⮞ .block
+⮞ .unblock
+⮞ .dev
+⮞ .self
+⮞ .public
+⮞ .bc
+⮞ .setbio
+⮞ .settings
+⮞ .addprem
+⮞ .delprem
+⮞ .addowner
+⮞ .delowner
+⮞ .shell
+⮞ .eval
+⮞ .restart
+⮞ .update
+⮞ .backup
+⮞ .restore
+⮞ .setpp
+⮞ .setname
+⮞ .setstatus
+⮞ .listprem
+⮞ .listban
 🌸───────────────────────────────🌸
 
 
 🌷🌹 G R O U P   M A N A G E 🌹🌷
-⮞ .add - Add member
-⮞ .promote - Make admin
-⮞ .demote - Remove admin
-⮞ .kick - Remove member
-⮞ .open - Open group
-⮞ .close - Close group
-⮞ .link - Get group link
-⮞ .resetlink - Reset group link
-⮞ .tagall - Tag everyone
-⮞ .tagadmin - Tag admins only
-⮞ .hidetag - Hidden tag
-⮞ .ginfo - Group info
-⮞ .invite - Invite to group
-⮞ .leave - Leave group
-⮞ .setdesc - Set description
-⮞ .setname - Set group name
-⮞ .setppgc - Set group picture
-⮞ .delete - Delete message
-⮞ .revoke - Revoke invite link
-⮞ .grouplist - List all groups
+⮞ .add
+⮞ .promote
+⮞ .demote
+⮞ .kick
+⮞ .open
+⮞ .close
+⮞ .link
+⮞ .resetlink
+⮞ .tagall
+⮞ .tagadmin
+⮞ .hidetag
+⮞ .ginfo
+⮞ .invite
+⮞ .leave
+⮞ .setdesc
+⮞ .setname
+⮞ .setppgc
+⮞ .delete
+⮞ .revoke
+⮞ .grouplist
 🌷───────────────────────────────🌷
 
 
 🌺🌼 A I   &   C H A T B O T S 🌼🌺
-⮞ .gpt - Ask ChatGPT
-⮞ .chatgpt - Advanced AI chat
-⮞ .deepseek - DeepSeek AI
-⮞ .imagine - Generate images
-⮞ .llama - LLaMA AI
-⮞ .gemini - Google Gemini AI
-⮞ .bard - Google Bard
-⮞ .blackbox - BlackBox AI
-⮞ .ai - General AI
-⮞ .aiimg - AI Image generation
-⮞ .joke - Random joke
-⮞ .advice - Get advice
-⮞ .trivia - Trivia questions
-⮞ .quote - Random quote
-⮞ .fact - Random fact
-⮞ .riddle - Random riddle
-⮞ .meme - Random meme
-⮞ .anime - Anime recommendations
+⮞ .gpt
+⮞ .chatgpt
+⮞ .deepseek
+⮞ .imagine
+⮞ .llama
+⮞ .gemini
+⮞ .bard
+⮞ .blackbox
+⮞ .ai
+⮞ .aiimg
+⮞ .joke
+⮞ .advice
+⮞ .trivia
+⮞ .quote
+⮞ .fact
+⮞ .riddle
+⮞ .meme
+⮞ .anime
 🌺───────────────────────────────🌺
 
 
 🌹🌸 U T I L I T I E S 🌸🌹
-⮞ .menu - Show menu
-⮞ .help - Help command
-⮞ .ping - Bot speed
-⮞ .alive - Bot status
-⮞ .uptime - Runtime info
-⮞ .speed - Speed test
-⮞ .owner - Owner contact
-⮞ .repo - Bot repository
-⮞ .delete - Delete message
-⮞ .react - React to message
-⮞ .autoread - Toggle autoread
-⮞ .autostatus - Toggle auto status view
-⮞ .translate - Translate text
-⮞ .currency - Currency converter
-⮞ .weather - Weather info
-⮞ .time - Current time
-⮞ .date - Current date
-⮞ .calc - Calculator
-⮞ .wikipedia - Wikipedia search
-⮞ .google - Google search
-⮞ .image - Image search
-⮞ .define - Define word
-⮞ .urban - Urban dictionary
+⮞ .menu
+⮞ .help
+⮞ .ping
+⮞ .alive
+⮞ .uptime
+⮞ .speed
+⮞ .owner
+⮞ .repo
+⮞ .delete
+⮞ .react
+⮞ .autoread
+⮞ .autostatus
+⮞ .translate
+⮞ .currency
+⮞ .weather
+⮞ .time
+⮞ .date
+⮞ .calc
+⮞ .wikipedia
+⮞ .google
+⮞ .image
+⮞ .define
+⮞ .urban
 🌹───────────────────────────────🌹
 
 
 🌼🌻 M E D I A   &   D O W N L O A D 🌻🌼
-⮞ .song - Download audio
-⮞ .video - Download video
-⮞ .play - YouTube search & download
-⮞ .ytmp3 - YouTube to MP3
-⮞ .ytmp4 - YouTube to MP4
-⮞ .yts - YouTube search
-⮞ .ytv - YouTube video info
-⮞ .fb - Facebook downloader
-⮞ .fbdl - Facebook download
-⮞ .ig - Instagram downloader
-⮞ .igdl - Instagram download
-⮞ .igstory - IG story downloader
-⮞ .tiktok - TikTok downloader
-⮞ .ttdl - TikTok download
-⮞ .twitter - Twitter downloader
-⮞ .twdl - Twitter download
-⮞ .mediafire - MediaFire downloader
-⮞ .gdrive - Google Drive downloader
-⮞ .apk - APK downloader
-⮞ .spotify - Spotify downloader
-⮞ .soundcloud - SoundCloud downloader
-⮞ .lyrics - Song lyrics
-⮞ .pinterest - Pinterest downloader
-⮞ .wallpaper - Wallpaper search
+⮞ .song
+⮞ .video
+⮞ .play
+⮞ .ytmp3
+⮞ .ytmp4
+⮞ .yts
+⮞ .ytv
+⮞ .fb
+⮞ .fbdl
+⮞ .ig
+⮞ .igdl
+⮞ .igstory
+⮞ .tiktok
+⮞ .ttdl
+⮞ .twitter
+⮞ .twdl
+⮞ .mediafire
+⮞ .gdrive
+⮞ .apk
+⮞ .spotify
+⮞ .soundcloud
+⮞ .lyrics
+⮞ .pinterest
+⮞ .wallpaper
 🌼───────────────────────────────🌼
 
 
 🌸🌺 S T I C K E R S 🌺🌸
-⮞ .sticker - Create sticker
-⮞ .s - Quick sticker
-⮞ .toimg - Sticker to image
-⮞ .toanime - Animate image
-⮞ .smeme - Sticker meme
-⮞ .swm - Sticker watermark
-⮞ .steal - Steal sticker
-⮞ .take - Take sticker
-⮞ .emoji - Get emoji
-⮞ .emojimix - Mix emojis
-⮞ .attp - Animated text
-⮞ .ttp - Text to picture
+⮞ .sticker
+⮞ .s
+⮞ .toimg
+⮞ .toanime
+⮞ .smeme
+⮞ .swm
+⮞ .steal
+⮞ .take
+⮞ .emoji
+⮞ .emojimix
+⮞ .attp
+⮞ .ttp
 🌸───────────────────────────────🌸
 
 
 🌷🌹 A N T I – F E A T U R E S 🌹🌷
-⮞ .antilink - Toggle antilink
-⮞ .antibadword - Filter bad words
-⮞ .antibot - Block other bots
-⮞ .antitag - Prevent tagging
-⮞ .antidelete - Save deleted msgs
-⮞ .antivirus - Scan files
-⮞ .antiviewonce - Save view once
-⮞ .antispam - Anti spam
-⮞ .antiforeign - Anti foreign users
-⮞ .antitoxic - Anti toxic words
+⮞ .antilink
+⮞ .antibadword
+⮞ .antibot
+⮞ .antitag
+⮞ .antidelete
+⮞ .antivirus
+⮞ .antiviewonce
+⮞ .antispam
+⮞ .antiforeign
+⮞ .antitoxic
 🌷───────────────────────────────🌷
 
 
 💎🎮 G A M E S 🎮💎
-⮞ .tictactoe - Tic Tac Toe
-⮞ .ttt - Tic Tac Toe
-⮞ .slot - Slot machine
-⮞ .casino - Casino game
-⮞ .dice - Roll dice
-⮞ .rps - Rock Paper Scissors
-⮞ .quiz - Quiz game
-⮞ .truth - Truth question
-⮞ .dare - Dare challenge
-⮞ .akinator - Akinator game
-⮞ .math - Math quiz
-⮞ .guess - Guessing game
-⮞ .hangman - Hangman game
-⮞ .werewolf - Werewolf game
-⮞ .chess - Chess game
-⮞ .tebakgambar - Guess image
-⮞ .tebakkata - Guess word
+⮞ .tictactoe
+⮞ .ttt
+⮞ .slot
+⮞ .casino
+⮞ .dice
+⮞ .rps
+⮞ .quiz
+⮞ .truth
+⮞ .dare
+⮞ .akinator
+⮞ .math
+⮞ .guess
+⮞ .hangman
+⮞ .werewolf
+⮞ .chess
+⮞ .tebakgambar
+⮞ .tebakkata
 💎───────────────────────────────💎
 
 
 🎨✨ I M A G E   E D I T 🎨✨
-⮞ .blur - Blur image
-⮞ .beautiful - Beautify image
-⮞ .facepalm - Facepalm effect
-⮞ .jail - Jail effect
-⮞ .wasted - Wasted effect
-⮞ .triggered - Triggered effect
-⮞ .greyscale - Greyscale filter
-⮞ .invert - Invert colors
-⮞ .sepia - Sepia filter
-⮞ .wanted - Wanted poster
-⮞ .circle - Circle crop
-⮞ .brightness - Adjust brightness
-⮞ .darkness - Darken image
-⮞ .rainbow - Rainbow effect
-⮞ .delete - Delete effect
+⮞ .blur
+⮞ .beautiful
+⮞ .facepalm
+⮞ .jail
+⮞ .wasted
+⮞ .triggered
+⮞ .greyscale
+⮞ .invert
+⮞ .sepia
+⮞ .wanted
+⮞ .circle
+⮞ .brightness
+⮞ .darkness
+⮞ .rainbow
+⮞ .delete
 🎨───────────────────────────────🎨
 
 
 🔍📊 S E A R C H   &   I N F O 📊🔍
-⮞ .google - Google search
-⮞ .wiki - Wikipedia
-⮞ .news - Latest news
-⮞ .crypto - Crypto prices
-⮞ .stock - Stock prices
-⮞ .movie - Movie info
-⮞ .anime - Anime info
-⮞ .manga - Manga info
-⮞ .character - Anime character
-⮞ .npm - NPM package info
-⮞ .github - GitHub repo info
-⮞ .lyrics - Song lyrics
-⮞ .recipe - Food recipe
-⮞ .covid - COVID statistics
-⮞ .earthquake - Earthquake info
+⮞ .google
+⮞ .wiki
+⮞ .news
+⮞ .crypto
+⮞ .stock
+⮞ .movie
+⮞ .anime
+⮞ .manga
+⮞ .character
+⮞ .npm
+⮞ .github
+⮞ .lyrics
+⮞ .recipe
+⮞ .covid
+⮞ .earthquake
 🔍───────────────────────────────🔍
 
 
 🎭🎪 F U N   &   R A N D O M 🎪🎭
-⮞ .joke - Random joke
-⮞ .meme - Random meme
-⮞ .quote - Inspirational quote
-⮞ .fact - Random fact
-⮞ .roast - Roast someone
-⮞ .compliment - Compliment someone
-⮞ .flirt - Flirt line
-⮞ .pickup - Pickup line
-⮞ .ship - Ship calculator
-⮞ .love - Love calculator
-⮞ .gay - Gay meter
-⮞ .lesbian - Lesbian meter
-⮞ .couple - Couple picture
-⮞ .rate - Rate something
-⮞ .hack - Fake hack
-⮞ .when - When will...
-⮞ .how - How much...
-⮞ .who - Who is...
-⮞ .what - What is...
-⮞ .8ball - Magic 8 ball
+⮞ .joke
+⮞ .meme
+⮞ .quote
+⮞ .fact
+⮞ .roast
+⮞ .compliment
+⮞ .flirt
+⮞ .pickup
+⮞ .ship
+⮞ .love
+⮞ .gay
+⮞ .lesbian
+⮞ .couple
+⮞ .rate
+⮞ .hack
+⮞ .when
+⮞ .how
+⮞ .who
+⮞ .what
+⮞ .8ball
 🎭───────────────────────────────🎭
 
 
 🔧⚙️ C O N V E R T E R S ⚙️🔧
-⮞ .toimage - Convert to image
-⮞ .tomp3 - Convert to MP3
-⮞ .tomp4 - Convert to MP4
-⮞ .toaudio - Convert to audio
-⮞ .tovideo - Convert to video
-⮞ .togif - Convert to GIF
-⮞ .tourl - Upload to URL
-⮞ .tovn - Convert to voice note
-⮞ .toptv - Convert to PTV
-⮞ .readmore - Add read more
-⮞ .fancy - Fancy text
-⮞ .tiny - Tiny text
-⮞ .emoji - Emoji to image
+⮞ .toimage
+⮞ .tomp3
+⮞ .tomp4
+⮞ .toaudio
+⮞ .tovideo
+⮞ .togif
+⮞ .tourl
+⮞ .tovn
+⮞ .toptv
+⮞ .readmore
+⮞ .fancy
+⮞ .tiny
+⮞ .emoji
 🔧───────────────────────────────🔧
 
 
 👥💬 I N T E R A C T I O N 💬👥
-⮞ .hug - Hug someone
-⮞ .kiss - Kiss someone
-⮞ .slap - Slap someone
-⮞ .pat - Pat someone
-⮞ .bonk - Bonk someone
-⮞ .cuddle - Cuddle someone
-⮞ .cry - Cry
-⮞ .smile - Smile
-⮞ .wave - Wave
-⮞ .dance - Dance
-⮞ .handhold - Hold hands
-⮞ .bite - Bite someone
-⮞ .poke - Poke someone
-⮞ .feed - Feed someone
+⮞ .hug
+⮞ .kiss
+⮞ .slap
+⮞ .pat
+⮞ .bonk
+⮞ .cuddle
+⮞ .cry
+⮞ .smile
+⮞ .wave
+⮞ .dance
+⮞ .handhold
+⮞ .bite
+⮞ .poke
+⮞ .feed
 👥───────────────────────────────👥
 
 
 🎵🎶 M U S I C   &   A U D I O 🎶🎵
-⮞ .play - Play music
-⮞ .song - Download song
-⮞ .lyrics - Get lyrics
-⮞ .spotify - Spotify download
-⮞ .soundcloud - SoundCloud download
-⮞ .bass - Bass boost
-⮞ .blown - Blown effect
-⮞ .deep - Deep effect
-⮞ .earrape - Earrape effect
-⮞ .fast - Speed up
-⮞ .fat - Fat effect
-⮞ .nightcore - Nightcore
-⮞ .reverse - Reverse audio
-⮞ .robot - Robot voice
-⮞ .slow - Slow down
-⮞ .smooth - Smooth audio
-⮞ .tupai - Chipmunk voice
+⮞ .play
+⮞ .song
+⮞ .lyrics
+⮞ .spotify
+⮞ .soundcloud
+⮞ .bass
+⮞ .blown
+⮞ .deep
+⮞ .earrape
+⮞ .fast
+⮞ .fat
+⮞ .nightcore
+⮞ .reverse
+⮞ .robot
+⮞ .slow
+⮞ .smooth
+⮞ .tupai
 🎵───────────────────────────────🎵
 
 
 📝✍️ T E X T   &   L O G O ✍️📝
-⮞ .blackpink - Blackpink logo
-⮞ .neon - Neon text
-⮞ .devil - Devil text
-⮞ .lion - Lion logo
-⮞ .wolf - Wolf logo
-⮞ .phlogo - PornHub logo
-⮞ .glitch - Glitch text
-⮞ .sand - Sand writing
-⮞ .thunder - Thunder text
-⮞ .magma - Magma text
-⮞ .3dtext - 3D text
-⮞ .pencil - Pencil sketch
-⮞ .graffiti - Graffiti text
-⮞ .blood - Blood text
+⮞ .blackpink
+⮞ .neon
+⮞ .devil
+⮞ .lion
+⮞ .wolf
+⮞ .phlogo
+⮞ .glitch
+⮞ .sand
+⮞ .thunder
+⮞ .magma
+⮞ .3dtext
+⮞ .pencil
+⮞ .graffiti
+⮞ .blood
 📝───────────────────────────────📝
 
 
 🎯🎲 R A N D O M   A N I M E 🎲🎯
-⮞ .waifu - Random waifu
-⮞ .neko - Neko image
-⮞ .shinobu - Shinobu image
-⮞ .megumin - Megumin image
-⮞ .bully - Bully GIF
-⮞ .cuddle - Cuddle GIF
-⮞ .cry - Cry GIF
-⮞ .hug - Hug GIF
-⮞ .awoo - Awoo GIF
-⮞ .kiss - Kiss GIF
-⮞ .lick - Lick GIF
-⮞ .pat - Pat GIF
-⮞ .smug - Smug face
-⮞ .bonk - Bonk GIF
-⮞ .yeet - Yeet GIF
-⮞ .blush - Blush GIF
-⮞ .smile - Smile GIF
-⮞ .wave - Wave GIF
-⮞ .highfive - High five GIF
-⮞ .handhold - Hand hold GIF
+⮞ .waifu
+⮞ .neko
+⮞ .shinobu
+⮞ .megumin
+⮞ .bully
+⮞ .cuddle
+⮞ .cry
+⮞ .hug
+⮞ .awoo
+⮞ .kiss
+⮞ .lick
+⮞ .pat
+⮞ .smug
+⮞ .bonk
+⮞ .yeet
+⮞ .blush
+⮞ .smile
+⮞ .wave
+⮞ .highfive
+⮞ .handhold
 🎯───────────────────────────────🎯
 
 
 💰🏦 E C O N O M Y 🏦💰
-⮞ .daily - Daily rewards
-⮞ .weekly - Weekly rewards
-⮞ .monthly - Monthly rewards
-⮞ .work - Work for money
-⮞ .rob - Rob someone
-⮞ .crime - Commit crime
-⮞ .gamble - Gamble money
-⮞ .deposit - Deposit to bank
-⮞ .withdraw - Withdraw from bank
-⮞ .transfer - Transfer money
-⮞ .balance - Check balance
-⮞ .bank - Bank info
-⮞ .leaderboard - Top users
-⮞ .shop - Item shop
-⮞ .buy - Buy items
-⮞ .sell - Sell items
-⮞ .inventory - Your inventory
+⮞ .daily
+⮞ .weekly
+⮞ .monthly
+⮞ .work
+⮞ .rob
+⮞ .crime
+⮞ .gamble
+⮞ .deposit
+⮞ .withdraw
+⮞ .transfer
+⮞ .balance
+⮞ .bank
+⮞ .leaderboard
+⮞ .shop
+⮞ .buy
+⮞ .sell
+⮞ .inventory
 💰───────────────────────────────💰
 
 
 🔐🛡️ M O D E R A T I O N 🛡️🔐
-⮞ .warn - Warn user
-⮞ .unwarn - Remove warning
-⮞ .warnings - Check warnings
-⮞ .mute - Mute user
-⮞ .unmute - Unmute user
-⮞ .ban - Ban user
-⮞ .unban - Unban user
-⮞ .clear - Clear messages
-⮞ .purge - Purge messages
-⮞ .lock - Lock group
-⮞ .unlock - Unlock group
-⮞ .filter - Add word filter
-⮞ .unfilter - Remove word filter
+⮞ .warn
+⮞ .unwarn
+⮞ .warnings
+⮞ .mute
+⮞ .unmute
+⮞ .ban
+⮞ .unban
+⮞ .clear
+⮞ .purge
+⮞ .lock
+⮞ .unlock
+⮞ .filter
+⮞ .unfilter
 🔐───────────────────────────────🔐
 
 
 📢🔔 A N N O U N C E M E N T 🔔📢
-⮞ .announce - Make announcement
-⮞ .broadcast - Broadcast to all
-⮞ .bcgc - Broadcast to groups
-⮞ .bcall - Broadcast to all chats
-⮞ .promote - Promote message
-⮞ .notify - Notify users
-⮞ .remind - Set reminder
-⮞ .poll - Create poll
-⮞ .vote - Vote in poll
+⮞ .announce
+⮞ .broadcast
+⮞ .bcgc
+⮞ .bcall
+⮞ .promote
+⮞ .notify
+⮞ .remind
+⮞ .poll
+⮞ .vote
 📢───────────────────────────────📢
 
 
 🌐🔗 L I N K S   &   S H O R T 🔗🌐
-⮞ .shorten - Shorten URL
-⮞ .tinyurl - TinyURL
-⮞ .bitly - Bitly shortener
-⮞ .qrcode - Generate QR code
-⮞ .readqr - Read QR code
-⮞ .whois - Domain WHOIS
-⮞ .checkip - Check IP
-⮞ .dns - DNS lookup
+⮞ .shorten
+⮞ .tinyurl
+⮞ .bitly
+⮞ .qrcode
+⮞ .readqr
+⮞ .whois
+⮞ .checkip
+⮞ .dns
 🌐───────────────────────────────🌐
 
 
 📱💻 D E V I C E   I N F O 💻📱
-⮞ .ping - Bot latency
-⮞ .speed - Connection speed
-⮞ .server - Server info
-⮞ .botstats - Bot statistics
-⮞ .system - System info
-⮞ .runtime - Bot uptime
-⮞ .owner - Owner info
-⮞ .repo - Repository
+⮞ .ping
+⮞ .speed
+⮞ .server
+⮞ .botstats
+⮞ .system
+⮞ .runtime
+⮞ .owner
+⮞ .repo
 📱───────────────────────────────📱
 
 
 ❀──────────────────────────────❀
-      🌸 Powered by CORTANA MD 
+      🌸 Powered by C̷O̷R̷T̷A̷N̷A̷ ̷M̷D̷ 
          🎄 Èdûqarîz 2025
 ❀──────────────────────────────❀`;
 
@@ -483,5 +483,15 @@ registerCommand({
     category: "core",
     execute: async ({ reply }) => {
         await reply("👑 *Bot Owner*\n\n📞 Number: Not set\n🤖 Bot: CORTANA MD");
+    }
+});
+
+registerCommand({
+    name: "repo",
+    aliases: ["sc", "script"],
+    description: "Get repository link",
+    category: "core",
+    execute: async ({ reply }) => {
+        await reply("📂 *CORTANA MD Repository*\n\n🔗 Link: https://github.com/depro-tech/cortana-Web\n\n⭐ Start the project if you like it!");
     }
 });

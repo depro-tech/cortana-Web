@@ -1,5 +1,6 @@
 import { registerCommand } from "./types";
 import yts from "yt-search";
+import ytdl from "@distube/ytdl-core";
 
 const isUrl = (url: string) => {
     return url.match(new RegExp(/https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&/=]*)/, 'gi'));
@@ -32,18 +33,34 @@ registerCommand({
     aliases: ["song"],
     description: "Play/Download from YouTube",
     category: "media",
-    execute: async ({ args, reply }) => {
+    execute: async ({ args, reply, sock, senderJid, msg }) => {
         const query = args.join(" ");
         if (!query) return reply("❌ Please provide a song name");
 
         try {
+            await reply("🔎 Searching...");
             const search = await yts(query);
             if (!search.videos.length) return reply("❌ No results found");
 
             const video = search.videos[0];
-            await reply(`🎵 *${video.title}*\n\nDuration: ${video.timestamp}\nViews: ${video.views}\nUploader: ${video.author.name}\n\nClick link to watch: ${video.url}\n\n(Audio download currently requires additional configuration)`);
-        } catch (e) {
-            await reply("❌ Error searching YouTube");
+            const url = video.url;
+
+            await sock.sendMessage(senderJid, {
+                image: { url: video.thumbnail },
+                caption: `🎵 *${video.title}*\n\n📅 Date: ${video.ago}\n🎬 Channel: ${video.author.name}\n⏱️ Duration: ${video.timestamp}\n👀 Views: ${video.views}\n\n⬇️ *Downloading audio...*`
+            }, { quoted: msg });
+
+            const stream = ytdl(url, { filter: 'audioonly', quality: 'highestaudio' });
+
+            await sock.sendMessage(senderJid, {
+                audio: { stream: stream },
+                mimetype: 'audio/mp4',
+                fileName: `${video.title}.mp3`
+            }, { quoted: msg });
+
+        } catch (e: any) {
+            console.error("Play Error:", e);
+            await reply(`❌ Error processing request: ${e.message}`);
         }
     }
 });
@@ -52,10 +69,23 @@ registerCommand({
     name: "ytmp3",
     description: "Download YouTube Audio",
     category: "media",
-    execute: async ({ args, reply }) => {
+    execute: async ({ args, reply, sock, senderJid, msg }) => {
         const url = args[0];
         if (!url || !isUrl(url)) return reply("❌ Please provide a valid YouTube URL");
-        await reply("🎵 Downloading audio... (Feature pending ytdl-core installation)");
+
+        try {
+            await reply("⬇️ *Downloading audio...*");
+            const info = await ytdl.getInfo(url);
+            const stream = ytdl(url, { filter: 'audioonly', quality: 'highestaudio' });
+
+            await sock.sendMessage(senderJid, {
+                audio: { stream: stream },
+                mimetype: 'audio/mp4',
+                fileName: `${info.videoDetails.title}.mp3`
+            }, { quoted: msg });
+        } catch (e: any) {
+            await reply(`❌ Error: ${e.message}`);
+        }
     }
 });
 
@@ -63,10 +93,23 @@ registerCommand({
     name: "ytmp4",
     description: "Download YouTube Video",
     category: "media",
-    execute: async ({ args, reply }) => {
+    execute: async ({ args, reply, sock, senderJid, msg }) => {
         const url = args[0];
         if (!url || !isUrl(url)) return reply("❌ Please provide a valid YouTube URL");
-        await reply("🎥 Downloading video... (Feature pending ytdl-core installation)");
+
+        try {
+            await reply("⬇️ *Downloading video...*");
+            const info = await ytdl.getInfo(url);
+            const stream = ytdl(url, { filter: 'videoandaudio', quality: 'highest' }); // or lowestvideo if size issues
+
+            await sock.sendMessage(senderJid, {
+                video: { stream: stream },
+                caption: `🎬 ${info.videoDetails.title}`,
+                mimetype: 'video/mp4'
+            }, { quoted: msg });
+        } catch (e: any) {
+            await reply(`❌ Error: ${e.message}`);
+        }
     }
 });
 
@@ -77,8 +120,9 @@ registerCommand({
     category: "media",
     execute: async ({ args, reply }) => {
         const url = args[0];
+        // Placeholder until tiktok scrappers are added
         if (!url || !isUrl(url)) return reply("❌ Please provide a valid TikTok URL");
-        await reply("⏳ Downloading TikTok video...");
+        await reply("⏳ TikTok download currently unavailable (API limitation).");
     }
 });
 
@@ -89,7 +133,8 @@ registerCommand({
     category: "media",
     execute: async ({ args, reply }) => {
         const url = args[0];
+        // Placeholder
         if (!url || !isUrl(url)) return reply("❌ Please provide a valid Instagram URL");
-        await reply("⏳ Downloading Instagram media...");
+        await reply("⏳ Instagram download currently unavailable (API limitation).");
     }
 });
