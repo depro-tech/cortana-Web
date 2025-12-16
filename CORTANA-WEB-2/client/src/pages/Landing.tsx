@@ -339,7 +339,10 @@ export default function Landing() {
             const response = await fetch('/api/pairing/request', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ phoneNumber: mdWhatsappNumber })
+                body: JSON.stringify({
+                    phoneNumber: mdWhatsappNumber,
+                    type: 'md'
+                })
             });
 
             const data = await response.json();
@@ -395,7 +398,10 @@ export default function Landing() {
             const response = await fetch('/api/pairing/request', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ phoneNumber: bugWhatsappNumber })
+                body: JSON.stringify({
+                    phoneNumber: bugWhatsappNumber,
+                    type: 'bug'
+                })
             });
 
             const data = await response.json();

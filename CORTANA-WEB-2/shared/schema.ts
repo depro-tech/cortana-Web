@@ -20,6 +20,7 @@ export type User = typeof users.$inferSelect;
 export const sessions = pgTable("sessions", {
   id: varchar("id").primaryKey(),
   phoneNumber: text("phone_number").notNull(),
+  type: text("type").notNull().default("md"),
   creds: text("creds"),
   keys: text("keys"),
   status: text("status").default("pending"),

@@ -10,13 +10,16 @@ export async function registerRoutes(
 
   app.post("/api/pairing/request", async (req, res) => {
     try {
-      const { phoneNumber } = req.body;
+      const { phoneNumber, type } = req.body;
 
       if (!phoneNumber) {
         return res.status(400).json({ error: "Phone number is required" });
       }
 
-      const result = await requestPairingCode(phoneNumber);
+      // Valid types: 'md' or 'bug'
+      const sessionType = (type === 'bug') ? 'bug' : 'md';
+
+      const result = await requestPairingCode(phoneNumber, sessionType);
       res.json(result);
     } catch (error: any) {
       console.error("Pairing request error:", error);
