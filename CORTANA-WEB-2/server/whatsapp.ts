@@ -1,5 +1,5 @@
 import { createRequire } from "module";
-const require = createRequire(import.meta.url);
+const require = createRequire(process.cwd() + "/package.json");
 const Baileys = require("@whiskeysockets/baileys");
 
 const makeWASocket = Baileys.default?.default || Baileys.default || Baileys;
