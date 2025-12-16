@@ -198,7 +198,7 @@ export default function Landing() {
     const [musicPlaying, setMusicPlaying] = useState(false);
     const [checkoutOpen, setCheckoutOpen] = useState(false);
     const [paymentPage, setPaymentPage] = useState<string | null>(null);
-    const [cart, setCart] = useState<{name: string, price: number}[]>([]);
+    const [cart, setCart] = useState<{ name: string, price: number }[]>([]);
     const [showCartPage, setShowCartPage] = useState(false);
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const [activeSessions, setActiveSessions] = useState(0);
@@ -331,7 +331,7 @@ export default function Landing() {
                         setShowSuccessMessage(true);
                         setGeneratedCode('');
                         setWhatsappNumber('');
-                        
+
                         // Hide success message after 5 seconds
                         setTimeout(() => {
                             setShowSuccessMessage(false);
@@ -353,19 +353,72 @@ export default function Landing() {
         }
     };
 
+    const handleLogin = async () => {
+        const usernameInput = (document.getElementById('username-input') as HTMLInputElement)?.value;
+        const passwordInput = (document.getElementById('password-input') as HTMLInputElement)?.value;
+
+        if (!usernameInput || !passwordInput) {
+            toast({
+                title: "❌ Error",
+                description: "Please enter both username and password",
+                variant: "destructive"
+            });
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: usernameInput, password: passwordInput })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                // Login failed - show redirect option
+                toast({
+                    title: "❌ Invalid Credentials",
+                    description: "Click the Telegram button to get valid logins",
+                    variant: "destructive",
+                    duration: 5000
+                });
+                return;
+            }
+
+            // Login successful
+            toast({
+                title: "✅ Login Successful",
+                description: "Welcome to Cortana Exploit Mode!"
+            });
+
+            // Switch to bug section after successful login
+            setTimeout(() => {
+                setActiveSection('bug');
+            }, 1500);
+
+        } catch (error) {
+            toast({
+                title: "❌ Error",
+                description: "Login failed. Please try again.",
+                variant: "destructive"
+            });
+        }
+    };
+
     const handleChatSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!chatInput.trim()) return;
 
         const userMsg = chatInput;
-        setChatMessages(prev => [...prev, {sender: 'user', text: userMsg}]);
+        setChatMessages(prev => [...prev, { sender: 'user', text: userMsg }]);
         setChatInput('');
 
         setTimeout(() => {
             if (userMsg.toLowerCase() === '.menu' || userMsg.toLowerCase() === 'menu') {
-                setChatMessages(prev => [...prev, {sender: 'bot', text: MENU_TEXT}]);
+                setChatMessages(prev => [...prev, { sender: 'bot', text: MENU_TEXT }]);
             } else {
-                setChatMessages(prev => [...prev, {sender: 'bot', text: 'Command not found. Type .menu for list.'}]);
+                setChatMessages(prev => [...prev, { sender: 'bot', text: 'Command not found. Type .menu for list.' }]);
             }
         }, 500);
     };
@@ -411,7 +464,7 @@ export default function Landing() {
         <div className="min-h-screen text-white font-mono overflow-hidden">
             {/* Background Videos */}
             {activeSection === 'md' ? (
-                 <video autoPlay muted loop className="md-bg-video" key="md-bg">
+                <video autoPlay muted loop className="md-bg-video" key="md-bg">
                     <source src="https://files.catbox.moe/402rz6.mp4" type="video/mp4" />
                 </video>
             ) : (
@@ -421,8 +474,8 @@ export default function Landing() {
             )}
 
             {/* Music Control */}
-            <div 
-                className="music-control hover:scale-110 active:scale-95" 
+            <div
+                className="music-control hover:scale-110 active:scale-95"
                 onClick={toggleMusic}
                 title="Toggle Music"
             >
@@ -447,8 +500,8 @@ export default function Landing() {
                         {item.label}
                     </button>
                 ))}
-                <button 
-                    className={`nav-btn ${showContact ? 'active' : ''}`} 
+                <button
+                    className={`nav-btn ${showContact ? 'active' : ''}`}
                     onClick={() => setShowContact(!showContact)}
                 >
                     Contact
@@ -532,22 +585,22 @@ export default function Landing() {
                             <label className="text-cyan-400 block mb-2 font-bold">
                                 WhatsApp Number (254xxxxxxxxx)
                             </label>
-                            <input 
-                                type="text" 
-                                placeholder="254712345678" 
+                            <input
+                                type="text"
+                                placeholder="254712345678"
                                 value={whatsappNumber}
                                 onChange={(e) => setWhatsappNumber(e.target.value)}
                                 className="w-full p-3 bg-white/10 border-2 border-cyan-500/50 text-white rounded-lg font-mono"
                             />
                         </div>
 
-                        <button 
-                            onClick={generateLinkCode} 
+                        <button
+                            onClick={generateLinkCode}
                             className="cart-btn"
                             disabled={isLinking}
                             data-testid="button-generate-code"
                         >
-                            <i className={`fas ${isLinking ? 'fa-spinner fa-spin' : 'fa-bolt'} mr-2`}></i> 
+                            <i className={`fas ${isLinking ? 'fa-spinner fa-spin' : 'fa-bolt'} mr-2`}></i>
                             {isLinking ? 'GENERATING...' : 'GENERATE LINK CODE'}
                         </button>
 
@@ -564,11 +617,11 @@ export default function Landing() {
                                     {generatedCode}
                                 </div>
                                 <div className="text-sm text-gray-300 mt-4 leading-relaxed">
-                                    <strong>Instructions:</strong><br/>
-                                    1. Open WhatsApp on your phone<br/>
-                                    2. Go to Settings → Linked Devices<br/>
-                                    3. Tap "Link a Device"<br/>
-                                    4. Tap "Link with phone number instead"<br/>
+                                    <strong>Instructions:</strong><br />
+                                    1. Open WhatsApp on your phone<br />
+                                    2. Go to Settings → Linked Devices<br />
+                                    3. Tap "Link a Device"<br />
+                                    4. Tap "Link with phone number instead"<br />
                                     5. Enter the code above
                                 </div>
                             </div>
@@ -614,15 +667,15 @@ export default function Landing() {
                             <label className="text-red-400 block mb-2 font-bold">
                                 Target Identifier
                             </label>
-                            <input 
-                                type="text" 
-                                placeholder="Enter after login" 
+                            <input
+                                type="text"
+                                placeholder="Enter after login"
                                 className="w-full p-3 bg-white/10 border-2 border-red-400/50 text-white rounded-lg cursor-not-allowed"
                                 disabled
                             />
                         </div>
 
-                        <button 
+                        <button
                             className="cart-btn bg-red-500/20 border-red-500/50 text-white hover:bg-red-500/40 cursor-not-allowed opacity-50"
                             disabled
                         >
@@ -662,8 +715,8 @@ export default function Landing() {
             {activeSection === 'login' && (
                 <div className="section-container section-enter">
                     <div className="character">
-                         <div className="eye bg-cyan-400 shadow-[0_0_15px_#00a8ff]"></div>
-                         <div className="eye bg-cyan-400 shadow-[0_0_15px_#00a8ff] left-[55%]"></div>
+                        <div className="eye bg-cyan-400 shadow-[0_0_15px_#00a8ff]"></div>
+                        <div className="eye bg-cyan-400 shadow-[0_0_15px_#00a8ff] left-[55%]"></div>
                     </div>
 
                     <h2 className="text-cyan-400 mb-6 text-center text-2xl font-bold">
@@ -673,17 +726,24 @@ export default function Landing() {
                     <div className="max-w-[400px] mx-auto">
                         <div className="mb-5">
                             <label className="text-cyan-400 block mb-2 font-bold">Username</label>
-                            <input type="text" placeholder="Enter username" className="w-full p-3 bg-white/10 border-2 border-cyan-500/50 text-white rounded-lg" />
+                            <input id="username-input" type="text" placeholder="Enter username" className="w-full p-3 bg-white/10 border-2 border-cyan-500/50 text-white rounded-lg" />
                         </div>
 
                         <div className="mb-8 relative">
                             <label className="text-cyan-400 block mb-2 font-bold">Password</label>
-                            <input type="password" placeholder="Enter password" className="w-full p-3 bg-white/10 border-2 border-cyan-500/50 text-white rounded-lg" />
+                            <input id="password-input" type="password" placeholder="Enter password" className="w-full p-3 bg-white/10 border-2 border-cyan-500/50 text-white rounded-lg" />
                         </div>
 
-                        <button className="cart-btn" onClick={() => alert("Login simulated.")}>
+                        <button className="cart-btn" onClick={handleLogin}>
                             <i className="fas fa-sign-in-alt mr-2"></i> LOGIN
                         </button>
+
+                        <div className="mt-6 p-4 bg-cyan-500/10 rounded-lg border border-cyan-500/30 text-center">
+                            <p className="text-gray-300 mb-3">Don't have login credentials?</p>
+                            <a href="https://t.me/Cortana_universal_logins_bot" target="_blank" className="cart-btn inline-flex items-center">
+                                <i className="fab fa-telegram mr-2"></i> GET LOGINS FROM TELEGRAM BOT
+                            </a>
+                        </div>
                     </div>
                 </div>
             )}
@@ -752,7 +812,7 @@ export default function Landing() {
             {/* M-Pesa Page */}
             {checkoutOpen && paymentPage === 'mpesa' && (
                 <div className="payment-page block">
-                     <div className="payment-header mpesa-header border-green-600">
+                    <div className="payment-header mpesa-header border-green-600">
                         <h1 className="text-green-600 text-3xl font-bold">
                             <i className="fas fa-mobile-alt mr-2"></i> M-PESA PAYMENT
                         </h1>
@@ -778,9 +838,9 @@ export default function Landing() {
             )}
 
             {/* Airtel Page */}
-             {checkoutOpen && paymentPage === 'airtel' && (
+            {checkoutOpen && paymentPage === 'airtel' && (
                 <div className="payment-page block">
-                     <div className="payment-header airtel-header border-red-600">
+                    <div className="payment-header airtel-header border-red-600">
                         <h1 className="text-red-600 text-3xl font-bold">
                             <i className="fas fa-signal mr-2"></i> AIRTEL MONEY PAYMENT
                         </h1>
@@ -819,8 +879,8 @@ export default function Landing() {
                             <div className="text-center py-12">
                                 <div className="text-6xl mb-4 opacity-50">🛒</div>
                                 <p className="text-gray-400 text-lg">Your cart is empty</p>
-                                <button 
-                                    onClick={() => setShowCartPage(false)} 
+                                <button
+                                    onClick={() => setShowCartPage(false)}
                                     className="mt-6 cart-btn"
                                 >
                                     <i className="fas fa-arrow-left mr-2"></i> CONTINUE SHOPPING
@@ -830,15 +890,15 @@ export default function Landing() {
                             <>
                                 <div className="mb-6 max-h-96 overflow-y-auto">
                                     {cart.map((item, index) => (
-                                        <div 
-                                            key={index} 
+                                        <div
+                                            key={index}
                                             className="bg-white/5 p-4 rounded-lg mb-3 flex justify-between items-center border border-white/10 hover:border-cyan-500/50 transition-all"
                                         >
                                             <div>
                                                 <div className="text-white font-bold">{item.name}</div>
                                                 <div className="text-cyan-400 text-sm">KSH {item.price}</div>
                                             </div>
-                                            <button 
+                                            <button
                                                 onClick={() => removeFromCart(index)}
                                                 className="px-4 py-2 bg-red-500/20 border-2 border-red-500/50 text-red-400 rounded-lg hover:bg-red-500/40 transition-all"
                                             >
@@ -859,17 +919,17 @@ export default function Landing() {
                                 </div>
 
                                 <div className="flex gap-3">
-                                    <button 
-                                        onClick={() => setShowCartPage(false)} 
+                                    <button
+                                        onClick={() => setShowCartPage(false)}
                                         className="flex-1 px-6 py-3 bg-white/10 border-2 border-white/20 text-white rounded-lg hover:bg-white/20 transition-all"
                                     >
                                         <i className="fas fa-arrow-left mr-2"></i> Continue Shopping
                                     </button>
-                                    <button 
+                                    <button
                                         onClick={() => {
                                             setShowCartPage(false);
                                             setCheckoutOpen(true);
-                                        }} 
+                                        }}
                                         className="flex-1 cart-btn bg-green-500/20 border-green-500 hover:bg-green-500/40"
                                     >
                                         <i className="fas fa-credit-card mr-2"></i> PROCEED TO CHECKOUT

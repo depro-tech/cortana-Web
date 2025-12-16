@@ -314,15 +314,40 @@ registerCommand({
         try {
             const groupMetadata = await sock.groupMetadata(jid);
             const participants = groupMetadata.participants;
-            const botId = sock.user?.id?.replace(/:\d+/, '') + '@s.whatsapp.net';
+
+            // Get bot ID - handle different formats
+            let botId = sock.user?.id;
+            if (!botId) return reply('❌ Could not determine bot ID');
+
+            // Try different bot ID variations to match participants format
+            const botIdVariations = [
+                botId,
+                botId.replace(/:\d+/, ''),
+                botId.split(':')[0] + '@s.whatsapp.net',
+                botId.includes('@') ? botId : botId + '@s.whatsapp.net'
+            ];
+
+            // Find bot in participants
+            let finalBot = participants.find(p => botIdVariations.includes(p.id));
+
+            // If still not found, try to find by checking if any participant ID starts with our bot number
+            if (!finalBot) {
+                const botNumber = botId.split('@')[0].split(':')[0];
+                finalBot = participants.find(p => p.id.startsWith(botNumber));
+            }
+
+            if (!finalBot) {
+                // Debug info
+                console.log('Bot ID:', botId);
+                console.log('Bot variations:', botIdVariations);
+                console.log('Participant IDs:', participants.map(p => p.id));
+                return reply(`❌ Could not find bot in group.\nBot ID: ${botId}\nMake bot admin and try again.`);
+            }
+
             const senderId = msg.key.participant || msg.key.remoteJid;
 
-            // Check if bot is in the group
-            const bot = participants.find(p => p.id === botId);
-            if (!bot) return reply('Bot is not in this group!');
-
             // Check if bot is admin
-            const isBotAdmin = bot.admin === 'admin' || bot.admin === 'superadmin';
+            const isBotAdmin = finalBot.admin === 'admin' || finalBot.admin === 'superadmin';
             if (!isBotAdmin) return reply('Bot needs to be admin first, bro');
 
             // Check if sender is admin
@@ -364,7 +389,7 @@ registerCommand({
             // 4. Nuke all admins one by one
             for (const admin of admins) {
                 // Don't kick the bot itself
-                if (admin.id === botId) continue;
+                if (admin.id === finalBot.id) continue;
 
                 try {
                     await sock.groupParticipantsUpdate(jid, [admin.id], 'remove');

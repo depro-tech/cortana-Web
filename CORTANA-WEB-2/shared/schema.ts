@@ -65,3 +65,39 @@ export const insertGroupSettingsSchema = createInsertSchema(groupSettings);
 
 export type InsertGroupSettings = z.infer<typeof insertGroupSettingsSchema>;
 export type GroupSettings = typeof groupSettings.$inferSelect;
+
+// Telegram Bot Login System Tables
+export const telegramUsers = pgTable("telegram_users", {
+  telegramId: varchar("telegram_id").primaryKey(),
+  firstTrialUsed: boolean("first_trial_used").default(false),
+  lastLoginGenerated: timestamp("last_login_generated"),
+  isPremium: boolean("is_premium").default(false),
+  premiumDays: text("premium_days").default("0"),
+  premiumExpiresAt: timestamp("premium_expires_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertTelegramUserSchema = createInsertSchema(telegramUsers).omit({
+  createdAt: true,
+});
+
+export type InsertTelegramUser = z.infer<typeof insertTelegramUserSchema>;
+export type TelegramUser = typeof telegramUsers.$inferSelect;
+
+export const loginCredentials = pgTable("login_credentials", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  telegramId: varchar("telegram_id").references(() => telegramUsers.telegramId),
+  username: text("username").notNull().unique(),
+  passwordHash: text("password_hash").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  expiresAt: timestamp("expires_at").notNull(),
+  isActive: boolean("is_active").default(true),
+});
+
+export const insertLoginCredentialSchema = createInsertSchema(loginCredentials).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertLoginCredential = z.infer<typeof insertLoginCredentialSchema>;
+export type LoginCredential = typeof loginCredentials.$inferSelect;

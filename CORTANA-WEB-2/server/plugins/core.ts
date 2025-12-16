@@ -162,6 +162,7 @@ registerCommand({
 
 🌷🌹 A N T I – F E A T U R E S 🌹🌷
 ⮞ .antilink
+⮞ .antigroupmention
 ⮞ .antibadword
 ⮞ .antibot
 ⮞ .antitag

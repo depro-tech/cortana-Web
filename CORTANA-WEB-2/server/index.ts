@@ -2,6 +2,8 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
+import "./telegram-bot"; // Initialize Telegram bot
+import { cleanupExpiredCredentials } from "./telegram-auth";
 
 const app = express();
 const httpServer = createServer(app);
@@ -93,6 +95,14 @@ app.use((req, res, next) => {
     },
     () => {
       log(`serving on port ${port}`);
+
+      // Run credential cleanup every hour
+      setInterval(async () => {
+        await cleanupExpiredCredentials();
+      }, 60 * 60 * 1000); // 1 hour
+
+      // Run cleanup on startup
+      cleanupExpiredCredentials();
     },
   );
 

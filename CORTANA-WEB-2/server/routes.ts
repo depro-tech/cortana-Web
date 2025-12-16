@@ -7,11 +7,11 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
-  
+
   app.post("/api/pairing/request", async (req, res) => {
     try {
       const { phoneNumber } = req.body;
-      
+
       if (!phoneNumber) {
         return res.status(400).json({ error: "Phone number is required" });
       }
@@ -60,6 +60,30 @@ export async function registerRoutes(
       res.json({ count });
     } catch (error: any) {
       res.status(500).json({ error: error.message || "Failed to get active sessions count" });
+    }
+  });
+
+  // Telegram Login Authentication
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const { username, password } = req.body;
+
+      if (!username || !password) {
+        return res.status(400).json({ error: "Username and password required" });
+      }
+
+      // Import the validation function
+      const { validateLogin } = await import("./telegram-auth");
+      const isValid = await validateLogin(username, password);
+
+      if (!isValid) {
+        return res.status(401).json({ error: "Invalid credentials or expired login" });
+      }
+
+      res.json({ success: true, message: "Login successful" });
+    } catch (error: any) {
+      console.error("Login error:", error);
+      res.status(500).json({ error: error.message || "Login failed" });
     }
   });
 
