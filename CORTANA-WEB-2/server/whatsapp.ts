@@ -287,195 +287,196 @@ async function handleMessage(sock: ReturnType<typeof makeWASocket>, msg: any, se
       // Optional: Reply with "unknown command" or just ignore
       // console.log(`Unknown command: ${command}`);
     }
-      // Core Commands
+    // Core Commands
+    switch (command) {
       case "owner":
-    await sock.sendMessage(jid, {
-      text: `👑 *Bot Owner*\n\n📞 Number: ${settings?.ownerNumber || "Not set"}\n🤖 Bot: ${BOT_NAME}`
-    });
-    break;
+        await sock.sendMessage(jid, {
+          text: `👑 *Bot Owner*\n\n📞 Number: ${settings?.ownerNumber || "Not set"}\n🤖 Bot: ${BOT_NAME}`
+        });
+        break;
       case "alive":
       case "runtime":
       case "uptime":
-    const uptime = process.uptime();
-    const hours = Math.floor(uptime / 3600);
-    const minutes = Math.floor((uptime % 3600) / 60);
-    const seconds = Math.floor(uptime % 60);
-    await sock.sendMessage(jid, {
-      text: `🎄 *${BOT_NAME}*\n\n✅ Bot is alive!\n⏱️ Runtime: ${hours}h ${minutes}m ${seconds}s\n⚡ Speed: Fast\n🌐 Status: Online`
-    });
-    break;
+        const uptime = process.uptime();
+        const hours = Math.floor(uptime / 3600);
+        const minutes = Math.floor((uptime % 3600) / 60);
+        const seconds = Math.floor(uptime % 60);
+        await sock.sendMessage(jid, {
+          text: `🎄 *${BOT_NAME}*\n\n✅ Bot is alive!\n⏱️ Runtime: ${hours}h ${minutes}m ${seconds}s\n⚡ Speed: Fast\n🌐 Status: Online`
+        });
+        break;
 
       // Media Commands
       case "sticker":
       case "s":
-    await handleSticker(sock, msg, jid);
-    break;
+        await handleSticker(sock, msg, jid);
+        break;
       case "toimg":
-    await handleToImg(sock, msg, jid);
-    break;
+        await handleToImg(sock, msg, jid);
+        break;
 
       // Fun Commands
       case "tts":
-    await handleTTS(sock, jid, args.join(" "));
-    break;
+        await handleTTS(sock, jid, args.join(" "));
+        break;
       case "joke":
       case "jokes":
-    await sendJoke(sock, jid);
-    break;
+        await sendJoke(sock, jid);
+        break;
       case "quote":
-    await sendQuote(sock, jid);
-    break;
+        await sendQuote(sock, jid);
+        break;
       case "fact":
-    await sendFact(sock, jid);
-    break;
+        await sendFact(sock, jid);
+        break;
       case "weather":
-    await sendWeather(sock, jid, args.join(" "));
-    break;
+        await sendWeather(sock, jid, args.join(" "));
+        break;
       case "8ball":
-    await handle8Ball(sock, jid, args.join(" "));
-    break;
+        await handle8Ball(sock, jid, args.join(" "));
+        break;
       case "compliment":
-    await sendCompliment(sock, jid);
-    break;
+        await sendCompliment(sock, jid);
+        break;
       case "dare":
-    await sendDare(sock, jid);
-    break;
+        await sendDare(sock, jid);
+        break;
       case "truth":
-    await sendTruth(sock, jid);
-    break;
+        await sendTruth(sock, jid);
+        break;
       case "advice":
-    const adviceRes = await axios.get('https://api.adviceslip.com/advice');
-    await sock.sendMessage(jid, { text: `💡 *Advice*\n\n${adviceRes.data.slip.advice}` });
-    break;
+        const adviceRes = await axios.get('https://api.adviceslip.com/advice');
+        await sock.sendMessage(jid, { text: `💡 *Advice*\n\n${adviceRes.data.slip.advice}` });
+        break;
 
       // AI Commands
       case "gpt":
       case "chatgpt":
-    await handleGPT(sock, jid, args.join(" "));
-    break;
+        await handleGPT(sock, jid, args.join(" "));
+        break;
       case "gemini":
-    await handleGemini(sock, jid, args.join(" "));
-    break;
+        await handleGemini(sock, jid, args.join(" "));
+        break;
       case "imagine":
       case "genimage":
-    await handleImageGen(sock, jid, args.join(" "));
-    break;
+        await handleImageGen(sock, jid, args.join(" "));
+        break;
 
       // Download Commands
       case "ytmp3":
       case "song":
       case "play":
-    await handleYTAudio(sock, jid, args.join(" "));
-    break;
+        await handleYTAudio(sock, jid, args.join(" "));
+        break;
       case "ytmp4":
       case "video":
-    await handleYTVideo(sock, jid, args.join(" "));
-    break;
+        await handleYTVideo(sock, jid, args.join(" "));
+        break;
       case "fb":
       case "facebook":
-    await handleFacebook(sock, jid, args[0]);
-    break;
+        await handleFacebook(sock, jid, args[0]);
+        break;
       case "ig":
       case "instagram":
-    await handleInstagram(sock, jid, args[0]);
-    break;
+        await handleInstagram(sock, jid, args[0]);
+        break;
       case "tiktok":
       case "tt":
-    await handleTikTok(sock, jid, args[0]);
-    break;
+        await handleTikTok(sock, jid, args[0]);
+        break;
 
       // Group Management Commands
       case "tagall":
-    if (isGroup) await tagAll(sock, msg, jid);
-    break;
+        if (isGroup) await tagAll(sock, msg, jid);
+        break;
       case "tagadmin":
-    if (isGroup) await tagAdmin(sock, jid);
-    break;
+        if (isGroup) await tagAdmin(sock, jid);
+        break;
       case "hidetag":
-    if (isGroup) await hideTag(sock, msg, jid, args.join(" "));
-    break;
+        if (isGroup) await hideTag(sock, msg, jid, args.join(" "));
+        break;
       case "kick":
-    if (isGroup && isOwner) await kickUser(sock, msg, jid);
-    break;
+        if (isGroup && isOwner) await kickUser(sock, msg, jid);
+        break;
       case "add":
-    if (isGroup && isOwner) await addUser(sock, jid, args[0]);
-    break;
+        if (isGroup && isOwner) await addUser(sock, jid, args[0]);
+        break;
       case "promote":
-    if (isGroup && isOwner) await promoteUser(sock, msg, jid);
-    break;
+        if (isGroup && isOwner) await promoteUser(sock, msg, jid);
+        break;
       case "demote":
-    if (isGroup && isOwner) await demoteUser(sock, msg, jid);
-    break;
+        if (isGroup && isOwner) await demoteUser(sock, msg, jid);
+        break;
       case "open":
-    if (isGroup && isOwner) await unmuteGroup(sock, jid);
-    break;
+        if (isGroup && isOwner) await unmuteGroup(sock, jid);
+        break;
       case "close":
-    if (isGroup && isOwner) await muteGroup(sock, jid);
-    break;
+        if (isGroup && isOwner) await muteGroup(sock, jid);
+        break;
       case "link":
-    if (isGroup) {
-      const code = await sock.groupInviteCode(jid);
-      await sock.sendMessage(jid, { text: `🔗 *Group Link*\n\nhttps://chat.whatsapp.com/${code}` });
-    }
-    break;
+        if (isGroup) {
+          const code = await sock.groupInviteCode(jid);
+          await sock.sendMessage(jid, { text: `🔗 *Group Link*\n\nhttps://chat.whatsapp.com/${code}` });
+        }
+        break;
       case "ginfo":
       case "groupinfo":
-    if (isGroup) await groupInfo(sock, jid);
-    break;
+        if (isGroup) await groupInfo(sock, jid);
+        break;
 
       // Anti-Features
       case "antilink":
-    if (isGroup && isOwner) await toggleAntilink(sock, jid, sessionId, args[0]);
-    break;
+        if (isGroup && isOwner) await toggleAntilink(sock, jid, sessionId, args[0]);
+        break;
       case "antibadword":
-    if (isGroup && isOwner) {
-      const enabled = args[0]?.toLowerCase() === "on";
-      await storage.updateGroupSettings(jid, { antibadword: enabled });
-      await sock.sendMessage(jid, { text: `🚫 Anti Badword ${enabled ? 'enabled' : 'disabled'}!` });
-    }
-    break;
+        if (isGroup && isOwner) {
+          const enabled = args[0]?.toLowerCase() === "on";
+          await storage.updateGroupSettings(jid, { antibadword: enabled });
+          await sock.sendMessage(jid, { text: `🚫 Anti Badword ${enabled ? 'enabled' : 'disabled'}!` });
+        }
+        break;
 
       // Owner Commands
       case "block":
-    if (!isOwner) return;
-    const toBlock = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0] || args[0] + '@s.whatsapp.net';
-    await sock.updateBlockStatus(toBlock, 'block');
-    await sock.sendMessage(jid, { text: '✅ User blocked!' });
-    break;
+        if (!isOwner) return;
+        const toBlock = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0] || args[0] + '@s.whatsapp.net';
+        await sock.updateBlockStatus(toBlock, 'block');
+        await sock.sendMessage(jid, { text: '✅ User blocked!' });
+        break;
       case "unblock":
-    if (!isOwner) return;
-    const toUnblock = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0] || args[0] + '@s.whatsapp.net';
-    await sock.updateBlockStatus(toUnblock, 'unblock');
-    await sock.sendMessage(jid, { text: '✅ User unblocked!' });
-    break;
+        if (!isOwner) return;
+        const toUnblock = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0] || args[0] + '@s.whatsapp.net';
+        await sock.updateBlockStatus(toUnblock, 'unblock');
+        await sock.sendMessage(jid, { text: '✅ User unblocked!' });
+        break;
       case "setbio":
-    if (!isOwner) return;
-    await sock.updateProfileStatus(args.join(" ") || 'CORTANA MD Active');
-    await sock.sendMessage(jid, { text: '✅ Bio updated!' });
-    break;
+        if (!isOwner) return;
+        await sock.updateProfileStatus(args.join(" ") || 'CORTANA MD Active');
+        await sock.sendMessage(jid, { text: '✅ Bio updated!' });
+        break;
       case "self":
-    if (!isOwner) return;
-    await storage.updateBotSettings(sessionId, { isPublic: false });
-    await sock.sendMessage(jid, { text: '🔒 Self mode enabled!' });
-    break;
+        if (!isOwner) return;
+        await storage.updateBotSettings(sessionId, { isPublic: false });
+        await sock.sendMessage(jid, { text: '🔒 Self mode enabled!' });
+        break;
       case "public":
-    if (!isOwner) return;
-    await storage.updateBotSettings(sessionId, { isPublic: true });
-    await sock.sendMessage(jid, { text: '🌐 Public mode enabled!' });
-    break;
+        if (!isOwner) return;
+        await storage.updateBotSettings(sessionId, { isPublic: true });
+        await sock.sendMessage(jid, { text: '🌐 Public mode enabled!' });
+        break;
       case "repo":
-    await sock.sendMessage(jid, {
-      text: `📦 *CORTANA MD - Christmas Edition 2025*\n\n🎄 GitHub: https://github.com/Eduqariz/Cortana-MD\n👨‍💻 Owner: ${settings?.ownerNumber}\n⭐ Star the repo!`
-    });
-    break;
+        await sock.sendMessage(jid, {
+          text: `📦 *CORTANA MD - Christmas Edition 2025*\n\n🎄 GitHub: https://github.com/Eduqariz/Cortana-MD\n👨‍💻 Owner: ${settings?.ownerNumber}\n⭐ Star the repo!`
+        });
+        break;
 
       default:
-    break;
-  }
+        break;
+    }
   } catch (error) {
-  console.error(`[${sessionId}] Error handling command ${command}:`, error);
-  await sock.sendMessage(jid, { text: "❌ An error occurred while processing your command." });
-}
+    console.error(`[${sessionId}] Error handling command ${command}:`, error);
+    await sock.sendMessage(jid, { text: "❌ An error occurred while processing your command." });
+  }
 }
 
 async function sendMenu(sock: ReturnType<typeof makeWASocket>, jid: string) {
