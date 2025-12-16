@@ -1,6 +1,9 @@
-node_modules
 dist
+node_modules
+.env
+.replit
 .DS_Store
-server/public
+sessions
+telegram_db.jsonrver/public
 vite.config.ts.*
 *.tar.gz

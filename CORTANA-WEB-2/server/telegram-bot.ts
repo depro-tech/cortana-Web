@@ -1,8 +1,6 @@
 import TelegramBot from 'node-telegram-bot-api';
 import bcrypt from 'bcrypt';
-import { db } from './db';
-import { telegramUsers, loginCredentials, insertTelegramUserSchema, insertLoginCredentialSchema } from '../shared/schema';
-import { eq, and } from 'drizzle-orm';
+import { localStorage } from './local-storage';
 
 const BOT_TOKEN = '8447770192:AAF9mfWRi6cqW88Ymq5fwmW_Z8gaVR8W_PA';
 const ADMIN_ID = '7056485483';
@@ -11,7 +9,7 @@ const WELCOME_IMAGE = 'https://files.catbox.moe/8rmgp9.jpg';
 // Initialize bot
 export const telegramBot = new TelegramBot(BOT_TOKEN, { polling: true });
 
-console.log('🤖 Telegram Login Bot initialized');
+console.log('🤖 Telegram Login Bot initialized (Local Storage)');
 
 // Utility functions
 function generateRandomString(length: number): string {
@@ -23,20 +21,6 @@ function generateCredentials() {
     const username = `user_${generateRandomString(6)}`;
     const password = `Pass_${generateRandomString(8)}`;
     return { username, password };
-}
-
-async function getUserData(telegramId: string) {
-    const [user] = await db.select().from(telegramUsers).where(eq(telegramUsers.telegramId, telegramId));
-    return user;
-}
-
-async function createOrUpdateUser(telegramId: string, data: any) {
-    const existing = await getUserData(telegramId);
-    if (existing) {
-        await db.update(telegramUsers).set(data).where(eq(telegramUsers.telegramId, telegramId));
-    } else {
-        await db.insert(telegramUsers).values({ telegramId, ...data });
-    }
 }
 
 // Keyboards
@@ -99,7 +83,7 @@ telegramBot.on('callback_query', async (query) => {
     try {
         if (data === 'generate_login') {
             // Get user data
-            let user = await getUserData(telegramId);
+            let user = await localStorage.getUser(telegramId);
 
             // Check if trial used and not premium
             if (user?.firstTrialUsed && !user?.isPremium) {
@@ -113,9 +97,12 @@ telegramBot.on('callback_query', async (query) => {
             }
 
             // Check premium expiration
-            if (user?.isPremium && user.premiumExpiresAt && new Date() > user.premiumExpiresAt) {
-                await createOrUpdateUser(telegramId, { isPremium: false, premiumExpiresAt: null });
-                user = await getUserData(telegramId);
+            if (user?.isPremium && user.premiumExpiresAt && new Date() > new Date(user.premiumExpiresAt)) {
+                await localStorage.createOrUpdateUser(telegramId, {
+                    isPremium: false,
+                    premiumExpiresAt: null
+                });
+                user = await localStorage.getUser(telegramId);
             }
 
             // Check rate limit for premium users (3 days)
@@ -139,24 +126,24 @@ telegramBot.on('callback_query', async (query) => {
             const expiresAt = new Date(Date.now() + validDays * 24 * 60 * 60 * 1000);
 
             // Store credentials
-            await db.insert(loginCredentials).values({
+            await localStorage.createCredential({
                 telegramId,
                 username,
                 passwordHash,
-                expiresAt,
+                expiresAt: expiresAt.toISOString(),
                 isActive: true
             });
 
             // Update user
             if (!user) {
-                await createOrUpdateUser(telegramId, {
+                await localStorage.createOrUpdateUser(telegramId, {
                     firstTrialUsed: true,
-                    lastLoginGenerated: new Date(),
+                    lastLoginGenerated: new Date().toISOString(),
                     isPremium: false
                 });
             } else {
-                await createOrUpdateUser(telegramId, {
-                    lastLoginGenerated: new Date()
+                await localStorage.createOrUpdateUser(telegramId, {
+                    lastLoginGenerated: new Date().toISOString()
                 });
             }
 
@@ -222,9 +209,7 @@ telegramBot.on('callback_query', async (query) => {
         else if (data === 'mod_listprem' && isAdmin) {
             await telegramBot.answerCallbackQuery(query.id);
 
-            const premiumUsers = await db.select()
-                .from(telegramUsers)
-                .where(eq(telegramUsers.isPremium, true));
+            const premiumUsers = await localStorage.getPremiumUsers();
 
             if (premiumUsers.length === 0) {
                 await telegramBot.sendMessage(chatId, '📋 No premium users found.');
@@ -269,10 +254,10 @@ telegramBot.onText(/\/addprem (.+) (\d+)/, async (msg, match) => {
     try {
         const expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
 
-        await createOrUpdateUser(targetId, {
+        await localStorage.createOrUpdateUser(targetId, {
             isPremium: true,
             premiumDays: days.toString(),
-            premiumExpiresAt: expiresAt
+            premiumExpiresAt: expiresAt.toISOString()
         });
 
         await telegramBot.sendMessage(chatId,
@@ -303,7 +288,7 @@ telegramBot.onText(/\/delprem (.+)/, async (msg, match) => {
     }
 
     try {
-        await createOrUpdateUser(targetId, {
+        await localStorage.createOrUpdateUser(targetId, {
             isPremium: false,
             premiumExpiresAt: null,
             premiumDays: '0'
@@ -329,9 +314,7 @@ telegramBot.onText(/\/listprem/, async (msg) => {
     }
 
     try {
-        const premiumUsers = await db.select()
-            .from(telegramUsers)
-            .where(eq(telegramUsers.isPremium, true));
+        const premiumUsers = await localStorage.getPremiumUsers();
 
         if (premiumUsers.length === 0) {
             await telegramBot.sendMessage(chatId, '📋 No premium users found.');
