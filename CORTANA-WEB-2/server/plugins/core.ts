@@ -95,7 +95,6 @@ registerCommand({
 ⮞ .uptime
 ⮞ .speed
 ⮞ .owner
-⮞ .repo
 ⮞ .delete
 ⮞ .react
 ⮞ .autoread
@@ -424,7 +423,6 @@ registerCommand({
 ⮞ .system
 ⮞ .runtime
 ⮞ .owner
-⮞ .repo
 📱───────────────────────────────📱
 
 
@@ -441,7 +439,7 @@ registerCommand({
             // Send audio after menu
             await sock.sendMessage(senderJid, {
                 audio: { url: "https://files.catbox.moe/5s85cc.mp3" },
-                mimetype: 'audio/mp4',
+                mimetype: 'audio/mpeg',
                 ptt: true // Send as voice note
             });
         } catch (error) {
@@ -483,15 +481,5 @@ registerCommand({
     category: "core",
     execute: async ({ reply }) => {
         await reply("👑 *Bot Owner*\n\n📞 Number: Not set\n🤖 Bot: CORTANA MD");
-    }
-});
-
-registerCommand({
-    name: "repo",
-    aliases: ["sc", "script"],
-    description: "Get repository link",
-    category: "core",
-    execute: async ({ reply }) => {
-        await reply("📂 *CORTANA MD Repository*\n\n🔗 Link: https://github.com/depro-tech/cortana-Web\n\n⭐ Start the project if you like it!");
     }
 });

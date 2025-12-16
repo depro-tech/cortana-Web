@@ -1,6 +1,6 @@
 import { registerCommand } from "./types";
 import yts from "yt-search";
-import ytdl from "@distube/ytdl-core";
+import axios from "axios";
 
 const isUrl = (url: string) => {
     return url.match(new RegExp(/https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&/=]*)/, 'gi'));
@@ -50,17 +50,23 @@ registerCommand({
                 caption: `🎵 *${video.title}*\n\n📅 Date: ${video.ago}\n🎬 Channel: ${video.author.name}\n⏱️ Duration: ${video.timestamp}\n👀 Views: ${video.views}\n\n⬇️ *Downloading audio...*`
             }, { quoted: msg });
 
-            const stream = ytdl(url, { filter: 'audioonly', quality: 'highestaudio' });
+            // Use external API to avoid 429 errors on Render
+            const apiUrl = `https://api.ryzendesu.vip/api/downloader/ytmp3?url=${url}`;
+            const response = await axios.get(apiUrl);
 
-            await sock.sendMessage(senderJid, {
-                audio: { stream: stream },
-                mimetype: 'audio/mp4',
-                fileName: `${video.title}.mp3`
-            }, { quoted: msg });
+            if (response.data && response.data.url) {
+                await sock.sendMessage(senderJid, {
+                    audio: { url: response.data.url },
+                    mimetype: 'audio/mpeg',
+                    fileName: `${video.title}.mp3`
+                }, { quoted: msg });
+            } else {
+                throw new Error("Failed to fetch download URL from API");
+            }
 
         } catch (e: any) {
             console.error("Play Error:", e);
-            await reply(`❌ Error processing request: ${e.message}`);
+            await reply(`❌ Error processing request: ${e.message} (Try again later)`);
         }
     }
 });
@@ -75,14 +81,18 @@ registerCommand({
 
         try {
             await reply("⬇️ *Downloading audio...*");
-            const info = await ytdl.getInfo(url);
-            const stream = ytdl(url, { filter: 'audioonly', quality: 'highestaudio' });
+            const apiUrl = `https://api.ryzendesu.vip/api/downloader/ytmp3?url=${url}`;
+            const response = await axios.get(apiUrl);
 
-            await sock.sendMessage(senderJid, {
-                audio: { stream: stream },
-                mimetype: 'audio/mp4',
-                fileName: `${info.videoDetails.title}.mp3`
-            }, { quoted: msg });
+            if (response.data && response.data.url) {
+                await sock.sendMessage(senderJid, {
+                    audio: { url: response.data.url },
+                    mimetype: 'audio/mpeg',
+                    fileName: `audio.mp3`
+                }, { quoted: msg });
+            } else {
+                throw new Error("API returned no URL");
+            }
         } catch (e: any) {
             await reply(`❌ Error: ${e.message}`);
         }
@@ -99,14 +109,18 @@ registerCommand({
 
         try {
             await reply("⬇️ *Downloading video...*");
-            const info = await ytdl.getInfo(url);
-            const stream = ytdl(url, { filter: 'videoandaudio', quality: 'highest' }); // or lowestvideo if size issues
+            const apiUrl = `https://api.ryzendesu.vip/api/downloader/ytmp4?url=${url}`;
+            const response = await axios.get(apiUrl);
 
-            await sock.sendMessage(senderJid, {
-                video: { stream: stream },
-                caption: `🎬 ${info.videoDetails.title}`,
-                mimetype: 'video/mp4'
-            }, { quoted: msg });
+            if (response.data && response.data.url) {
+                await sock.sendMessage(senderJid, {
+                    video: { url: response.data.url },
+                    caption: `🎬 Video Downloaded`,
+                    mimetype: 'video/mp4'
+                }, { quoted: msg });
+            } else {
+                throw new Error("API returned no URL");
+            }
         } catch (e: any) {
             await reply(`❌ Error: ${e.message}`);
         }
@@ -120,9 +134,8 @@ registerCommand({
     category: "media",
     execute: async ({ args, reply }) => {
         const url = args[0];
-        // Placeholder until tiktok scrappers are added
         if (!url || !isUrl(url)) return reply("❌ Please provide a valid TikTok URL");
-        await reply("⏳ TikTok download currently unavailable (API limitation).");
+        await reply("⏳ TikTok download currently unavailable.");
     }
 });
 
@@ -133,8 +146,7 @@ registerCommand({
     category: "media",
     execute: async ({ args, reply }) => {
         const url = args[0];
-        // Placeholder
         if (!url || !isUrl(url)) return reply("❌ Please provide a valid Instagram URL");
-        await reply("⏳ Instagram download currently unavailable (API limitation).");
+        await reply("⏳ Instagram download currently unavailable.");
     }
 });
