@@ -19,7 +19,7 @@ import { storage } from "./storage";
 import fs from "fs";
 import path from "path";
 import { commands } from "./plugins/types";
-import "./plugins/index"; // Import all plugins
+import "./plugins/index";
 
 const logger = pino({ level: "warn" });
 const msgRetryCounterCache = new NodeCache();
@@ -30,27 +30,12 @@ const pairingCodes: Map<string, string> = new Map();
 const BOT_NAME = "CORTANA MD X-MASS ED.";
 const PREFIX = ".";
 
-export async function requestPairingCode(phoneNumber: string): Promise<{ sessionId: string; pairingCode: string }> {
-  const cleanPhone = phoneNumber.replace(/[^0-9]/g, "");
-
-  if (cleanPhone.length < 10) {
-    throw new Error("Invalid phone number");
-  }
-
-  const sessionId = randomUUID();
+async function startSocket(sessionId: string, phoneNumber?: string) {
   const authDir = path.join(process.cwd(), "auth_sessions", sessionId);
 
   if (!fs.existsSync(authDir)) {
     fs.mkdirSync(authDir, { recursive: true });
   }
-
-  await storage.createSession({
-    id: sessionId,
-    phoneNumber: cleanPhone,
-    status: "pending",
-    creds: null,
-    keys: null,
-  });
 
   const { state, saveCreds } = await useMultiFileAuthState(authDir);
   const { version } = await fetchLatestBaileysVersion();
@@ -85,12 +70,13 @@ export async function requestPairingCode(phoneNumber: string): Promise<{ session
       await storage.updateSession(sessionId, { status: "connected" });
       pairingCodes.delete(sessionId);
 
+      // Create settings if they don't exist
       const existingSettings = await storage.getBotSettings(sessionId);
-      if (!existingSettings) {
+      if (!existingSettings && phoneNumber) {
         await storage.createBotSettings({
           sessionId,
           prefix: PREFIX,
-          ownerNumber: cleanPhone,
+          ownerNumber: phoneNumber,
           isPublic: true,
         });
       }
@@ -112,10 +98,14 @@ export async function requestPairingCode(phoneNumber: string): Promise<{ session
         activeSockets.delete(sessionId);
         // Clean restart after stream error
         setTimeout(async () => {
-          // In a real implementation we would restart the session here
+          console.log(`Restarting session ${sessionId}...`);
+          await startSocket(sessionId, phoneNumber);
         }, 3000);
       } else if (statusCode === DisconnectReason.timedOut || currentStatus?.status === "pending") {
-        console.log(`Session ${sessionId} timed out or failed during pairing`);
+        // Only fail if we lose connection during initial pairing. 
+        // If we were already connected and timed out, we might want to retry too, assuming it's network flake.
+        // But for now, sticking to original logic logic for pending state.
+        console.log(`Session ${sessionId} timed out or failed.`);
         await storage.updateSession(sessionId, { status: "failed" });
         activeSockets.delete(sessionId);
         pairingCodes.delete(sessionId);
@@ -126,11 +116,11 @@ export async function requestPairingCode(phoneNumber: string): Promise<{ session
       pairingCodes.delete(sessionId);
 
       const existingSettings = await storage.getBotSettings(sessionId);
-      if (!existingSettings) {
+      if (!existingSettings && phoneNumber) {
         await storage.createBotSettings({
           sessionId,
           prefix: PREFIX,
-          ownerNumber: cleanPhone,
+          ownerNumber: phoneNumber,
           isPublic: true,
         });
       }
@@ -150,6 +140,28 @@ export async function requestPairingCode(phoneNumber: string): Promise<{ session
     }
   });
 
+  return sock;
+}
+
+export async function requestPairingCode(phoneNumber: string): Promise<{ sessionId: string; pairingCode: string }> {
+  const cleanPhone = phoneNumber.replace(/[^0-9]/g, "");
+
+  if (cleanPhone.length < 10) {
+    throw new Error("Invalid phone number");
+  }
+
+  const sessionId = randomUUID();
+
+  await storage.createSession({
+    id: sessionId,
+    phoneNumber: cleanPhone,
+    status: "pending",
+    creds: null,
+    keys: null,
+  });
+
+  const sock = await startSocket(sessionId, cleanPhone);
+
   await new Promise(resolve => setTimeout(resolve, 2000));
 
   if (!sock.authState.creds.registered) {
@@ -168,7 +180,10 @@ export async function requestPairingCode(phoneNumber: string): Promise<{ session
     }
   } else {
     await storage.updateSession(sessionId, { status: "connected" });
-    try { sock.end(undefined); } catch { }
+    try { sock.end(undefined); } catch { } // We end this socket instance? Wait, if it's already registered, we should keep it open? 
+    // The original logic threw an error "Number already linked", confusingly. 
+    // If registered, we should probably just return success or existing session?
+    // Following original behavior for now:
     throw new Error("Number already linked.");
   }
 }
@@ -196,8 +211,6 @@ export async function disconnectSession(sessionId: string): Promise<void> {
 export function getActiveSessionsCount(): number {
   return activeSockets.size;
 }
-
-
 
 async function handleMessage(sock: ReturnType<typeof makeWASocket>, msg: any, sessionId: string) {
   const jid = msg.key.remoteJid!;
