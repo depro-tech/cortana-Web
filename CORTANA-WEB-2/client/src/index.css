@@ -229,18 +229,29 @@ nav::-webkit-scrollbar {
     opacity: 1;
 }
 
-.squirrel {
-    font-size: 60px;
-    margin-top: 30px;
-    opacity: 0;
-    transition: opacity 0.5s ease;
+.anime-character-container {
     position: absolute;
     bottom: 20px;
+    right: 20px;
+    z-index: 50;
+    transition: all 0.3s ease;
+    cursor: pointer;
 }
 
-.squirrel.show {
-    opacity: 1;
-    animation: bounce 2s infinite;
+.anime-character {
+    width: 200px;
+    height: auto;
+    filter: drop-shadow(0 0 10px rgba(0, 168, 255, 0.5));
+    transition: transform 0.2s ease;
+}
+
+.anime-character:hover {
+    transform: scale(1.05);
+    filter: drop-shadow(0 0 15px rgba(0, 168, 255, 0.8));
+}
+
+.anime-character.jump {
+    animation: bounce 0.5s ease infinite alternate;
 }
 
 /* Contact Icons - Real Colors */
@@ -705,6 +716,76 @@ nav::-webkit-scrollbar {
         transform: translateX(0);
         opacity: 1;
     }
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+    20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
+@keyframes glitch-anim {
+    0% { clip-path: inset(50% 0 30% 0); transform: skew(0.15deg); }
+    20% { clip-path: inset(15% 0 70% 0); transform: skew(0.15deg); }
+    40% { clip-path: inset(5% 0 90% 0); transform: skew(-0.15deg); }
+    60% { clip-path: inset(80% 0 5% 0); transform: skew(-0.15deg); }
+    80% { clip-path: inset(20% 0 60% 0); transform: skew(0.15deg); }
+    100% { clip-path: inset(40% 0 40% 0); transform: skew(0.15deg); }
+}
+
+.login-shake {
+    animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+    border-color: #ff6b6b !important;
+    box-shadow: 0 0 15px rgba(255, 107, 107, 0.5) !important;
+}
+
+.access-granted {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.95);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    animation: fadeIn 0.3s ease;
+}
+
+.access-text {
+    font-family: 'Courier New', monospace;
+    font-size: 3rem;
+    color: #4ade80;
+    font-weight: bold;
+    text-shadow: 0 0 20px #4ade80;
+    position: relative;
+}
+
+.access-text::before,
+.access-text::after {
+    content: attr(data-text);
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #000;
+}
+
+.access-text::before {
+    left: 2px;
+    text-shadow: -1px 0 #ff00c1;
+    clip: rect(44px, 450px, 56px, 0);
+    animation: glitch-anim 2s infinite linear alternate-reverse;
+}
+
+.access-text::after {
+    left: -2px;
+    text-shadow: -1px 0 #00fff9;
+    clip: rect(44px, 450px, 56px, 0);
+    animation: glitch-anim 1s infinite linear alternate-reverse;
 }
 
 /* Mobile Responsive */

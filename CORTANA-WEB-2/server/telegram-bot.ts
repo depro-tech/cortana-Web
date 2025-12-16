@@ -85,8 +85,8 @@ telegramBot.on('callback_query', async (query) => {
             // Get user data
             let user = await localStorage.getUser(telegramId);
 
-            // Check if trial used and not premium
-            if (user?.firstTrialUsed && !user?.isPremium) {
+            // Check if trial used and not premium (skip for admin)
+            if (!isAdmin && user?.firstTrialUsed && !user?.isPremium) {
                 await telegramBot.answerCallbackQuery(query.id, {
                     text: "Party's over!"
                 });
@@ -105,8 +105,8 @@ telegramBot.on('callback_query', async (query) => {
                 user = await localStorage.getUser(telegramId);
             }
 
-            // Check rate limit for premium users (3 days)
-            if (user?.isPremium && user?.lastLoginGenerated) {
+            // Check rate limit for premium users (3 days) (skip for admin)
+            if (!isAdmin && user?.isPremium && user?.lastLoginGenerated) {
                 const daysSinceLastGen = (Date.now() - new Date(user.lastLoginGenerated).getTime()) / (1000 * 60 * 60 * 24);
                 if (daysSinceLastGen < 3) {
                     const timeLeft = Math.ceil(3 - daysSinceLastGen);

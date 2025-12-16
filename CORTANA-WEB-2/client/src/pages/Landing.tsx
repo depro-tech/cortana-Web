@@ -204,6 +204,14 @@ export default function Landing() {
     const [activeSessions, setActiveSessions] = useState(0);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [rememberMe, setRememberMe] = useState(false);
+    const [loginError, setLoginError] = useState(false);
+    const [showAccessGranted, setShowAccessGranted] = useState(false);
+    const [characterJump, setCharacterJump] = useState(false);
+
+    const triggerCharacterJump = () => {
+        setCharacterJump(true);
+        setTimeout(() => setCharacterJump(false), 500);
+    };
 
     // MD Link State
     const [whatsappNumber, setWhatsappNumber] = useState('');
@@ -395,16 +403,22 @@ export default function Landing() {
             }
 
             // Login successful
-            setIsLoggedIn(true);
-            if (rememberMe) {
-                localStorage.setItem('cortana_login', 'true');
-            }
-            toast({
-                title: "✅ Login Successful",
-                description: "Welcome to Cortana Exploit Mode!"
-            });
+            setShowAccessGranted(true);
+            setTimeout(() => {
+                setShowAccessGranted(false);
+                setIsLoggedIn(true);
+                if (rememberMe) {
+                    localStorage.setItem('cortana_login', 'true');
+                }
+                toast({
+                    title: "✅ ACCESS GRANTED",
+                    description: "Welcome to Cortana Exploit Mode!"
+                });
+            }, 2000);
 
         } catch (error) {
+            setLoginError(true);
+            setTimeout(() => setLoginError(false), 500);
             toast({
                 title: "❌ Error",
                 description: "Login failed. Please try again.",
@@ -523,7 +537,17 @@ export default function Landing() {
                         <div className="cyber-tip show text-cyan-400">
                             {CYBER_TIPS[currentTipIndex]}
                         </div>
-                        <div className="squirrel show text-6xl mt-8">🐿️</div>
+                        <div
+                            className="anime-character-container"
+                            onClick={triggerCharacterJump}
+                            title="Cortana Assistant"
+                        >
+                            <img
+                                src="https://files.catbox.moe/k365i3.png"
+                                alt="Cortana Character"
+                                className={`anime-character ${characterJump ? 'jump' : ''}`}
+                            />
+                        </div>
                     </div>
                 </div>
             )}
@@ -667,7 +691,7 @@ export default function Landing() {
                                 <i className="fas fa-lock mr-2"></i> SECURE LOGIN
                             </h2>
 
-                            <div className="max-w-[400px] mx-auto">
+                            <div className={`max-w-[400px] mx-auto ${loginError ? 'login-shake' : ''}`}>
                                 <div className="mb-5">
                                     <label className="text-cyan-400 block mb-2 font-bold">Username</label>
                                     <input id="username-input" type="text" placeholder="Enter username" className="w-full p-3 bg-white/10 border-2 border-cyan-500/50 text-white rounded-lg" />
@@ -796,6 +820,13 @@ export default function Landing() {
                     <a href="#" className="icon tiktok">
                         <i className="fab fa-tiktok"></i>
                     </a>
+                </div>
+            )}
+
+            {showAccessGranted && (
+                <div className="access-granted">
+                    <div className="access-text" data-text="ACCESS GRANTED">ACCESS GRANTED</div>
+                    <div className="text-cyan-400 mt-4 text-xl font-mono animate-pulse">Initializing System Exploit...</div>
                 </div>
             )}
 
