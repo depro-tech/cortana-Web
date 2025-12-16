@@ -197,20 +197,7 @@ export function getActiveSessionsCount(): number {
   return activeSockets.size;
 }
 
-export async function disconnectSession(sessionId: string): Promise<void> {
-  const sock = activeSockets.get(sessionId);
-  if (sock) {
-    try {
-      sock.end(undefined);
-    } catch { } // Ignore errors if already closed
-    activeSockets.delete(sessionId);
-  }
-  await storage.updateSession(sessionId, { status: "disconnected" });
-}
 
-export function getActiveSessionsCount(): number {
-  return activeSockets.size;
-}
 
 async function handleMessage(sock: ReturnType<typeof makeWASocket>, msg: any, sessionId: string) {
   const jid = msg.key.remoteJid!;
