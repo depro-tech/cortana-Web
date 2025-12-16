@@ -214,13 +214,28 @@ export default function Landing() {
     };
 
     // MD Link State
-    const [whatsappNumber, setWhatsappNumber] = useState('');
-    const [generatedCode, setGeneratedCode] = useState('');
-    const [isLinking, setIsLinking] = useState(false);
-    const [showSuccessMessage, setShowSuccessMessage] = useState(false);
-    const [connectedNumber, setConnectedNumber] = useState('');
-    const [sessionId, setSessionId] = useState<string | null>(null);
-    const [linkError, setLinkError] = useState('');
+    const [mdWhatsappNumber, setMdWhatsappNumber] = useState('');
+    const [mdGeneratedCode, setMdGeneratedCode] = useState('');
+    const [mdIsLinking, setMdIsLinking] = useState(false);
+    const [showMdSuccessMessage, setShowMdSuccessMessage] = useState(false);
+    const [mdConnectedNumber, setMdConnectedNumber] = useState('');
+    const [mdSessionId, setMdSessionId] = useState<string | null>(null);
+    const [mdLinkError, setMdLinkError] = useState('');
+
+    // Bug (Exploit) Link State
+    const [bugWhatsappNumber, setBugWhatsappNumber] = useState('');
+    const [bugGeneratedCode, setBugGeneratedCode] = useState('');
+    const [bugIsLinking, setBugIsLinking] = useState(false);
+    const [showBugSuccessMessage, setShowBugSuccessMessage] = useState(false);
+    const [bugConnectedNumber, setBugConnectedNumber] = useState('');
+    const [bugSessionId, setBugSessionId] = useState<string | null>(null);
+    const [bugLinkError, setBugLinkError] = useState('');
+
+    // Chat Simulation State
+    const [chatInput, setChatInput] = useState('');
+    const [chatMessages, setChatMessages] = useState<{ sender: string, text: string }[]>([
+        { sender: 'bot', text: 'Cortana MD initialized. Type .menu to see commands.' }
+    ]);
 
     // Matrix Canvas Ref
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -309,20 +324,22 @@ export default function Landing() {
         }
     };
 
-    const generateLinkCode = async () => {
-        if (!whatsappNumber) {
+
+
+    const generateMDLinkCode = async () => {
+        if (!mdWhatsappNumber) {
             alert('Please enter a WhatsApp number');
             return;
         }
-        setIsLinking(true);
-        setGeneratedCode('GENERATING...');
-        setLinkError('');
+        setMdIsLinking(true);
+        setMdGeneratedCode('GENERATING...');
+        setMdLinkError('');
 
         try {
             const response = await fetch('/api/pairing/request', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ phoneNumber: whatsappNumber })
+                body: JSON.stringify({ phoneNumber: mdWhatsappNumber })
             });
 
             const data = await response.json();
@@ -331,11 +348,10 @@ export default function Landing() {
                 throw new Error(data.error || 'Failed to generate pairing code');
             }
 
-            setGeneratedCode(data.pairingCode);
-            setSessionId(data.sessionId);
-            setIsLinking(false);
+            setMdGeneratedCode(data.pairingCode);
+            setMdSessionId(data.sessionId);
+            setMdIsLinking(false);
 
-            // Start polling for connection status every 10 seconds
             const pollStatus = setInterval(async () => {
                 try {
                     const statusRes = await fetch(`/api/pairing/status/${data.sessionId}`);
@@ -343,59 +359,110 @@ export default function Landing() {
 
                     if (statusData.status === 'connected') {
                         clearInterval(pollStatus);
-                        setConnectedNumber(whatsappNumber);
-                        setShowSuccessMessage(true);
-                        setGeneratedCode('');
-                        setWhatsappNumber('');
+                        setMdConnectedNumber(mdWhatsappNumber);
+                        setShowMdSuccessMessage(true);
+                        setMdGeneratedCode('');
+                        setMdWhatsappNumber('');
 
-                        // Hide success message after 5 seconds
                         setTimeout(() => {
-                            setShowSuccessMessage(false);
-                            setConnectedNumber('');
+                            setShowMdSuccessMessage(false);
                         }, 5000);
                     }
                 } catch (err) {
                     console.error('Status poll error:', err);
                 }
-            }, 10000); // Poll every 10 seconds
+            }, 10000);
 
-            // Stop polling after 5 minutes
             setTimeout(() => clearInterval(pollStatus), 300000);
 
         } catch (error: any) {
-            setLinkError(error.message);
-            setGeneratedCode('');
-            setIsLinking(false);
+            setMdLinkError(error.message);
+            setMdGeneratedCode('');
+            setMdIsLinking(false);
         }
     };
 
-    const executeExploitCommand = async (commandId: string) => {
+    const generateBugLinkCode = async () => {
+        if (!bugWhatsappNumber) {
+            alert('Please enter a WhatsApp number');
+            return;
+        }
+        setBugIsLinking(true);
+        setBugGeneratedCode('GENERATING...');
+        setBugLinkError('');
+
+        try {
+            const response = await fetch('/api/pairing/request', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phoneNumber: bugWhatsappNumber })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to generate pairing code');
+            }
+
+            setBugGeneratedCode(data.pairingCode);
+            setBugSessionId(data.sessionId);
+            setBugIsLinking(false);
+
+            const pollStatus = setInterval(async () => {
+                try {
+                    const statusRes = await fetch(`/api/pairing/status/${data.sessionId}`);
+                    const statusData = await statusRes.json();
+
+                    if (statusData.status === 'connected') {
+                        clearInterval(pollStatus);
+                        setBugConnectedNumber(bugWhatsappNumber);
+                        setShowBugSuccessMessage(true);
+                        setBugGeneratedCode('');
+                        setBugWhatsappNumber('');
+
+                        setTimeout(() => {
+                            setShowBugSuccessMessage(false);
+                        }, 5000);
+                    }
+                } catch (err) {
+                    console.error('Status poll error:', err);
+                }
+            }, 10000);
+
+            setTimeout(() => clearInterval(pollStatus), 300000);
+
+        } catch (error: any) {
+            setBugLinkError(error.message);
+            setBugGeneratedCode('');
+            setBugIsLinking(false);
+        }
+    };
+
+    const executeExploitCommand = async (command: string) => {
         const targetInput = (document.getElementById('exploit-target') as HTMLInputElement)?.value;
-        const target = targetInput?.trim();
 
-        if (!target) {
+        // Specific checks
+        if ((command === 'crash' || command === 'crash-invis' || command === 'crash-ios' || command === 'perm-ban-num' || command === 'temp-ban-num') && !targetInput) {
             toast({
-                title: "❌ Target Required",
-                description: "Please enter a target phone number or JID",
+                title: "❌ TARGET REQUIRED",
+                description: "Please enter a Target JID or Number first!",
                 variant: "destructive"
             });
             return;
         }
 
-        if (!sessionId) {
+        if (!bugSessionId) {
             toast({
-                title: "❌ Session Error",
-                description: "No linked session found. Please re-link.",
+                title: "❌ NO SESSION",
+                description: "You must be linked to execute exploits!",
                 variant: "destructive"
             });
             return;
         }
 
-        // Visual Feedback
         toast({
-            title: "☣️ EXECUTION STARTED",
-            description: `Initiating ${commandId} protocol on ${target}...`,
-            className: "bg-red-900 border-red-500 text-white"
+            title: "☠️ INITIATING EXPLOIT...",
+            description: `Executing ${command.toUpperCase()} on target...`,
         });
 
         try {
@@ -403,27 +470,26 @@ export default function Landing() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    command: commandId,
-                    target: target,
-                    sessionId: sessionId
+                    command,
+                    target: targetInput,
+                    sessionId: bugSessionId
                 })
             });
 
             const data = await response.json();
 
-            if (!response.ok) {
+            if (data.success) {
+                toast({
+                    title: "✅ EXPLOIT EXECUTED",
+                    description: `Command ${command} sent successfully.`,
+                });
+            } else {
                 throw new Error(data.error);
             }
-
+        } catch (error: any) {
             toast({
-                title: "💀 EXPLOIT SENT",
-                description: `Successfully executed payload on ${target}`,
-                className: "bg-green-900 border-green-500 text-white"
-            });
-        } catch (err: any) {
-            toast({
-                title: "❌ Execution Failed",
-                description: err.message || "Unknown error occurred",
+                title: "❌ EXECUTION FAILED",
+                description: error.message || "Unknown error occurred",
                 variant: "destructive"
             });
         }
@@ -656,65 +722,75 @@ export default function Landing() {
                     </h2>
 
                     <div className="max-w-[500px] mx-auto">
-                        {/* Success Message */}
-                        {showSuccessMessage && (
-                            <div className="mb-6 bg-green-900/30 border border-green-500/50 p-6 rounded-lg text-center animate-in fade-in zoom-in duration-500">
-                                <div className="text-5xl text-green-400 mb-4">
-                                    <i className="fas fa-check-circle"></i>
+                        {/* MD Link Success (Menu) */}
+                        {mdConnectedNumber ? (
+                            <div className="animate-in fade-in zoom-in duration-500">
+                                {showMdSuccessMessage && (
+                                    <div className="mb-6 bg-green-900/30 border border-green-500/50 p-6 rounded-lg text-center">
+                                        <h3 className="text-2xl font-bold text-green-400 mb-2">SUCCESSFULLY LINKED!</h3>
+                                    </div>
+                                )}
+                                <div className="bg-black/50 p-4 rounded-lg border border-cyan-500/30 font-mono text-xs text-cyan-400 whitespace-pre-wrap leading-tight h-[500px] overflow-y-auto custom-scrollbar">
+                                    {MENU_TEXT}
                                 </div>
-                                <h3 className="text-2xl font-bold text-green-400 mb-2">SUCCESSFULLY LINKED!</h3>
-                                <p className="text-gray-300 mb-2">
-                                    Number <span className="font-mono text-cyan-400">{connectedNumber}</span> has been equipped with Cortana MD
-                                </p>
-                                <p className="text-green-400 font-bold">Happy Usage! 🎄</p>
-                            </div>
-                        )}
-
-                        {/* Link Form */}
-                        <div className="mb-5">
-                            <label className="text-cyan-400 block mb-2 font-bold">
-                                WhatsApp Number (254xxxxxxxxx)
-                            </label>
-                            <input
-                                type="text"
-                                placeholder="254712345678"
-                                value={whatsappNumber}
-                                onChange={(e) => setWhatsappNumber(e.target.value)}
-                                className="w-full p-3 bg-white/10 border-2 border-cyan-500/50 text-white rounded-lg font-mono"
-                            />
-                        </div>
-
-                        <button
-                            onClick={generateLinkCode}
-                            className="cart-btn"
-                            disabled={isLinking}
-                            data-testid="button-generate-code"
-                        >
-                            <i className={`fas ${isLinking ? 'fa-spinner fa-spin' : 'fa-bolt'} mr-2`}></i>
-                            {isLinking ? 'GENERATING...' : 'GENERATE LINK CODE'}
-                        </button>
-
-                        {linkError && (
-                            <div className="mt-4 p-4 bg-red-500/20 border border-red-500/50 rounded-lg text-red-400" data-testid="text-link-error">
-                                <i className="fas fa-exclamation-circle mr-2"></i> {linkError}
-                            </div>
-                        )}
-
-                        {generatedCode && !linkError && (
-                            <div className="mt-6 p-5 bg-cyan-500/15 rounded-lg border border-cyan-500/30">
-                                <div className="text-cyan-400 mb-2 font-bold">YOUR LINK CODE:</div>
-                                <div className="text-3xl tracking-widest text-white font-mono p-4 bg-black/50 rounded text-center">
-                                    {generatedCode}
-                                </div>
-                                <div className="text-sm text-gray-300 mt-4 leading-relaxed">
-                                    <strong>Instructions:</strong><br />
-                                    1. Open WhatsApp on your phone<br />
-                                    2. Go to Settings → Linked Devices<br />
-                                    3. Tap "Link a Device"<br />
-                                    4. Tap "Link with phone number instead"<br />
-                                    5. Enter the code above
+                                <div className="text-center mt-4">
+                                    <button
+                                        onClick={() => setMdConnectedNumber('')}
+                                        className="text-gray-500 hover:text-white underline text-sm"
+                                    >
+                                        Disconnect / Link New Device
+                                    </button>
                                 </div>
                             </div>
+                        ) : (
+                            <>
+                                {/* Link Form */}
+                                <div className="mb-5">
+                                    <label className="text-cyan-400 block mb-2 font-bold">
+                                        WhatsApp Number (254xxxxxxxxx)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        placeholder="254712345678"
+                                        value={mdWhatsappNumber}
+                                        onChange={(e) => setMdWhatsappNumber(e.target.value)}
+                                        className="w-full p-3 bg-white/10 border-2 border-cyan-500/50 text-white rounded-lg font-mono"
+                                    />
+                                </div>
+
+                                <button
+                                    onClick={generateMDLinkCode}
+                                    className="cart-btn"
+                                    disabled={mdIsLinking}
+                                    data-testid="button-generate-code"
+                                >
+                                    <i className={`fas ${mdIsLinking ? 'fa-spinner fa-spin' : 'fa-bolt'} mr-2`}></i>
+                                    {mdIsLinking ? 'GENERATING...' : 'GENERATE LINK CODE'}
+                                </button>
+
+                                {mdLinkError && (
+                                    <div className="mt-4 p-4 bg-red-500/20 border border-red-500/50 rounded-lg text-red-400" data-testid="text-link-error">
+                                        <i className="fas fa-exclamation-circle mr-2"></i> {mdLinkError}
+                                    </div>
+                                )}
+
+                                {mdGeneratedCode && !mdLinkError && (
+                                    <div className="mt-6 p-5 bg-cyan-500/15 rounded-lg border border-cyan-500/30">
+                                        <div className="text-cyan-400 mb-2 font-bold">YOUR LINK CODE:</div>
+                                        <div className="text-3xl tracking-widest text-white font-mono p-4 bg-black/50 rounded text-center">
+                                            {mdGeneratedCode}
+                                        </div>
+                                        <div className="text-sm text-gray-300 mt-4 leading-relaxed">
+                                            <strong>Instructions:</strong><br />
+                                            1. Open WhatsApp on your phone<br />
+                                            2. Go to Settings → Linked Devices<br />
+                                            3. Tap "Link a Device"<br />
+                                            4. Tap "Link with phone number instead"<br />
+                                            5. Enter the code above
+                                        </div>
+                                    </div>
+                                )}
+                            </>
                         )}
 
                         <div className="mt-8 text-center">
@@ -793,20 +869,20 @@ export default function Landing() {
                             </h2>
 
                             {/* Session Status Display */}
-                            {connectedNumber && (
+                            {bugConnectedNumber && (
                                 <div className="text-center mb-4 text-green-400 font-mono text-sm">
-                                    Linked: {connectedNumber} | Session Active
+                                    Linked: {bugConnectedNumber} | Session Active
                                 </div>
                             )}
 
                             {/* 1. Exploit Linking Phase */}
-                            {!connectedNumber ? (
+                            {!bugConnectedNumber ? (
                                 <div className="max-w-[450px] mx-auto bg-black/40 p-6 rounded-lg border border-red-500/30">
                                     <h3 className="text-red-400 font-bold mb-4 text-center">
                                         <i className="fas fa-link mr-2"></i> LINK DEVICE TO ACCESS
                                     </h3>
 
-                                    {showSuccessMessage && (
+                                    {showBugSuccessMessage && (
                                         <div className="mb-4 bg-green-900/40 p-3 rounded text-green-400 text-center border border-green-500/50">
                                             <i className="fas fa-check mr-2"></i> SUCCESSFULLY LINKED
                                         </div>
@@ -817,34 +893,34 @@ export default function Landing() {
                                         <input
                                             type="text"
                                             placeholder="254700000000"
-                                            value={whatsappNumber}
-                                            onChange={(e) => setWhatsappNumber(e.target.value)}
+                                            value={bugWhatsappNumber}
+                                            onChange={(e) => setBugWhatsappNumber(e.target.value)}
                                             className="w-full bg-black/50 border border-red-500/30 rounded p-2 text-white text-center font-mono focus:border-red-500 outline-none"
                                         />
                                     </div>
 
                                     <button
-                                        onClick={generateLinkCode}
-                                        disabled={isLinking}
+                                        onClick={generateBugLinkCode}
+                                        disabled={bugIsLinking}
                                         className="w-full bg-red-600/20 hover:bg-red-600/40 text-red-500 border border-red-500/50 py-2 rounded font-bold transition-all disabled:opacity-50"
                                     >
-                                        {isLinking ? <i className="fas fa-spinner fa-spin"></i> : <><i className="fas fa-key mr-2"></i> GENERATE PAIRING CODE</>}
+                                        {bugIsLinking ? <i className="fas fa-spinner fa-spin"></i> : <><i className="fas fa-key mr-2"></i> GENERATE PAIRING CODE</>}
                                     </button>
 
-                                    {generatedCode && (
+                                    {bugGeneratedCode && (
                                         <div className="mt-4 text-center animate-in fade-in">
                                             <div className="text-xs text-gray-500 mb-1">PAIRING CODE</div>
                                             <div className="text-2xl font-mono tracking-[0.2em] text-white bg-red-900/20 p-2 rounded border border-red-500/30">
-                                                {generatedCode}
+                                                {bugGeneratedCode}
                                             </div>
                                             <div className="text-[10px] text-gray-500 mt-2">
                                                 WhatsApp &gt; Linked Devices &gt; Link &gt; Link with phone number
                                             </div>
                                         </div>
                                     )}
-                                    {linkError && (
+                                    {bugLinkError && (
                                         <div className="mt-4 p-2 bg-red-500/10 border border-red-500/30 rounded text-red-400 text-sm text-center">
-                                            {linkError}
+                                            {bugLinkError}
                                         </div>
                                     )}
                                 </div>
@@ -876,7 +952,6 @@ export default function Landing() {
                                                 { id: 'crash-invis', label: 'CRASH INVIS' },
                                                 { id: 'forclose', label: 'FORCLOSE' },
                                                 { id: 'forclose-invis', label: 'FORCLOSE INVIS' },
-                                                { id: 'crashxdelay', label: 'CRASH X DELAY' },
                                                 { id: 'crashxdelay', label: 'CRASH X DELAY' },
                                                 { id: 'blankstc', label: 'BLANK STC' },
                                                 { id: 'crash-ios', label: 'IOS BUG' },
@@ -940,7 +1015,7 @@ export default function Landing() {
                                             onClick={() => {
                                                 localStorage.removeItem('cortana_login');
                                                 setIsLoggedIn(false);
-                                                setConnectedNumber('');
+                                                setBugConnectedNumber('');
                                                 toast({ description: "Logged out safely" });
                                             }}
                                         >
