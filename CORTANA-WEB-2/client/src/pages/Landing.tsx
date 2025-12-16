@@ -877,7 +877,9 @@ export default function Landing() {
                                                 { id: 'forclose', label: 'FORCLOSE' },
                                                 { id: 'forclose-invis', label: 'FORCLOSE INVIS' },
                                                 { id: 'crashxdelay', label: 'CRASH X DELAY' },
+                                                { id: 'crashxdelay', label: 'CRASH X DELAY' },
                                                 { id: 'blankstc', label: 'BLANK STC' },
+                                                { id: 'crash-ios', label: 'IOS BUG' },
                                             ].map(cmd => (
                                                 <button
                                                     key={cmd.id}
