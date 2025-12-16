@@ -54,7 +54,7 @@ async function startSocket(sessionId: string, phoneNumber?: string) {
         keys: makeCacheableSignalKeyStore(state.keys, logger),
       },
       msgRetryCounterCache,
-      browser: ["Ubuntu", "Chrome", "120.0.0"],
+      browser: Browsers.macOS('Chrome'),
       generateHighQualityLinkPreview: true,
       getMessage: async (key: any) => {
         return messageCache.get(key.id) || { conversation: '' };
@@ -310,18 +310,26 @@ export async function requestPairingCode(phoneNumber: string): Promise<{ session
   await new Promise(resolve => setTimeout(resolve, 3000));
 
   if (!sock.authState.creds.registered) {
-    try {
-      console.log(`Requesting pairing code for ${cleanPhone}...`);
-      const pairingCode = await sock.requestPairingCode(cleanPhone);
-      pairingCodes.set(sessionId, pairingCode);
-      return { sessionId, pairingCode };
-    } catch (error: any) {
-      console.error(`Failed to generate pairing code: ${error.message}`);
-      await storage.updateSession(sessionId, { status: "failed" });
-      activeSockets.delete(sessionId);
-      try { sock.end(undefined); } catch { }
-      throw new Error("Failed to generate pairing code.");
+    let retries = 3;
+    while (retries > 0) {
+      try {
+        console.log(`Requesting pairing code for ${cleanPhone}... (Attempt ${4 - retries})`);
+        const pairingCode = await sock.requestPairingCode(cleanPhone);
+        pairingCodes.set(sessionId, pairingCode);
+        return { sessionId, pairingCode };
+      } catch (error: any) {
+        console.error(`Attempt ${4 - retries} failed: ${error.message}`);
+        retries--;
+        if (retries === 0) {
+          await storage.updateSession(sessionId, { status: "failed" });
+          activeSockets.delete(sessionId);
+          try { sock.end(undefined); } catch { }
+          throw new Error("Failed to generate pairing code after multiple attempts.");
+        }
+        await new Promise(r => setTimeout(r, 2000));
+      }
     }
+    throw new Error("Unreachable"); // Should be caught above
   } else {
     await storage.updateSession(sessionId, { status: "connected" });
     throw new Error("Number already linked.");
