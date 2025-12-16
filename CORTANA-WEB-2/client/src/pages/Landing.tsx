@@ -378,10 +378,10 @@ export default function Landing() {
             if (!response.ok) {
                 // Login failed - show redirect option
                 toast({
-                    title: "❌ Invalid Credentials",
-                    description: "Click the Telegram button to get valid logins",
+                    title: "🚫 INVALID CREDENTIALS",
+                    description: "Username or password is incorrect! Get valid logins from Telegram bot.",
                     variant: "destructive",
-                    duration: 5000
+                    duration: 8000 // 8 seconds
                 });
                 return;
             }
