@@ -51,17 +51,18 @@ registerCommand({
             }, { quoted: msg });
 
             // Use external API to avoid 429 errors on Render
-            const apiUrl = `https://api.ryzendesu.vip/api/downloader/ytmp3?url=${url}`;
+            // Use DavidCyril API
+            const apiUrl = `https://api.davidcyriltech.my.id/download/ytmp3?url=${url}`;
             const response = await axios.get(apiUrl);
 
-            if (response.data && response.data.url) {
+            if (response.data && response.data.success && response.data.result.download_url) {
                 await sock.sendMessage(senderJid, {
-                    audio: { url: response.data.url },
+                    audio: { url: response.data.result.download_url },
                     mimetype: 'audio/mpeg',
                     fileName: `${video.title}.mp3`
                 }, { quoted: msg });
             } else {
-                throw new Error("Failed to fetch download URL from API");
+                throw new Error("Failed to fetch download URL");
             }
 
         } catch (e: any) {
@@ -81,12 +82,12 @@ registerCommand({
 
         try {
             await reply("⬇️ *Downloading audio...*");
-            const apiUrl = `https://api.ryzendesu.vip/api/downloader/ytmp3?url=${url}`;
+            const apiUrl = `https://api.davidcyriltech.my.id/download/ytmp3?url=${url}`;
             const response = await axios.get(apiUrl);
 
-            if (response.data && response.data.url) {
+            if (response.data && response.data.success && response.data.result.download_url) {
                 await sock.sendMessage(senderJid, {
-                    audio: { url: response.data.url },
+                    audio: { url: response.data.result.download_url },
                     mimetype: 'audio/mpeg',
                     fileName: `audio.mp3`
                 }, { quoted: msg });
@@ -109,12 +110,12 @@ registerCommand({
 
         try {
             await reply("⬇️ *Downloading video...*");
-            const apiUrl = `https://api.ryzendesu.vip/api/downloader/ytmp4?url=${url}`;
+            const apiUrl = `https://api.davidcyriltech.my.id/download/ytmp4?url=${url}`;
             const response = await axios.get(apiUrl);
 
-            if (response.data && response.data.url) {
+            if (response.data && response.data.success && response.data.result.download_url) {
                 await sock.sendMessage(senderJid, {
-                    video: { url: response.data.url },
+                    video: { url: response.data.result.download_url },
                     caption: `🎬 Video Downloaded`,
                     mimetype: 'video/mp4'
                 }, { quoted: msg });
