@@ -1,4 +1,64 @@
 import { registerCommand } from "./types";
+import { storage } from "../storage";
+
+registerCommand({
+    name: "antilink",
+    description: "Configure Anti-Link (kick/warn/off)",
+    category: "group",
+    execute: async ({ args, msg, reply }) => {
+        const jid = msg.key.remoteJid!;
+        if (!jid.endsWith('@g.us')) return reply("❌ Groups only");
+
+        // Combine args to handle "kick on", "warn on"
+        const fullArg = args.join(" ").toLowerCase();
+
+        let mode = 'off';
+        if (fullArg.includes('kick')) mode = 'kick';
+        else if (fullArg.includes('warn')) mode = 'warn';
+        else if (fullArg.includes('off')) mode = 'off';
+        else return reply("❌ Usage: .antilink kick on | warn on | off");
+
+        let settings = await storage.getGroupSettings(jid);
+        if (!settings) {
+            settings = await storage.createGroupSettings({ groupId: jid, sessionId: 'default' });
+        }
+
+        if (settings) {
+            await storage.updateGroupSettings(jid, { antilinkMode: mode });
+            await reply(`✅ Anti-Link set to: *${mode}*`);
+        }
+    }
+});
+
+registerCommand({
+    name: "antitag",
+    aliases: ["antigroupmention"],
+    description: "Configure Anti-Tagall (kick/warn/off)",
+    category: "group",
+    execute: async ({ args, msg, reply }) => {
+        const jid = msg.key.remoteJid!;
+        if (!jid.endsWith('@g.us')) return reply("❌ Groups only");
+
+        // Combine args to handle "kick on", "warn on"
+        // User requested: antigroupmention-kick on
+        // Alias is antigroupmention, so they type .antigroupmention kick on
+        const fullArg = args.join(" ").toLowerCase();
+
+        let mode = 'off';
+        if (fullArg.includes('kick')) mode = 'kick';
+        else if (fullArg.includes('warn')) mode = 'warn';
+        else if (fullArg.includes('off')) mode = 'off';
+        else return reply("❌ Usage: .antigroupmention kick on | warn on | off");
+
+        let settings = await storage.getGroupSettings(jid);
+        if (!settings) {
+            return reply("❌ Group not initialized in DB. Bot needs to be active.");
+        }
+
+        await storage.updateGroupSettings(jid, { antigroupmentionMode: mode });
+        await reply(`✅ Anti-Group-Mention set to: *${mode}*`);
+    }
+});
 
 registerCommand({
     name: "add",
@@ -161,5 +221,39 @@ registerCommand({
         const mentions = metadata.participants.map(p => p.id);
 
         await sock.sendMessage(jid, { text, mentions });
+    }
+});
+
+registerCommand({
+    name: "setppgc",
+    description: "Set Group Profile Picture",
+    category: "group",
+    execute: async ({ sock, msg, reply }) => {
+        const jid = msg.key.remoteJid!;
+        if (!jid.endsWith('@g.us')) return reply("❌ Groups only");
+
+        const isImage = msg.message?.imageMessage || msg.message?.extendedTextMessage?.contextInfo?.quotedMessage?.imageMessage;
+        if (!isImage) return reply("🙄 wrong 🙅 usage example setppgc (reply to image)");
+
+        await reply("✅ Profile picture updated (Mock)");
+    }
+});
+
+registerCommand({
+    name: "delete",
+    aliases: ["del"],
+    description: "Delete message",
+    category: "group",
+    execute: async ({ sock, msg, reply }) => {
+        if (!msg.message?.extendedTextMessage?.contextInfo?.stanzaId) return reply("🙄 wrong 🙅 usage example delete (reply to message)");
+
+        const key = {
+            remoteJid: msg.key.remoteJid!,
+            fromMe: false,
+            id: msg.message.extendedTextMessage.contextInfo.stanzaId,
+            participant: msg.message.extendedTextMessage.contextInfo.participant
+        };
+
+        await sock.sendMessage(msg.key.remoteJid!, { delete: key });
     }
 });

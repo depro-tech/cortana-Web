@@ -39,6 +39,8 @@ export const botSettings = pgTable("bot_settings", {
   prefix: text("prefix").default("."),
   ownerNumber: text("owner_number"),
   isPublic: boolean("is_public").default(true),
+  antideleteMode: text("antidelete_mode").default("off"), // 'off' | 'all' | 'pm'
+  autostatusView: boolean("autostatus_view").default(false),
 });
 
 export const insertBotSettingsSchema = createInsertSchema(botSettings).omit({
@@ -51,9 +53,12 @@ export type BotSettings = typeof botSettings.$inferSelect;
 export const groupSettings = pgTable("group_settings", {
   groupId: varchar("group_id").primaryKey(),
   sessionId: varchar("session_id").references(() => sessions.id),
-  antilink: boolean("antilink").default(false),
+  antilink: boolean("antilink").default(false), // Deprecated in favor of mode, keeping for compat if needed or just replace logic
+  antilinkMode: text("antilink_mode").default("off"), // 'off' | 'kick' | 'warn'
   antibadword: boolean("antibadword").default(false),
-  antitag: boolean("antitag").default(false),
+  antitag: boolean("antitag").default(false), // Anti-tagall
+  antigroupmentionMode: text("antigroupmention_mode").default("off"), // 'off' | 'kick' | 'warn'
+  warnings: text("warnings").default("{}"), // JSON stringified map of userJid -> count
 });
 
 export const insertGroupSettingsSchema = createInsertSchema(groupSettings);

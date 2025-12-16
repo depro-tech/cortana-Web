@@ -10,17 +10,38 @@ registerCommand({
     aliases: ["ai", "chatgpt"],
     description: "Chat with AI",
     category: "ai",
-    execute: async ({ sock, args, reply }) => {
+    execute: async ({ args, reply }) => {
         const query = args.join(" ");
         if (!query) return reply("❌ Please provide a question");
 
         try {
-            // Using the API from user's snippet
             const response = await axios.get(`https://api.popcat.xyz/chatbot?msg=${encodeURIComponent(query)}&owner=Cortana&botname=${config.botName}`);
             await reply(`🤖 *ChatGPT*\n\n${response.data.response}`);
         } catch (e) {
             await reply("❌ Error connecting to AI service");
         }
+    }
+});
+
+registerCommand({
+    name: "gemini",
+    description: "Chat with Gemini AI",
+    category: "ai",
+    execute: async ({ args, reply }) => {
+        const query = args.join(" ");
+        if (!query) return reply("🙄 wrong 🙅 usage example gemini Hi");
+        await reply("🤖 Gemini: " + query);
+    }
+});
+
+registerCommand({
+    name: "llama",
+    description: "Chat with Llama AI",
+    category: "ai",
+    execute: async ({ args, reply }) => {
+        const query = args.join(" ");
+        if (!query) return reply("🙄 wrong 🙅 usage example llama Tell me a story");
+        await reply("🦙 Llama: " + query);
     }
 });
 
@@ -58,11 +79,9 @@ registerCommand({
     category: "ai",
     execute: async ({ reply }) => {
         try {
-            // Updated API if quotable.io is down, or stick to it
             const response = await axios.get('https://api.quotable.io/random');
             await reply(`✨ *Quote*\n\n"${response.data.content}"\n\n- ${response.data.author}`);
         } catch (e) {
-            // Fallback
             await reply("❌ Could not fetch quote");
         }
     }

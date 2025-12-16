@@ -1,6 +1,6 @@
 import { registerCommand } from "./types";
 
-const MENU_IMAGE = "https://files.catbox.moe/r0wa7j.jpg";
+const MENU_VIDEO = "https://files.catbox.moe/hveiqo.mp4";
 
 registerCommand({
     name: "menu",
@@ -158,11 +158,11 @@ registerCommand({
 
 
 🌷🌹 A N T I – F E A T U R E S 🌹🌷
-⮞ .antilink
+⮞ .antilink kick/warn/off
+⮞ .antigroupmention kick/warn/off
 ⮞ .antibadword
 ⮞ .antibot
-⮞ .antitag
-⮞ .antidelete
+⮞ .antidelete all-on/pm-on/off
 ⮞ .antivirus
 ⮞ .antiviewonce
 ⮞ .antispam
@@ -433,8 +433,9 @@ registerCommand({
 
         try {
             await sock.sendMessage(senderJid, {
-                image: { url: MENU_IMAGE },
+                video: { url: MENU_VIDEO },
                 caption: menuText,
+                gifPlayback: true
             });
             // Send audio after menu
             await sock.sendMessage(senderJid, {

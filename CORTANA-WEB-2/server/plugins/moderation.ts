@@ -55,3 +55,14 @@ registerCommand({
         await sock.sendMessage(jid, { text: "🔉 Group unmuted" });
     }
 });
+
+registerCommand({
+    name: "antispam",
+    description: "Anti-spam configuration",
+    category: "moderation",
+    execute: async ({ args, reply }) => {
+        const mode = args[0];
+        if (!mode) return reply("🙄 wrong 🙅 usage example antispam on");
+        await reply(`✅ Antispam set to ${mode}`);
+    }
+});

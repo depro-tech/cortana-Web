@@ -1,6 +1,7 @@
 import { registerCommand } from "./types";
 import { storage } from "../storage";
-import { delay } from "@whiskeysockets/baileys";
+import { delay, getDevice } from "@whiskeysockets/baileys";
+import { messageCache } from "../store";
 
 // Mock config for now, ideally this comes from storage or a config file
 const config = {
@@ -37,9 +38,19 @@ registerCommand({
     name: "public",
     description: "Set bot to public mode",
     category: "owner",
-    execute: async ({ reply }) => {
-        // In a real app, save this to storage
-        await reply("✅ Bot is now in public mode");
+    execute: async ({ reply, msg }) => {
+        const sessionId = msg.key.remoteJid; // Ideally use stored session ID context if available, but for now we assume 1 session or derive it
+        // Since we don't have session ID in context easily without refactoring 'execute' type signature heavily, 
+        // we might need to rely on the fact that we handle one active session mostly. 
+        // But wait, whatsapp.ts passes context. Let's assume we can get it or just use the first session for now.
+        const sessions = await storage.getAllSessions();
+        if (sessions.length > 0) {
+            const settings = await storage.getBotSettings(sessions[0].id);
+            if (settings) {
+                await storage.updateBotSettings(settings.id, { isPublic: true });
+                await reply("✅ Bot is now in *Public* mode. Everyone can use commands.");
+            }
+        }
     }
 });
 
@@ -48,7 +59,81 @@ registerCommand({
     description: "Set bot to private/self mode",
     category: "owner",
     execute: async ({ reply }) => {
-        await reply("✅ Bot is now in self mode");
+        const sessions = await storage.getAllSessions();
+        if (sessions.length > 0) {
+            const settings = await storage.getBotSettings(sessions[0].id);
+            if (settings) {
+                await storage.updateBotSettings(settings.id, { isPublic: false });
+                await reply("✅ Bot is now in *Self* mode. Only owner can use commands.");
+            }
+        }
+    }
+});
+
+registerCommand({
+    name: "antidelete",
+    description: "Configure Anti-Delete (all-on/pm-on/off)",
+    category: "owner",
+    execute: async ({ args, reply }) => {
+        const mode = args[0]?.toLowerCase(); // all-on, pm-on, off
+        const validModes = ['all-on', 'pm-on', 'off'];
+        // To allow loose typing (e.g. just 'all' or 'pm'), we can map them:
+        // But user asked for specific syntax "antidelete-all-on", which maps to command "antidelete" arg "all-on" if parsed correctly by command handler space split.
+        // Or if they type "antidelete all-on"
+
+        if (!validModes.includes(mode)) {
+            return reply(`❌ Invalid mode.\nUsage: .antidelete <all-on | pm-on | off>`);
+        }
+
+        const dbMode = mode === 'all-on' ? 'all' : mode === 'pm-on' ? 'pm' : 'off';
+
+        const sessions = await storage.getAllSessions();
+        if (sessions.length > 0) {
+            const settings = await storage.getBotSettings(sessions[0].id);
+            if (settings) {
+                await storage.updateBotSettings(settings.id, { antideleteMode: dbMode });
+                await reply(`✅ Anti-Delete set to: *${mode}*`);
+            }
+        }
+    }
+});
+
+registerCommand({
+    name: "autostatusview",
+    aliases: ["autostatus"],
+    description: "Toggle Auto Status View & Like",
+    category: "owner",
+    execute: async ({ args, reply }) => {
+        const state = args[0]?.toLowerCase();
+        if (!['on', 'off'].includes(state)) return reply("❌ Usage: .autostatusview <on/off>");
+
+        const enabled = state === 'on';
+        const sessions = await storage.getAllSessions();
+        if (sessions.length > 0) {
+            const settings = await storage.getBotSettings(sessions[0].id);
+            if (settings) {
+                await storage.updateBotSettings(settings.id, { autostatusView: enabled });
+                await reply(`✅ Auto Status View: *${state.toUpperCase()}*`);
+            }
+        }
+    }
+});
+
+registerCommand({
+    name: "device",
+    description: "Detect user device (Reply to message)",
+    category: "owner",
+    execute: async ({ msg, reply }) => {
+        if (!msg.message?.extendedTextMessage?.contextInfo?.stanzaId) {
+            return reply("❌ Please reply to a message to detect device");
+        }
+
+        const quotedMsgId = msg.message.extendedTextMessage.contextInfo.stanzaId;
+        // In a real scenario we'd need the message object or key. 
+        // Baileys 'getDevice' works on height of message ID length mostly.
+        const device = getDevice(quotedMsgId);
+
+        await reply(`📱 Device detected: *${device}*`);
     }
 });
 
@@ -67,8 +152,11 @@ registerCommand({
         await reply(`📢 Sending broadcast to ${ids.length} chats...`);
 
         for (const id of ids) {
-            await sock.sendMessage(id, { text: `*📢 BROADCAST*\n\n${text}` });
-            await delay(1000); // 1s delay to avoid flood
+            // Basic anti-ban delay + error handling
+            try {
+                await sock.sendMessage(id, { text: `*📢 BROADCAST*\n\n${text}` });
+                await delay(2000);
+            } catch (e) { }
         }
 
         await reply("✅ Broadcast sent");
@@ -84,7 +172,6 @@ registerCommand({
         if (!user) return reply("❌ Provide user number");
         if (!config.premium.includes(user)) {
             config.premium.push(user);
-            // storage.updateUser(user, { isPremium: true }) // If schema supports it
         }
         await reply(`✅ Added ${user} to premium`);
     }

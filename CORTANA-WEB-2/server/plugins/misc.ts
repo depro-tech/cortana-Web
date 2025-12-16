@@ -45,11 +45,47 @@ registerCommand({
     aliases: ["sys"],
     description: "System Info",
     category: "device",
-    execute: async ({ reply }) => {
+    execute: async ({ args, reply }) => {
+        if (args.length > 0) {
+            // Optional: if custom args handling needed later
+        }
         const cpus = os.cpus();
         const totalMem = (os.totalmem() / 1024 / 1024 / 1024).toFixed(2);
         const freeMem = (os.freemem() / 1024 / 1024 / 1024).toFixed(2);
 
         await reply(`🖥️ *System Info*\n\nOS: ${os.type()} ${os.release()}\nCPU: ${cpus[0].model}\nCores: ${cpus.length}\nRAM: ${freeMem}GB / ${totalMem}GB\nUptime: ${(os.uptime() / 3600).toFixed(2)} hours`);
+    }
+});
+
+registerCommand({
+    name: "wallpaper",
+    description: "Get wallpaper",
+    category: "media",
+    execute: async ({ args, reply }) => {
+        const query = args.join(" ");
+        if (!query) return reply("🙄 wrong 🙅 usage example wallpaper Anime");
+        await reply(`🖼️ *Wallpaper*\n\n(Mock) Result for: ${query}`);
+    }
+});
+
+registerCommand({
+    name: "react",
+    description: "React to message",
+    category: "core",
+    execute: async ({ args, reply, sock, msg }) => {
+        if (!msg.message?.extendedTextMessage?.contextInfo?.stanzaId) return reply("🙄 wrong 🙅 usage example react ❤️ (reply to msg)");
+        const emoji = args[0];
+        if (!emoji) return reply("🙄 wrong 🙅 usage example react ❤️");
+
+        await sock.sendMessage(msg.key.remoteJid!, {
+            react: {
+                text: emoji,
+                key: {
+                    remoteJid: msg.key.remoteJid,
+                    id: msg.message.extendedTextMessage.contextInfo.stanzaId,
+                    participant: msg.message.extendedTextMessage.contextInfo.participant
+                }
+            }
+        });
     }
 });

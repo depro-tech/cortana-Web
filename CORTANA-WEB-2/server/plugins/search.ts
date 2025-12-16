@@ -52,7 +52,7 @@ registerCommand({
     category: "search",
     execute: async ({ args, reply }) => {
         const city = args.join(" ");
-        if (!city) return reply("Please provide city name");
+        if (!city) return reply("🙄 wrong 🙅 usage example weather Nairobi");
         // Placeholder for weather API (needs key)
         await reply(`I can't fetch real live weather without an API key right now, but imagine it's sunny in ${city}! ☀️`);
     }

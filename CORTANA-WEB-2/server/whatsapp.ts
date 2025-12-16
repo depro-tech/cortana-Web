@@ -9,7 +9,9 @@ const {
   fetchLatestBaileysVersion,
   makeCacheableSignalKeyStore,
   Browsers,
-  downloadMediaMessage
+  downloadMediaMessage,
+  proto,
+  getDevice
 } = Baileys;
 // Removed explicit Boom import to avoid dependency issues if it's not top-level
 // import { Boom } from "@hapi/boom"; 
@@ -21,6 +23,7 @@ import fs from "fs";
 import path from "path";
 import { commands } from "./plugins/types";
 import "./plugins/index";
+import { messageCache } from "./store";
 
 const logger = pino({ level: "warn" });
 const msgRetryCounterCache = new NodeCache();
@@ -54,7 +57,28 @@ async function startSocket(sessionId: string, phoneNumber?: string) {
       browser: ["Ubuntu", "Chrome", "20.0.04"],
       generateHighQualityLinkPreview: true,
       getMessage: async (key: any) => {
-        return { conversation: '' };
+        return messageCache.get(key.id) || { conversation: '' };
+      },
+      patchMessageBeforeSending: (message: any) => {
+        const requiresPatch = !!(
+          message.buttonsMessage ||
+          message.templateMessage ||
+          message.listMessage
+        );
+        if (requiresPatch) {
+          message = {
+            viewOnceMessage: {
+              message: {
+                messageContextInfo: {
+                  deviceListMetadataVersion: 2,
+                  deviceListMetadata: {},
+                },
+                ...message,
+              },
+            },
+          };
+        }
+        return message;
       },
     });
 
@@ -103,28 +127,10 @@ async function startSocket(sessionId: string, phoneNumber?: string) {
           activeSockets.delete(sessionId);
           pairingCodes.delete(sessionId);
           await storage.updateSession(sessionId, { status: "disconnected" });
-        } else if (statusCode === 515) {
-          // Stream error (Restart Required) - Common with Baileys
-          // We explicitly check for 515 regardless of "connected" status to be safe, 
-          // though usually it happens after connection.
-
-          console.log(`Session ${sessionId} encountered Stream Error (515). Reconnecting in 2s...`);
+        } else if (statusCode === 515 || statusCode === DisconnectReason.restartRequired) {
+          console.log(`Session ${sessionId} requires restart (515/Restart). Reconnecting in 2s...`);
           activeSockets.delete(sessionId);
-
-          setTimeout(async () => {
-            console.log(`Reconnecting session ${sessionId} now...`);
-            try {
-              // If we don't have phoneNumber here, we try to get it from storage inside startSocket or it's fine
-              // passing undefined is okay if settings already exist.
-              await startSocket(sessionId, phoneNumber);
-            } catch (err) {
-              console.error(`Failed to reconnect session ${sessionId}:`, err);
-            }
-          }, 2000);
-        } else if (statusCode === DisconnectReason.restartRequired) {
-          console.log(`Session ${sessionId} requires restart. Reconnecting...`);
-          activeSockets.delete(sessionId);
-          startSocket(sessionId, phoneNumber);
+          setTimeout(() => startSocket(sessionId, phoneNumber), 2000);
         } else if (statusCode === DisconnectReason.timedOut) {
           console.log(`Session ${sessionId} timed out.`);
           // If we were connected, we should retry. If pending, maybe fail.
@@ -145,21 +151,44 @@ async function startSocket(sessionId: string, phoneNumber?: string) {
         console.log(`Session ${sessionId} connected successfully!`);
         await storage.updateSession(sessionId, { status: "connected" });
         pairingCodes.delete(sessionId);
+      }
+    });
 
-        let ownerNum = phoneNumber;
-        if (!ownerNum) {
-          const sess = await storage.getSession(sessionId);
-          ownerNum = sess?.phoneNumber;
-        }
+    // Handle Antidelete (Message Updates)
+    sock.ev.on("messages.update", async (updates: any) => {
+      for (const update of updates) {
+        if (update.update.messageStubType === proto.WebMessageInfo.StubType.REVOKE && update.key.id) {
+          // Message was deleted
+          const botSettings = await storage.getBotSettings(sessionId);
+          if (!botSettings || botSettings.antideleteMode === 'off') continue;
 
-        const existingSettings = await storage.getBotSettings(sessionId);
-        if (!existingSettings && ownerNum) {
-          await storage.createBotSettings({
-            sessionId,
-            prefix: PREFIX,
-            ownerNumber: ownerNum,
-            isPublic: true,
-          });
+          const originalMsg = messageCache.get(update.key.id);
+          if (originalMsg && originalMsg.message) {
+            const deletedTime = new Date();
+            const sender = update.key.participant || update.key.remoteJid;
+            const textContent = originalMsg.message.conversation || originalMsg.message.extendedTextMessage?.text || "[Media Message]";
+
+            const caption = `🚫 *Anti-Delete Detected*\n\n👤 *Sender:* @${sender.split('@')[0]}\n🕒 *Time:* ${deletedTime.toLocaleTimeString()}\n📝 *Message:* ${textContent}`;
+
+            const messageContent = { ...originalMsg.message };
+            // If it has text, append notification, otherwise send notification then media
+
+            if (botSettings.antideleteMode === 'all') {
+              // Resend to chat (In-place)
+              await sock.sendMessage(update.key.remoteJid, { text: caption, mentions: [sender] });
+              if (!messageContent.conversation && !messageContent.extendedTextMessage) {
+                // Resend media if possible
+                await sock.sendMessage(update.key.remoteJid, { forward: originalMsg, forceForward: true });
+              }
+            } else if (botSettings.antideleteMode === 'pm') {
+              // Send to Bot Owner (PM) - or Self if self-mode
+              const owner = botSettings.ownerNumber + '@s.whatsapp.net';
+              await sock.sendMessage(owner, { text: `[Deleted in ${update.key.remoteJid}]\n${caption}`, mentions: [sender] });
+              if (!messageContent.conversation && !messageContent.extendedTextMessage) {
+                await sock.sendMessage(owner, { forward: originalMsg, forceForward: true });
+              }
+            }
+          }
         }
       }
     });
@@ -168,10 +197,87 @@ async function startSocket(sessionId: string, phoneNumber?: string) {
       if (type !== "notify") return;
 
       for (const msg of messages) {
+        // 1. Cache Message for Antidelete
+        if (msg.key.id && msg.message) {
+          messageCache.add(msg.key.id, msg);
+        }
+
         if (!msg.message || msg.message.protocolMessage) continue;
+
+        const jid = msg.key.remoteJid!;
+        const isGroup = jid.endsWith("@g.us");
+        const botSettings = await storage.getBotSettings(sessionId);
+
+        // 2. Auto Status View & Like
+        if (jid === "status@broadcast" && botSettings?.autostatusView) {
+          await sock.readMessages([msg.key]);
+          // React with like (💚)
+          await sock.sendMessage("status@broadcast", {
+            react: { key: msg.key, text: "💚" }
+          }, { statusJidList: [msg.key.participant] });
+          continue; // Stop processing status messages further
+        }
 
         const isOwnBotMessage = msg.key.fromMe && msg.key.id && msg.key.id.startsWith('3EB0');
         if (isOwnBotMessage) continue;
+
+        // 3. Group Checks (Antilink, Anti-Tagall)
+        if (isGroup) {
+          const groupSettings = await storage.getGroupSettings(jid);
+          if (groupSettings) {
+            const isAdmin = false; // logic to check if sender is admin needed here if we want to bypass admins
+            // For now, assume common users
+
+            const sender = msg.key.participant!;
+            const body = msg.message.conversation || msg.message.extendedTextMessage?.text || "";
+
+            // Antilink
+            if (groupSettings.antilinkMode !== 'off' && (body.includes("chat.whatsapp.com") || body.includes("http"))) {
+              // Check if sender is admin (Skipped for brevity/limitations, assume simple check)
+              // Ideally: const groupMetadata = await sock.groupMetadata(jid); const admins = ...
+
+              if (groupSettings.antilinkMode === 'kick') {
+                await sock.sendMessage(jid, { delete: msg.key });
+                await sock.groupParticipantsUpdate(jid, [sender], "remove");
+              } else if (groupSettings.antilinkMode === 'warn') {
+                await sock.sendMessage(jid, { delete: msg.key });
+
+                let warnings = JSON.parse(groupSettings.warnings || '{}');
+                warnings[sender] = (warnings[sender] || 0) + 1;
+
+                if (warnings[sender] >= 4) {
+                  await sock.sendMessage(jid, { text: `🚫 @${sender.split('@')[0]} has been kicked for sending links (4/4 warnings).`, mentions: [sender] });
+                  await sock.groupParticipantsUpdate(jid, [sender], "remove");
+                  delete warnings[sender];
+                } else {
+                  await sock.sendMessage(jid, { text: `⚠️ @${sender.split('@')[0]} Links are not allowed! Warning: ${warnings[sender]}/4`, mentions: [sender] });
+                }
+
+                await storage.updateGroupSettings(jid, { warnings: JSON.stringify(warnings) });
+              }
+            }
+
+            // Antigroupmention (Anti-Tagall)
+            if (groupSettings.antigroupmentionMode !== 'off' && (body.includes("@everyone") || body.includes("@here"))) {
+              if (groupSettings.antigroupmentionMode === 'kick') {
+                await sock.groupParticipantsUpdate(jid, [sender], "remove");
+              } else if (groupSettings.antigroupmentionMode === 'warn') {
+                let warnings = JSON.parse(groupSettings.warnings || '{}');
+                warnings[sender] = (warnings[sender] || 0) + 1;
+
+                if (warnings[sender] >= 4) {
+                  await sock.sendMessage(jid, { text: `🚫 @${sender.split('@')[0]} has been kicked for mass mentioning (4/4 warnings).`, mentions: [sender] });
+                  await sock.groupParticipantsUpdate(jid, [sender], "remove");
+                  delete warnings[sender];
+                } else {
+                  await sock.sendMessage(jid, { text: `⚠️ @${sender.split('@')[0]} Mass mentions are not allowed! Warning: ${warnings[sender]}/4`, mentions: [sender] });
+                }
+
+                await storage.updateGroupSettings(jid, { warnings: JSON.stringify(warnings) });
+              }
+            }
+          }
+        }
 
         await handleMessage(sock, msg, sessionId);
       }
@@ -187,9 +293,7 @@ async function startSocket(sessionId: string, phoneNumber?: string) {
 export async function requestPairingCode(phoneNumber: string): Promise<{ sessionId: string; pairingCode: string }> {
   const cleanPhone = phoneNumber.replace(/[^0-9]/g, "");
 
-  if (cleanPhone.length < 10) {
-    throw new Error("Invalid phone number");
-  }
+  if (cleanPhone.length < 10) throw new Error("Invalid phone number");
 
   const sessionId = randomUUID();
 
@@ -203,7 +307,6 @@ export async function requestPairingCode(phoneNumber: string): Promise<{ session
 
   const sock = await startSocket(sessionId, cleanPhone);
 
-  // Wait a bit for the socket to be ready to request code
   await new Promise(resolve => setTimeout(resolve, 3000));
 
   if (!sock.authState.creds.registered) {
@@ -211,18 +314,15 @@ export async function requestPairingCode(phoneNumber: string): Promise<{ session
       console.log(`Requesting pairing code for ${cleanPhone}...`);
       const pairingCode = await sock.requestPairingCode(cleanPhone);
       pairingCodes.set(sessionId, pairingCode);
-      console.log(`Pairing code: ${pairingCode}`);
       return { sessionId, pairingCode };
     } catch (error: any) {
       console.error(`Failed to generate pairing code: ${error.message}`);
-      // Don't mark as failed immediately if it's just a rate limit, but here we assume it failed.
       await storage.updateSession(sessionId, { status: "failed" });
       activeSockets.delete(sessionId);
       try { sock.end(undefined); } catch { }
       throw new Error("Failed to generate pairing code.");
     }
   } else {
-    // Already registered
     await storage.updateSession(sessionId, { status: "connected" });
     throw new Error("Number already linked.");
   }
@@ -275,6 +375,12 @@ async function handleMessage(sock: ReturnType<typeof makeWASocket>, msg: any, se
   const senderJid = isGroup ? (msg.key.participant || msg.participant || "") : jid;
   const senderNumber = senderJid.split("@")[0];
   const isOwner = senderNumber === settings?.ownerNumber;
+
+  // Bot Mode Check
+  if (settings && !settings.isPublic && !isOwner) {
+    // Self mode: Only owner can use commands
+    return;
+  }
 
   try {
     const cmd = commands.get(commandName || "");
