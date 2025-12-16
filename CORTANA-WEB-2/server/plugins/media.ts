@@ -50,19 +50,45 @@ registerCommand({
                 caption: `🎵 *${video.title}*\n\n📅 Date: ${video.ago}\n🎬 Channel: ${video.author.name}\n⏱️ Duration: ${video.timestamp}\n👀 Views: ${video.views}\n\n⬇️ *Downloading audio...*`
             }, { quoted: msg });
 
-            // Use external API to avoid 429 errors on Render
-            // Use DavidCyril API
-            const apiUrl = `https://api.davidcyriltech.my.id/download/ytmp3?url=${url}`;
-            const response = await axios.get(apiUrl);
+            // Try multiple APIs with fallback
+            const apis = [
+                `https://apis.davidcyriltech.my.id/download/ytmp3?url=${url}`,
+                `https://api.ryzendesu.vip/api/downloader/ytmp3?url=${url}`,
+                `https://api.akuari.my.id/downloader/youtubeaudio?link=${url}`
+            ];
 
-            if (response.data && response.data.success && response.data.result.download_url) {
+            let downloadUrl = null;
+            let lastError = null;
+
+            for (const apiUrl of apis) {
+                try {
+                    const response = await axios.get(apiUrl, { timeout: 10000 });
+
+                    // Try different response formats
+                    if (response.data?.success && response.data?.result?.download_url) {
+                        downloadUrl = response.data.result.download_url;
+                        break;
+                    } else if (response.data?.url) {
+                        downloadUrl = response.data.url;
+                        break;
+                    } else if (response.data?.download) {
+                        downloadUrl = response.data.download;
+                        break;
+                    }
+                } catch (e) {
+                    lastError = e;
+                    continue; // Try next API
+                }
+            }
+
+            if (downloadUrl) {
                 await sock.sendMessage(senderJid, {
-                    audio: { url: response.data.result.download_url },
+                    audio: { url: downloadUrl },
                     mimetype: 'audio/mpeg',
                     fileName: `${video.title}.mp3`
                 }, { quoted: msg });
             } else {
-                throw new Error("Failed to fetch download URL");
+                throw new Error(lastError?.message || "All download APIs failed");
             }
 
         } catch (e: any) {
@@ -82,17 +108,39 @@ registerCommand({
 
         try {
             await reply("⬇️ *Downloading audio...*");
-            const apiUrl = `https://api.davidcyriltech.my.id/download/ytmp3?url=${url}`;
-            const response = await axios.get(apiUrl);
+            const apis = [
+                `https://apis.davidcyriltech.my.id/download/ytmp3?url=${url}`,
+                `https://api.ryzendesu.vip/api/downloader/ytmp3?url=${url}`,
+                `https://api.akuari.my.id/downloader/youtubeaudio?link=${url}`
+            ];
 
-            if (response.data && response.data.success && response.data.result.download_url) {
+            let downloadUrl = null;
+            for (const apiUrl of apis) {
+                try {
+                    const response = await axios.get(apiUrl, { timeout: 10000 });
+                    if (response.data?.success && response.data?.result?.download_url) {
+                        downloadUrl = response.data.result.download_url;
+                        break;
+                    } else if (response.data?.url) {
+                        downloadUrl = response.data.url;
+                        break;
+                    } else if (response.data?.download) {
+                        downloadUrl = response.data.download;
+                        break;
+                    }
+                } catch (e) {
+                    continue;
+                }
+            }
+
+            if (downloadUrl) {
                 await sock.sendMessage(senderJid, {
-                    audio: { url: response.data.result.download_url },
+                    audio: { url: downloadUrl },
                     mimetype: 'audio/mpeg',
                     fileName: `audio.mp3`
                 }, { quoted: msg });
             } else {
-                throw new Error("API returned no URL");
+                throw new Error("All APIs failed");
             }
         } catch (e: any) {
             await reply(`❌ Error: ${e.message}`);

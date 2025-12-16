@@ -8,64 +8,63 @@ registerCommand({
     description: "Show the bot menu",
     category: "core",
     execute: async ({ sock, msg, senderJid, reply }) => {
-        const menuText = `
-🌺 C H R I S T M A S   E D I T I O N 🌺
-          *CORTANA MD*
+        const menuText = `╭━━━━『 *CORTANA MD* 』━━━━╮
+│  🎄 *CHRISTMAS EDITION* 🎄
+╰━━━━━━━━━━━━━━━━━━━━╯
 
-🌸 *OWNER MENU*
-.block | .unblock | .dev | .self | .public
-.bc | .setbio | .settings | .addprem
-.delprem | .addowner | .delowner
-.shell | .eval | .restart | .shutdown
-.backup | .restore | .setpp | .setname
+┏━━━ *OWNER MENU* ━━━┓
+┃ • block | unblock
+┃ • public | self
+┃ • broadcast | setbio
+┃ • restart | shutdown
+┗━━━━━━━━━━━━━━━━━━┛
 
-🌹 *GROUP MANAGE*
-.add | .kick | .promote | .demote
-.open | .close | .link | .resetlink
-.tagall | .hidetag | .totag | .invite
-.setname | .setdesc | .setppgc
-.revoke | .leave | .groupinfo
+┏━━━ *GROUP MANAGE* ━━━┓
+┃ • add | kick | promote
+┃ • open | close | link
+┃ • tagall | hidetag
+┃ • setppgc | delete
+┗━━━━━━━━━━━━━━━━━━┛
 
-🌼 *AI & CHATBOTS*
-.gpt | .gemini | .llama | .deepseek
-.imagine | .dalle | .midjourney
-.joke | .advice | .quote | .fact
+┏━━━ *AI & CHATBOTS* ━━━┓
+┃ • gpt | gemini | llama
+┃ • joke | advice
+┃ • quote | fact | trivia
+┗━━━━━━━━━━━━━━━━━━┛
 
-🌻 *MEDIA & DOWN*
-.play | .song | .video | .ytmp3 | .ytmp4
-.tiktok | .ig | .twitter | .fb | .pin
-.sticker | .exif | .tourl | .toimg
+┏━━━ *MEDIA & DOWNLOAD* ━━━┓
+┃ • play | ytmp3 | ytmp4
+┃ • tiktok | ig | twitter
+┃ • sticker | toimg
+┗━━━━━━━━━━━━━━━━━━┛
 
-✨ *EFFECTS & FUN*
-.blur | .jail | .wasted | .triggered
-.simp | .horny | .lol | .gay | .stupid
-.couple | .match | .soulmate
+┏━━━ *SECURITY* ━━━┓
+┃ • antilink (kick/warn)
+┃ • antigroupmention (kick/warn)
+┃ • antidelete | antiviewonce
+┗━━━━━━━━━━━━━━━━━━┛
 
-🛡️ *SECURITY*
-.antilink (kick/warn)
-.antigroupmention (kick/warn)
-.antidelete | .antiviewonce
+┏━━━ *SYSTEM* ━━━┓
+┃ • ping | alive | speed
+┃ • runtime | owner
+┗━━━━━━━━━━━━━━━━━━┛
 
-🎮 *GAMES*
-.ttt | .math | .quiz | .guess | .casino
-
-📱 *SYSTEM*
-.ping | .alive | .speed | .owner
-.runtime | .rules | .changelog
-
-        🎄 Èdûqarîz 2025 🎄`;
+       🎄 *Èdûqarîz 2025* 🎄`;
 
         try {
+            // Send video with menu
             await sock.sendMessage(senderJid, {
                 video: { url: MENU_VIDEO },
                 caption: menuText,
                 gifPlayback: true
             });
-            // Send audio after menu
+
+            // Send audio as a playable document
             await sock.sendMessage(senderJid, {
                 audio: { url: "https://files.catbox.moe/5s85cc.mp3" },
                 mimetype: 'audio/mpeg',
-                ptt: false // Send as regular audio file
+                fileName: 'menu_audio.mp3',
+                ptt: false
             });
         } catch (error) {
             console.error("Failed to send menu image/audio:", error);

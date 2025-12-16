@@ -15,8 +15,36 @@ registerCommand({
         if (!query) return reply("❌ Please provide a question");
 
         try {
-            const response = await axios.get(`https://api.popcat.xyz/chatbot?msg=${encodeURIComponent(query)}&owner=Cortana&botname=${config.botName}`);
-            await reply(`🤖 *ChatGPT*\n\n${response.data.response}`);
+            const apis = [
+                `https://lance-frank-asta.onrender.com/api/gpt?q=${encodeURIComponent(query)}`,
+                `https://vapis.my.id/api/openai?q=${encodeURIComponent(query)}`,
+                `https://api.popcat.xyz/chatbot?msg=${encodeURIComponent(query)}&owner=Cortana&botname=${config.botName}`
+            ];
+
+            let aiResponse = null;
+            for (const apiUrl of apis) {
+                try {
+                    const response = await axios.get(apiUrl, { timeout: 10000 });
+                    if (response.data?.response) {
+                        aiResponse = response.data.response;
+                        break;
+                    } else if (response.data?.result) {
+                        aiResponse = response.data.result;
+                        break;
+                    } else if (typeof response.data === 'string') {
+                        aiResponse = response.data;
+                        break;
+                    }
+                } catch (e) {
+                    continue;
+                }
+            }
+
+            if (aiResponse) {
+                await reply(`🤖 *ChatGPT*\n\n${aiResponse}`);
+            } else {
+                throw new Error("All AI APIs failed");
+            }
         } catch (e) {
             await reply("❌ Error connecting to AI service");
         }
