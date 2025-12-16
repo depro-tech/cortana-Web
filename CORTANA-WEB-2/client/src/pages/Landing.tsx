@@ -202,6 +202,8 @@ export default function Landing() {
     const [showCartPage, setShowCartPage] = useState(false);
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const [activeSessions, setActiveSessions] = useState(0);
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [rememberMe, setRememberMe] = useState(false);
 
     // MD Link State
     const [whatsappNumber, setWhatsappNumber] = useState('');
@@ -216,6 +218,12 @@ export default function Landing() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
     useEffect(() => {
+        // Check for remembered login
+        const savedLogin = localStorage.getItem('cortana_login');
+        if (savedLogin === 'true') {
+            setIsLoggedIn(true);
+        }
+
         // Ticker Animation handled by CSS
         // Tips Cycle
         const interval = setInterval(() => {
@@ -387,15 +395,14 @@ export default function Landing() {
             }
 
             // Login successful
+            setIsLoggedIn(true);
+            if (rememberMe) {
+                localStorage.setItem('cortana_login', 'true');
+            }
             toast({
                 title: "✅ Login Successful",
                 description: "Welcome to Cortana Exploit Mode!"
             });
-
-            // Switch to bug section after successful login
-            setTimeout(() => {
-                setActiveSection('bug');
-            }, 1500);
 
         } catch (error) {
             toast({
@@ -489,8 +496,7 @@ export default function Landing() {
                     { id: 'catalogue', label: 'Catalogue' },
                     { id: 'md', label: 'MD Link' },
                     { id: 'bug', label: 'Bug Link' },
-                    { id: 'about', label: 'About' },
-                    { id: 'login', label: 'Login' }
+                    { id: 'about', label: 'About' }
                 ].map((item) => (
                     <button
                         key={item.id}
@@ -651,46 +657,105 @@ export default function Landing() {
                 <div className="section-container section-enter relative overflow-hidden">
                     <canvas ref={canvasRef} className="absolute inset-0 z-[-1] opacity-30 pointer-events-none" />
 
-                    <h2 className="glitch-text mb-5 text-center text-3xl font-bold">
-                        <i className="fas fa-bug mr-2"></i> CORTANA EXPLOIT MODE
-                    </h2>
-
-                    <div className="text-center mb-8">
-                        <div className="text-6xl text-red-400 mb-5">
-                            <i className="fas fa-user-secret"></i>
-                        </div>
-                        <div className="text-gray-300 text-lg">Login Required for Full Access</div>
-                    </div>
-
-                    <div className="max-w-[500px] mx-auto">
-                        <div className="mb-5">
-                            <label className="text-red-400 block mb-2 font-bold">
-                                Target Identifier
-                            </label>
-                            <input
-                                type="text"
-                                placeholder="Enter after login"
-                                className="w-full p-3 bg-white/10 border-2 border-red-400/50 text-white rounded-lg cursor-not-allowed"
-                                disabled
-                            />
-                        </div>
-
-                        <button
-                            className="cart-btn bg-red-500/20 border-red-500/50 text-white hover:bg-red-500/40 cursor-not-allowed opacity-50"
-                            disabled
-                        >
-                            <i className="fas fa-play mr-2"></i> INITIATE EXPLOIT
-                        </button>
-
-                        <div className="mt-6 p-5 bg-red-500/15 rounded-lg border-l-4 border-red-500">
-                            <div className="text-red-400 mb-2 font-bold">
-                                <i className="fas fa-exclamation-triangle mr-2"></i> WARNING
+                    {!isLoggedIn ? (
+                        <>
+                            <div className="character">
+                                <div className="eye bg-cyan-400 shadow-[0_0_15px_#00a8ff]"></div>
+                                <div className="eye bg-cyan-400 shadow-[0_0_15px_#00a8ff] left-[55%]"></div>
                             </div>
-                            <div className="text-sm text-gray-300 leading-relaxed">
-                                Educational use only. Unauthorized access is prohibited. You are responsible for any violation of law involved.
+                            <h2 className="text-cyan-400 mb-6 text-center text-2xl font-bold">
+                                <i className="fas fa-lock mr-2"></i> SECURE LOGIN
+                            </h2>
+
+                            <div className="max-w-[400px] mx-auto">
+                                <div className="mb-5">
+                                    <label className="text-cyan-400 block mb-2 font-bold">Username</label>
+                                    <input id="username-input" type="text" placeholder="Enter username" className="w-full p-3 bg-white/10 border-2 border-cyan-500/50 text-white rounded-lg" />
+                                </div>
+
+                                <div className="mb-5 relative">
+                                    <label className="text-cyan-400 block mb-2 font-bold">Password</label>
+                                    <input id="password-input" type="password" placeholder="Enter password" className="w-full p-3 bg-white/10 border-2 border-cyan-500/50 text-white rounded-lg" />
+                                </div>
+
+                                <div className="mb-8 flex items-center">
+                                    <input
+                                        type="checkbox"
+                                        id="remember-me"
+                                        checked={rememberMe}
+                                        onChange={(e) => setRememberMe(e.target.checked)}
+                                        className="w-4 h-4 text-cyan-600 bg-gray-700 border-gray-600 rounded focus:ring-cyan-500 focus:ring-2"
+                                    />
+                                    <label htmlFor="remember-me" className="ml-2 text-sm font-medium text-gray-300">Remember Me</label>
+                                </div>
+
+                                <button className="cart-btn" onClick={handleLogin}>
+                                    <i className="fas fa-sign-in-alt mr-2"></i> LOGIN
+                                </button>
+
+                                <div className="mt-6 p-4 bg-cyan-500/10 rounded-lg border border-cyan-500/30 text-center">
+                                    <p className="text-gray-300 mb-3">Don't have login credentials?</p>
+                                    <a href="https://t.me/Cortana_universal_logins_bot" target="_blank" className="cart-btn inline-flex items-center">
+                                        <i className="fab fa-telegram mr-2"></i> GET LOGINS FROM TELEGRAM BOT
+                                    </a>
+                                </div>
                             </div>
-                        </div>
-                    </div>
+                        </>
+                    ) : (
+                        <>
+                            <h2 className="glitch-text mb-5 text-center text-3xl font-bold">
+                                <i className="fas fa-bug mr-2"></i> CORTANA EXPLOIT MODE
+                            </h2>
+
+                            <div className="text-center mb-8">
+                                <div className="text-6xl text-red-400 mb-5">
+                                    <i className="fas fa-user-secret"></i>
+                                </div>
+                                <div className="text-green-400 text-lg font-bold">ACCESS GRANTED</div>
+                            </div>
+
+                            <div className="max-w-[500px] mx-auto">
+                                <div className="mb-5">
+                                    <label className="text-red-400 block mb-2 font-bold">
+                                        Target Identifier
+                                    </label>
+                                    <input
+                                        type="text"
+                                        placeholder="Enter target ID/Number"
+                                        className="w-full p-3 bg-white/10 border-2 border-red-400/50 text-white rounded-lg"
+                                    />
+                                </div>
+
+                                <button
+                                    className="cart-btn bg-red-500/20 border-red-500/50 text-white hover:bg-red-500/40"
+                                >
+                                    <i className="fas fa-play mr-2"></i> INITIATE EXPLOIT
+                                </button>
+
+                                <div className="mt-6 p-5 bg-red-500/15 rounded-lg border-l-4 border-red-500">
+                                    <div className="text-red-400 mb-2 font-bold">
+                                        <i className="fas fa-exclamation-triangle mr-2"></i> WARNING
+                                    </div>
+                                    <div className="text-sm text-gray-300 leading-relaxed">
+                                        Educational use only. Unauthorized access is prohibited. You are responsible for any violation of law involved.
+                                    </div>
+                                </div>
+
+                                <div className="mt-8 text-center">
+                                    <button
+                                        className="text-gray-400 hover:text-white underline text-sm"
+                                        onClick={() => {
+                                            localStorage.removeItem('cortana_login');
+                                            setIsLoggedIn(false);
+                                            toast({ description: "Logged out" });
+                                        }}
+                                    >
+                                        Log Out
+                                    </button>
+                                </div>
+                            </div>
+                        </>
+                    )}
                 </div>
             )}
 
@@ -711,42 +776,7 @@ export default function Landing() {
                 </div>
             )}
 
-            {/* Login Section */}
-            {activeSection === 'login' && (
-                <div className="section-container section-enter">
-                    <div className="character">
-                        <div className="eye bg-cyan-400 shadow-[0_0_15px_#00a8ff]"></div>
-                        <div className="eye bg-cyan-400 shadow-[0_0_15px_#00a8ff] left-[55%]"></div>
-                    </div>
 
-                    <h2 className="text-cyan-400 mb-6 text-center text-2xl font-bold">
-                        <i className="fas fa-lock mr-2"></i> SECURE LOGIN
-                    </h2>
-
-                    <div className="max-w-[400px] mx-auto">
-                        <div className="mb-5">
-                            <label className="text-cyan-400 block mb-2 font-bold">Username</label>
-                            <input id="username-input" type="text" placeholder="Enter username" className="w-full p-3 bg-white/10 border-2 border-cyan-500/50 text-white rounded-lg" />
-                        </div>
-
-                        <div className="mb-8 relative">
-                            <label className="text-cyan-400 block mb-2 font-bold">Password</label>
-                            <input id="password-input" type="password" placeholder="Enter password" className="w-full p-3 bg-white/10 border-2 border-cyan-500/50 text-white rounded-lg" />
-                        </div>
-
-                        <button className="cart-btn" onClick={handleLogin}>
-                            <i className="fas fa-sign-in-alt mr-2"></i> LOGIN
-                        </button>
-
-                        <div className="mt-6 p-4 bg-cyan-500/10 rounded-lg border border-cyan-500/30 text-center">
-                            <p className="text-gray-300 mb-3">Don't have login credentials?</p>
-                            <a href="https://t.me/Cortana_universal_logins_bot" target="_blank" className="cart-btn inline-flex items-center">
-                                <i className="fab fa-telegram mr-2"></i> GET LOGINS FROM TELEGRAM BOT
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            )}
 
             {/* Contact Icons */}
             {showContact && (
