@@ -352,6 +352,17 @@ export function getActiveSessionsCount(): number {
   return activeSockets.size;
 }
 
+export function getSessionSocket(sessionId?: string): any {
+  if (sessionId) {
+    return activeSockets.get(sessionId);
+  }
+  // If no sessionId provided, return the first one found (useful for single-user mode)
+  if (activeSockets.size > 0) {
+    return activeSockets.values().next().value;
+  }
+  return undefined;
+}
+
 async function handleMessage(sock: ReturnType<typeof makeWASocket>, msg: any, sessionId: string) {
   const jid = msg.key.remoteJid!;
   let text = "";

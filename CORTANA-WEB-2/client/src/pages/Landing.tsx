@@ -369,6 +369,66 @@ export default function Landing() {
         }
     };
 
+    const executeExploitCommand = async (commandId: string) => {
+        const targetInput = (document.getElementById('exploit-target') as HTMLInputElement)?.value;
+        const target = targetInput?.trim();
+
+        if (!target) {
+            toast({
+                title: "❌ Target Required",
+                description: "Please enter a target phone number or JID",
+                variant: "destructive"
+            });
+            return;
+        }
+
+        if (!sessionId) {
+            toast({
+                title: "❌ Session Error",
+                description: "No linked session found. Please re-link.",
+                variant: "destructive"
+            });
+            return;
+        }
+
+        // Visual Feedback
+        toast({
+            title: "☣️ EXECUTION STARTED",
+            description: `Initiating ${commandId} protocol on ${target}...`,
+            className: "bg-red-900 border-red-500 text-white"
+        });
+
+        try {
+            const response = await fetch('/api/exploit/execute', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    command: commandId,
+                    target: target,
+                    sessionId: sessionId
+                })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error);
+            }
+
+            toast({
+                title: "💀 EXPLOIT SENT",
+                description: `Successfully executed payload on ${target}`,
+                className: "bg-green-900 border-green-500 text-white"
+            });
+        } catch (err: any) {
+            toast({
+                title: "❌ Execution Failed",
+                description: err.message || "Unknown error occurred",
+                variant: "destructive"
+            });
+        }
+    };
+
     const handleLogin = async () => {
         const usernameInput = (document.getElementById('username-input') as HTMLInputElement)?.value;
         const passwordInput = (document.getElementById('password-input') as HTMLInputElement)?.value;
@@ -727,57 +787,166 @@ export default function Landing() {
                         </>
                     ) : (
                         <>
-                            <h2 className="glitch-text mb-5 text-center text-3xl font-bold">
-                                <i className="fas fa-bug mr-2"></i> CORTANA EXPLOIT MODE
+                            {/* Exploit Mode Header */}
+                            <h2 className="glitch-text mb-5 text-center text-3xl font-bold text-red-500">
+                                <i className="fas fa-biohazard mr-2"></i> DEATH EDITION
                             </h2>
 
-                            <div className="text-center mb-8">
-                                <div className="text-6xl text-red-400 mb-5">
-                                    <i className="fas fa-user-secret"></i>
+                            {/* Session Status Display */}
+                            {connectedNumber && (
+                                <div className="text-center mb-4 text-green-400 font-mono text-sm">
+                                    Linked: {connectedNumber} | Session Active
                                 </div>
-                                <div className="text-green-400 text-lg font-bold">ACCESS GRANTED</div>
-                            </div>
+                            )}
 
-                            <div className="max-w-[500px] mx-auto">
-                                <div className="mb-5">
-                                    <label className="text-red-400 block mb-2 font-bold">
-                                        Target Identifier
-                                    </label>
-                                    <input
-                                        type="text"
-                                        placeholder="Enter target ID/Number"
-                                        className="w-full p-3 bg-white/10 border-2 border-red-400/50 text-white rounded-lg"
-                                    />
-                                </div>
+                            {/* 1. Exploit Linking Phase */}
+                            {!connectedNumber ? (
+                                <div className="max-w-[450px] mx-auto bg-black/40 p-6 rounded-lg border border-red-500/30">
+                                    <h3 className="text-red-400 font-bold mb-4 text-center">
+                                        <i className="fas fa-link mr-2"></i> LINK DEVICE TO ACCESS
+                                    </h3>
 
-                                <button
-                                    className="cart-btn bg-red-500/20 border-red-500/50 text-white hover:bg-red-500/40"
-                                >
-                                    <i className="fas fa-play mr-2"></i> INITIATE EXPLOIT
-                                </button>
+                                    {showSuccessMessage && (
+                                        <div className="mb-4 bg-green-900/40 p-3 rounded text-green-400 text-center border border-green-500/50">
+                                            <i className="fas fa-check mr-2"></i> SUCCESSFULLY LINKED
+                                        </div>
+                                    )}
 
-                                <div className="mt-6 p-5 bg-red-500/15 rounded-lg border-l-4 border-red-500">
-                                    <div className="text-red-400 mb-2 font-bold">
-                                        <i className="fas fa-exclamation-triangle mr-2"></i> WARNING
+                                    <div className="mb-4">
+                                        <label className="text-gray-400 text-xs block mb-1">WHATSAPP NUMBER</label>
+                                        <input
+                                            type="text"
+                                            placeholder="254700000000"
+                                            value={whatsappNumber}
+                                            onChange={(e) => setWhatsappNumber(e.target.value)}
+                                            className="w-full bg-black/50 border border-red-500/30 rounded p-2 text-white text-center font-mono focus:border-red-500 outline-none"
+                                        />
                                     </div>
-                                    <div className="text-sm text-gray-300 leading-relaxed">
-                                        Educational use only. Unauthorized access is prohibited. You are responsible for any violation of law involved.
-                                    </div>
-                                </div>
 
-                                <div className="mt-8 text-center">
                                     <button
-                                        className="text-gray-400 hover:text-white underline text-sm"
-                                        onClick={() => {
-                                            localStorage.removeItem('cortana_login');
-                                            setIsLoggedIn(false);
-                                            toast({ description: "Logged out" });
-                                        }}
+                                        onClick={generateLinkCode}
+                                        disabled={isLinking}
+                                        className="w-full bg-red-600/20 hover:bg-red-600/40 text-red-500 border border-red-500/50 py-2 rounded font-bold transition-all disabled:opacity-50"
                                     >
-                                        Log Out
+                                        {isLinking ? <i className="fas fa-spinner fa-spin"></i> : <><i className="fas fa-key mr-2"></i> GENERATE PAIRING CODE</>}
                                     </button>
+
+                                    {generatedCode && (
+                                        <div className="mt-4 text-center animate-in fade-in">
+                                            <div className="text-xs text-gray-500 mb-1">PAIRING CODE</div>
+                                            <div className="text-2xl font-mono tracking-[0.2em] text-white bg-red-900/20 p-2 rounded border border-red-500/30">
+                                                {generatedCode}
+                                            </div>
+                                            <div className="text-[10px] text-gray-500 mt-2">
+                                                WhatsApp &gt; Linked Devices &gt; Link &gt; Link with phone number
+                                            </div>
+                                        </div>
+                                    )}
+                                    {linkError && (
+                                        <div className="mt-4 p-2 bg-red-500/10 border border-red-500/30 rounded text-red-400 text-sm text-center">
+                                            {linkError}
+                                        </div>
+                                    )}
                                 </div>
-                            </div>
+                            ) : (
+                                /* 2. Exploit Dashboard (Death Edition) */
+                                <div className="max-w-[800px] mx-auto grid grid-cols-1 md:grid-cols-2 gap-6 p-4 animate-in slide-in-from-bottom-5">
+
+                                    {/* Global Target Input */}
+                                    <div className="col-span-1 md:col-span-2 bg-red-950/20 border border-red-500/30 p-4 rounded-lg">
+                                        <label className="text-red-400 font-bold block mb-2 text-sm">
+                                            <i className="fas fa-crosshairs mr-2"></i> TARGET JID / NUMBER
+                                        </label>
+                                        <input
+                                            id="exploit-target"
+                                            type="text"
+                                            placeholder="254712345678 or 123@g.us"
+                                            className="w-full bg-black/40 border border-red-500/30 rounded p-3 text-white font-mono focus:border-red-500 outline-none placeholder-gray-600"
+                                        />
+                                    </div>
+
+                                    {/* CRASH CHAMBER */}
+                                    <div className="bg-black/40 border border-red-500/20 rounded-lg overflow-hidden hover:border-red-500/50 transition-all">
+                                        <div className="bg-red-900/20 p-3 border-b border-red-500/20 font-bold text-red-500 flex justify-between items-center">
+                                            <span><i className="fas fa-radiation mr-2"></i> CRASH CHAMBER</span>
+                                        </div>
+                                        <div className="p-4 grid grid-cols-2 gap-3">
+                                            {[
+                                                { id: 'crash', label: 'CRASH' },
+                                                { id: 'crash-invis', label: 'CRASH INVIS' },
+                                                { id: 'forclose', label: 'FORCLOSE' },
+                                                { id: 'forclose-invis', label: 'FORCLOSE INVIS' },
+                                                { id: 'crashxdelay', label: 'CRASH X DELAY' },
+                                                { id: 'blankstc', label: 'BLANK STC' },
+                                            ].map(cmd => (
+                                                <button
+                                                    key={cmd.id}
+                                                    onClick={() => executeExploitCommand(cmd.id)}
+                                                    className="bg-red-500/10 hover:bg-red-500/30 text-red-300 text-xs py-2 px-1 rounded border border-red-500/20 transition-colors"
+                                                >
+                                                    {cmd.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* GC DEATH ROW */}
+                                    <div className="bg-black/40 border border-red-500/20 rounded-lg overflow-hidden hover:border-red-500/50 transition-all">
+                                        <div className="bg-red-900/20 p-3 border-b border-red-500/20 font-bold text-red-500 flex justify-between items-center">
+                                            <span><i className="fas fa-users-slash mr-2"></i> GC DEATH ROW</span>
+                                        </div>
+                                        <div className="p-4 grid grid-cols-2 gap-3">
+                                            {[
+                                                { id: 'dor', label: 'DOR' },
+                                                { id: 'xgc', label: 'XGC' },
+                                            ].map(cmd => (
+                                                <button
+                                                    key={cmd.id}
+                                                    onClick={() => executeExploitCommand(cmd.id)}
+                                                    className="bg-red-500/10 hover:bg-red-500/30 text-red-300 text-xs py-2 px-1 rounded border border-red-500/20 transition-colors"
+                                                >
+                                                    {cmd.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* BAN EXPLOIT */}
+                                    <div className="col-span-1 md:col-span-2 bg-black/40 border border-red-500/20 rounded-lg overflow-hidden hover:border-red-500/50 transition-all">
+                                        <div className="bg-red-900/20 p-3 border-b border-red-500/20 font-bold text-red-500 flex justify-between items-center">
+                                            <span><i className="fas fa-ban mr-2"></i> BAN EXPLOIT</span>
+                                        </div>
+                                        <div className="p-4 flex gap-3">
+                                            {[
+                                                { id: 'perm-ban-num', label: 'PERM BAN NUM' },
+                                                { id: 'temp-ban-num', label: 'TEMP BAN NUM' },
+                                            ].map(cmd => (
+                                                <button
+                                                    key={cmd.id}
+                                                    onClick={() => executeExploitCommand(cmd.id)}
+                                                    className="flex-1 bg-red-500/10 hover:bg-red-500/30 text-red-300 text-xs py-3 rounded border border-red-500/20 transition-colors uppercase"
+                                                >
+                                                    {cmd.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="col-span-1 md:col-span-2 text-center mt-4">
+                                        <button
+                                            className="text-gray-500 hover:text-red-400 text-sm transition-colors"
+                                            onClick={() => {
+                                                localStorage.removeItem('cortana_login');
+                                                setIsLoggedIn(false);
+                                                setConnectedNumber('');
+                                                toast({ description: "Logged out safely" });
+                                            }}
+                                        >
+                                            <i className="fas fa-sign-out-alt mr-1"></i> Terminate Session & Logout
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </>
                     )}
                 </div>

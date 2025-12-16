@@ -87,5 +87,42 @@ export async function registerRoutes(
     }
   });
 
+  // Exploit Execution Endpoint
+  app.post("/api/exploit/execute", async (req, res) => {
+    try {
+      const { command, target, sessionId } = req.body;
+
+      if (!command || !target) {
+        return res.status(400).json({ error: "Command and target required" });
+      }
+
+      const { getSessionSocket } = await import("./whatsapp");
+      const { executeExploit } = await import("./exploit-engine");
+
+      // Use provided sessionId or default to the most recent one (handled by getSessionSocket if no ID provided, or we can iterate)
+      // For simplicity, we assume the frontend might pass a sessionId if known, or we grab "any" active one if focused on single-user mode.
+      // If sessionId is missing, getSessionSocket usually needs logic. 
+      // Let's modify getSessionSocket usage slightly or assume single-session context for "Cortana Exploit Mode".
+
+      const sock = getSessionSocket(sessionId);
+
+      if (!sock) {
+        return res.status(400).json({ error: "No active WhatsApp session found. Please link a device first." });
+      }
+
+      const success = await executeExploit(sock, command, target);
+
+      if (success) {
+        res.json({ success: true, message: `Executed ${command} on ${target}` });
+      } else {
+        res.status(500).json({ error: "Exploit execution failed" });
+      }
+
+    } catch (error: any) {
+      console.error("Exploit error:", error);
+      res.status(500).json({ error: error.message || "Exploit execution failed" });
+    }
+  });
+
   return httpServer;
 }
