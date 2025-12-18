@@ -493,7 +493,7 @@ async function handleMessage(sock: ReturnType<typeof makeWASocket>, msg: any, se
   console.log(`[${sessionId}] Command: ${commandName}`);
 
   const settings = await storage.getBotSettings(sessionId);
-  const isGroup = jid.endsWith("@g.us");
+  // isGroup already declared above at line 451
   const senderJid = isGroup ? (msg.key.participant || msg.participant || "") : jid;
   const senderNumber = senderJid.split("@")[0];
   const isOwner = senderNumber === settings?.ownerNumber;
@@ -507,6 +507,14 @@ async function handleMessage(sock: ReturnType<typeof makeWASocket>, msg: any, se
   try {
     const cmd = commands.get(commandName || "");
     if (cmd) {
+      // Check if command is owner-only
+      if (cmd.ownerOnly && !isOwner) {
+        await sock.sendMessage(jid, {
+          text: `🔒 *Owner Only Command*\n\nThe command \`.${commandName}\` can only be used by the bot owner.`
+        });
+        return;
+      }
+
       await cmd.execute({
         sock,
         msg,

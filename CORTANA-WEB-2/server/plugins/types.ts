@@ -17,6 +17,8 @@ export interface Command {
     aliases?: string[];
     description: string;
     category: string;
+    usage?: string; // e.g., ".play <song name>"
+    ownerOnly?: boolean;
     execute: (ctx: CommandContext) => Promise<void>;
 }
 
