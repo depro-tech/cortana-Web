@@ -12,18 +12,57 @@ registerCommand({
 
         try {
             await reply(`🔍 Searching/Downloading video: ${query}...`);
-            // API Provided by user
-            const apiUrl = `https://yt-dl.officialhectormanuel.workers.dev/?url=${encodeURIComponent(query)}`;
 
-            const res = await axios.get(apiUrl);
-            const data = res.data;
+            // First search for the video
+            let videoUrl = query;
+            let title = 'Video';
+            let thumbnail = '';
 
-            if (data && (data.url || data.video)) {
-                const videoUrl = data.url || data.video;
-                const title = data.title || 'Video';
+            if (!query.includes('youtube.com') && !query.includes('youtu.be')) {
+                const search = await yts(query);
+                if (!search.videos.length) {
+                    return reply("❌ No results found.");
+                }
+                const video = search.videos[0];
+                videoUrl = video.url;
+                title = video.title;
+                thumbnail = video.thumbnail;
+            }
 
+            // Multi-API fallback for video download
+            const apis = [
+                { url: `https://apis.davidcyriltech.my.id/download/ytmp4?url=${videoUrl}`, type: 'davidcyril' },
+                { url: `https://api.ryzendesu.vip/api/downloader/ytmp4?url=${videoUrl}`, type: 'ryzendesu' },
+                { url: `https://yt-dl.officialhectormanuel.workers.dev/?url=${encodeURIComponent(videoUrl)}`, type: 'hectormanuel' }
+            ];
+
+            let downloadUrl = null;
+
+            for (const api of apis) {
+                try {
+                    const { data } = await axios.get(api.url, { timeout: 15000 });
+                    console.log(`[VIDEO] Trying ${api.type}:`, JSON.stringify(data).substring(0, 200));
+
+                    // Handle different response formats
+                    if (data.status === 200 || data.success) {
+                        const result = data.result || data;
+                        downloadUrl = result.downloadUrl || result.url || result.video;
+                        if (result.title) title = result.title;
+                    } else if (data.url || data.video) {
+                        downloadUrl = data.url || data.video;
+                        if (data.title) title = data.title;
+                    }
+
+                    if (downloadUrl) break;
+                } catch (e) {
+                    console.log(`[VIDEO] ${api.type} failed:`, e);
+                    continue;
+                }
+            }
+
+            if (downloadUrl) {
                 await sock.sendMessage(msg.key.remoteJid, {
-                    video: { url: videoUrl },
+                    video: { url: downloadUrl },
                     caption: `CORTANA MD
 ╭═════════════════⊷
 ║ 🎥 *Title:* ${title}
@@ -32,10 +71,10 @@ registerCommand({
 *Powered by CORTANA MD*`
                 });
             } else {
-                await reply("❌ Failed to fetch video. Please try a valid YouTube link.");
+                await reply("❌ Failed to fetch video from all sources. Try again later.");
             }
         } catch (e) {
-            console.error(e);
+            console.error('[VIDEO ERROR]', e);
             await reply("❌ Error fetching video.");
         }
     }
@@ -61,36 +100,81 @@ registerCommand({
             const video = search.videos[0];
             const url = video.url;
 
-            // 2. Download using Multi-API Fallback (Robust)
+            // 2. Multi-API Fallback for audio download
             const apis = [
-                `https://apis.davidcyriltech.my.id/download/ytmp3?url=${url}`,
-                `https://api.ryzendesu.vip/api/downloader/ytmp3?url=${url}`,
-                `https://api.akuari.my.id/downloader/youtubeaudio?link=${url}`,
-                `https://apis-keith.vercel.app/download/dlmp3?url=${url}` // Keep Keith as backup
+                { url: `https://apis.davidcyriltech.my.id/download/ytmp3?url=${url}`, type: 'davidcyril' },
+                { url: `https://api.ryzendesu.vip/api/downloader/ytmp3?url=${url}`, type: 'ryzendesu' },
+                { url: `https://api.akuari.my.id/downloader/youtubeaudio?link=${url}`, type: 'akuari' },
+                { url: `https://apis-keith.vercel.app/download/dlmp3?url=${url}`, type: 'keith' }
             ];
 
             let audioUrl = null;
-            let songData = null;
+            let songData = {
+                title: video.title,
+                artist: video.author?.name || 'Unknown Artist',
+                thumbnail: video.thumbnail
+            };
 
             for (const api of apis) {
                 try {
-                    const { data } = await axios.get(api);
-                    const result = data.result || data;
-                    if (data.status === 200 || data.success || result.downloadUrl) {
-                        audioUrl = result.downloadUrl || data.url;
-                        songData = {
-                            title: result.title || video.title,
-                            artist: result.author || video.author?.name || 'Unknown Artist',
-                            thumbnail: result.image || result.thumbnail || video.thumbnail
-                        };
-                        break;
+                    const { data } = await axios.get(api.url, { timeout: 15000 });
+                    console.log(`[PLAY] Trying ${api.type}:`, JSON.stringify(data).substring(0, 200));
+
+                    // Handle different response formats from various APIs
+                    if (api.type === 'davidcyril') {
+                        if (data.status === 200 && data.result?.downloadUrl) {
+                            audioUrl = data.result.downloadUrl;
+                            if (data.result.title) songData.title = data.result.title;
+                            if (data.result.author) songData.artist = data.result.author;
+                            break;
+                        }
+                    } else if (api.type === 'ryzendesu') {
+                        if (data.status === 200 && data.url) {
+                            audioUrl = data.url;
+                            if (data.title) songData.title = data.title;
+                            break;
+                        }
+                    } else if (api.type === 'akuari') {
+                        if (data.success && data.result?.download) {
+                            audioUrl = data.result.download;
+                            if (data.result.title) songData.title = data.result.title;
+                            break;
+                        }
+                        // Alternative format
+                        if (data.url || data.downloadUrl) {
+                            audioUrl = data.url || data.downloadUrl;
+                            break;
+                        }
+                    } else if (api.type === 'keith') {
+                        if (data.response?.downloadUrl) {
+                            audioUrl = data.response.downloadUrl;
+                            if (data.response.title) songData.title = data.response.title;
+                            break;
+                        }
+                        // Alternative format
+                        if (data.url || data.result?.url) {
+                            audioUrl = data.url || data.result?.url;
+                            break;
+                        }
+                    }
+
+                    // Generic fallback check
+                    if (!audioUrl) {
+                        const result = data.result || data.response || data;
+                        const possibleUrl = result.downloadUrl || result.url || result.download || result.audio;
+                        if (possibleUrl && typeof possibleUrl === 'string') {
+                            audioUrl = possibleUrl;
+                            break;
+                        }
                     }
                 } catch (e) {
+                    console.log(`[PLAY] ${api.type} failed:`, e);
                     continue;
                 }
             }
 
-            if (audioUrl && songData) {
+            if (audioUrl) {
+                console.log(`[PLAY] Sending audio from: ${audioUrl}`);
                 await sock.sendMessage(msg.key.remoteJid, {
                     audio: { url: audioUrl },
                     mimetype: 'audio/mp4',
@@ -107,11 +191,11 @@ registerCommand({
                     }
                 });
             } else {
-                await reply("❌ Failed to fetch audio from all sources.");
+                await reply("❌ Failed to fetch audio from all sources. Please try again.");
             }
 
         } catch (e) {
-            console.error(e);
+            console.error('[PLAY ERROR]', e);
             await reply("❌ Error fetching song.");
         }
     }
