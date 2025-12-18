@@ -1,4 +1,38 @@
 import { registerCommand } from "./types";
+import axios from "axios";
+
+// Truth/Dare from ShizoAPI (researched from Knightbot-MD)
+registerCommand({
+    name: "truth",
+    description: "Get a truth question",
+    category: "game",
+    execute: async ({ reply }) => {
+        try {
+            const res = await axios.get('https://shizoapi.onrender.com/api/texts/truth?apikey=shizo');
+            const truthMessage = res.data.result;
+            await reply(`🔮 *Truth*\n\n${truthMessage}`);
+        } catch (error) {
+            console.error('Truth command error:', error);
+            await reply('❌ Failed to get truth. Try again later!');
+        }
+    }
+});
+
+registerCommand({
+    name: "dare",
+    description: "Get a dare challenge",
+    category: "game",
+    execute: async ({ reply }) => {
+        try {
+            const res = await axios.get('https://shizoapi.onrender.com/api/texts/dare?apikey=shizo');
+            const dareMessage = res.data.result;
+            await reply(`💪 *Dare*\n\n${dareMessage}`);
+        } catch (error) {
+            console.error('Dare command error:', error);
+            await reply('❌ Failed to get dare. Try again later!');
+        }
+    }
+});
 
 registerCommand({
     name: "tictactoe",
