@@ -51,93 +51,137 @@ registerCommand({
 
 
 🌸🌼 O W N E R   M E N U 🌼🌸
-⮞ .block
-⮞ .unblock
-⮞ .dev
-⮞ .self
-⮞ .public
-⮞ .bc
-⮞ .setbio
-⮞ .settings
+⮞ .block | .unblock
+⮞ .dev | .self | .public
+⮞ .bc | .setbio | .settings
 
 
 🌸🌼 AUTO-PRESENCE 🌼🌸
 ⮞ .autorecording-all-on
-⮞ .autorecording-pm-on
-⮞ .autorecording-off
 ⮞ .autotyping-all-on
-⮞ .autotyping-pm-on
-⮞ .autotyping-off
 ⮞ .autorecordtyping-on
-⮞ .autorecordtyping-off
 ⮞ .presence-status
 
 
 🌸🌼 G R O U P   M E N U 🌼🌸
-⮞ .antilink <on/off>
-⮞ .promote
-⮞ .demote
-⮞ .kick
-⮞ .add
-⮞ .tagall
-⮞ .hidetag
-⮞ .group <open/close>
-⮞ .gcname <text>
-⮞ .gcdesc <text>
-⮞ .join <link>
-⮞ .left
+⮞ .antilink kick/warn/off
+⮞ .antigroupmention kick/warn/off
+⮞ .promote | .demote
+⮞ .kick | .add
+⮞ .tagall | .hidetag
+⮞ .open | .close
+⮞ .link | .resetlink
+⮞ .gcname | .gcdesc
+⮞ .delete
+
+
+🌸🌼 REACTIONS (25+) 🌼🌸
+⮞ .hug | .kiss | .cuddle
+⮞ .slap | .pat | .poke
+⮞ .bonk | .bite | .kick
+⮞ .wave | .wink | .smile
+⮞ .cry | .blush | .happy
+⮞ .dance | .yeet | .bully
+⮞ .handhold | .highfive
+⮞ .lick | .glomp | .nom
+⮞ .kill | .awoo | .cringe
+
+
+🌸🌼 FUN & MEMES (45+) 🌼🌸
+⮞ .ship | .rate | .ask
+⮞ .pick | .when | .how
+⮞ .owo | .uwu | .mock
+⮞ .zalgo | .vaporwave
+⮞ .cowsay | .lenny
+⮞ .tableflip | .unflip
+⮞ .shrug | .facepalm
+⮞ .clap | .compliment
+⮞ .insult | .roast
+⮞ .shipname | .wyr
+⮞ .neverhave | .heart
+⮞ .gg | .respect | .f
+⮞ .chad | .based | .flex
+⮞ .dank | .yolo | .legend
+⮞ .dealwithit | .notbad
+
+
+🌸🌼 MUSIC & AUDIO 🌼🌸
+⮞ .play <song name> ✨NEW✨
+⮞ .lyrics <song>
+⮞ .soundcloud <url>
+⮞ .ytmp3 | .ytmp4
+⮞ .yts | .spotify
+
+
+🌸🌼 DOWNLOADERS 🌼🌸
+⮞ .tiktok | .ig
+⮞ .fb | .twitter
+
+
+🌸🌼 IMAGE EFFECTS 🌼🌸
+⮞ .blur | .enhance
+⮞ .wanted | .wasted
+⮞ .trigger | .circle
+⮞ .sepia | .pixelate
+⮞ .colorize
+
+
+🌸🌼 AI FEATURES 🌼🌸
+⮞ .chatgpt <question>
+⮞ .imagine <prompt>
+⮞ .removebg | .ocr
+⮞ .aivision
+⮞ .chatbot on/off
 
 
 🌸🌼 SEARCH & INFO 🌼🌸
-⮞ .google <query>
-⮞ .wiki <query>
-⮞ .lyrics <song name>
-⮞ .movie <movie name>
-⮞ .weather <city>
-⮞ .npm <package>
-⮞ .define <word>
-⮞ .github <username>
+⮞ .google | .weather
+⮞ .wiki | .github
+⮞ .npm | .dictionary
+⮞ .movie | .anime
+⮞ .manga | .character
 
 
-🌸🌼 MEDIA & DOWNLOAD 🌼🌸
-⮞ .play <song name>
-⮞ .video <video name>
-⮞ .ytmp3 <youtube url>
-⮞ .ytmp4 <youtube url>
-⮞ .yts <query>
-⮞ .tiktok <url>
-⮞ .ig <instagram url>
-⮞ .fb <facebook url>
-⮞ .twitter <twitter url>
-⮞ .spotify <spotify url>
+🌸🌼 TEXT TOOLS 🌼🌸
+⮞ .fancy | .reverse
+⮞ .binary | .morse
+⮞ .emojimix <emoji1> <emoji2>
+⮞ .encrypt | .decrypt
+⮞ .shorten | .readmore
+⮞ .flip
 
 
-🌸🌼 AI CHATBOT 🌼🌸
-⮞ .chatbot on
-⮞ .chatbot off
+🌸🌼 ANIME  & MANGA 🌼🌸
+⮞ .waifu | .neko
+⮞ .animequote
+⮞ .shinobu | .megumin
+⮞ .animewallpaper
 
 
-🌸🌼 FUN 🌼🌸
-⮞ .joke
-⮞ .meme
-⮞ .quote
-⮞ .fact
-⮞ .roast
-⮞ .truth
-⮞ .dare
-⮞ .math
+🌸🌼 GAMES 🌼🌸
+⮞ .truth | .dare
+⮞ .slot | .dice | .rps
+⮞ .casino | .hangman
+⮞ .guessnumber | .coinflip
+⮞ .8ball | .triviagame
+⮞ .quiz
 
 
 🌸🌼 UTILITIES 🌼🌸
-⮞ .calc <expression>
-⮞ .translate <lang> <text>
-⮞ .sticker (reply to image)
-⮞ .toimg (reply to sticker)
+⮞ .calc | .translate
+⮞ .sticker | .toimg
+⮞ .qr | .screenshot
+⮞ .carbon | .paste
+⮞ .wallpaper | .ip
+⮞ .uuid | .hash
+⮞ .base64encode/decode
 
 
 🔊 CORTANA MD • Christmas Edition
 💝 Developed by èdûqarîz
-🎅 Merry Christmas! 🎄`;
+🎅 Merry Christmas! 🎄
+📊 Total Commands: 170+
+✨ NEW: Reactions & Fun Commands!`;
 
         try {
             // Send menu as forwarded message from verified channel
