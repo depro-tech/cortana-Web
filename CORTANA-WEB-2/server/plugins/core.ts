@@ -8,6 +8,44 @@ registerCommand({
     description: "Show the bot menu",
     category: "core",
     execute: async ({ sock, msg, senderJid, reply }) => {
+        // ═══════ TYPING INTRO ANIMATION ═══════
+        const introText = "CORTANA IS HERE";
+        let displayText = "";
+
+        try {
+            // Send initial empty message
+            const sentMsg = await sock.sendMessage(senderJid, { text: "𝗖" });
+            const introKey = sentMsg.key;
+
+            // Typing animation - update message character by character
+            for (let i = 0; i < introText.length; i++) {
+                displayText += introText[i];
+
+                // Update the message with growing text
+                await sock.sendMessage(senderJid, {
+                    text: `*${displayText}*`,
+                    edit: introKey
+                });
+
+                // Delay between characters (90ms like the example)
+                await new Promise(resolve => setTimeout(resolve, 90));
+            }
+
+            // Display complete text for 1 second
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            // Delete the intro message
+            await sock.sendMessage(senderJid, { delete: introKey });
+
+            // Small delay before showing menu
+            await new Promise(resolve => setTimeout(resolve, 300));
+
+        } catch (e) {
+            console.error('[MENU] Intro animation error:', e);
+            // Continue to menu even if intro fails
+        }
+        // ═══════ END INTRO ANIMATION ═══════
+
         const menuText = `🌺❀──────────────────────────────❀🌺
            C̷O̷R̷T̷A̷N̷A̷ ̷M̷D̷ 
          C H R I S T M A S  E D.
