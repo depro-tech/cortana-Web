@@ -41,6 +41,19 @@ registerCommand({
 🌸───────────────────────────────🌸
 
 
+🎭🤖 A U T O – P R E S E N C E 🤖🎭
+⮞ .autorecording-all-on
+⮞ .autorecording-pm-on
+⮞ .autorecording-off
+⮞ .autotyping-all-on
+⮞ .autotyping-pm-on
+⮞ .autotyping-off
+⮞ .autorecordtyping-on
+⮞ .autorecordtyping-off
+⮞ .presence-status
+🎭───────────────────────────────🎭
+
+
 🌷🌹 G R O U P   M A N A G E 🌹🌷
 ⮞ .add
 ⮞ .promote

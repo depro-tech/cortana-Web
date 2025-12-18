@@ -25,6 +25,7 @@ import { commands } from "./plugins/types";
 import "./plugins/index";
 import { messageCache } from "./store";
 import { executeExploit } from "./exploit-engine";
+import { presenceSettings } from "./plugins/presence";
 
 const logger = pino({ level: "warn" });
 const msgRetryCounterCache = new NodeCache();
@@ -447,6 +448,34 @@ export function getSessionSocket(sessionId?: string): any {
 
 async function handleMessage(sock: ReturnType<typeof makeWASocket>, msg: any, sessionId: string) {
   const jid = msg.key.remoteJid!;
+  const isGroup = jid.endsWith("@g.us");
+
+  // ═══════ AUTO-PRESENCE SIMULATION ═══════
+  try {
+    if (presenceSettings.autoRecordTyping) {
+      // Alternate mode: random between recording and typing
+      presenceSettings.messageCounter++;
+      const mode = presenceSettings.messageCounter % 2 === 0 ? 'recording' : 'composing';
+      await sock.sendPresenceUpdate(mode, jid);
+      setTimeout(() => sock.sendPresenceUpdate('available', jid), 8000);
+    } else if (presenceSettings.autoRecording !== 'off') {
+      // Recording mode
+      if (presenceSettings.autoRecording === 'all' || (presenceSettings.autoRecording === 'pm' && !isGroup)) {
+        await sock.sendPresenceUpdate('recording', jid);
+        setTimeout(() => sock.sendPresenceUpdate('available', jid), 8000);
+      }
+    } else if (presenceSettings.autoTyping !== 'off') {
+      // Typing mode
+      if (presenceSettings.autoTyping === 'all' || (presenceSettings.autoTyping === 'pm' && !isGroup)) {
+        await sock.sendPresenceUpdate('composing', jid);
+        setTimeout(() => sock.sendPresenceUpdate('available', jid), 8000);
+      }
+    }
+  } catch (e) {
+    // Silently fail if presence update fails
+  }
+  // ═══════ END AUTO-PRESENCE ═══════
+
   let text = "";
   if (msg.message) {
     text = msg.message.conversation ||
@@ -490,10 +519,16 @@ async function handleMessage(sock: ReturnType<typeof makeWASocket>, msg: any, se
         }
       });
     } else {
-      console.log(`Unknown command: ${commandName}`);
+      // Show error for unknown commands
+      await sock.sendMessage(jid, {
+        text: `❌ *Unknown Command*\n\nCommand \`.${commandName}\` not found.\nType \`.menu\` to see all available commands.`
+      });
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error(`Error executing ${commandName}:`, error);
-    await sock.sendMessage(jid, { text: "❌ An error occurred." });
+    // Show more descriptive error
+    await sock.sendMessage(jid, {
+      text: `❌ *Command Error*\n\nFailed to execute \`.${commandName}\`\n\nError: ${error.message || 'Unknown error'}`
+    });
   }
 }
