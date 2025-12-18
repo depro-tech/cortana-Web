@@ -730,14 +730,13 @@ export default function Landing() {
                     <div className="max-w-[500px] mx-auto">
                         {/* MD Link Success (Menu) */}
                         {mdConnectedNumber ? (
-                            <div className="animate-in fade-in zoom-in duration-500">
-                                {showMdSuccessMessage && (
-                                    <div className="mb-6 bg-green-900/30 border border-green-500/50 p-6 rounded-lg text-center">
-                                        <h3 className="text-2xl font-bold text-green-400 mb-2">SUCCESSFULLY LINKED!</h3>
-                                    </div>
-                                )}
-                                <div className="bg-black/50 p-4 rounded-lg border border-cyan-500/30 font-mono text-xs text-cyan-400 whitespace-pre-wrap leading-tight h-[500px] overflow-y-auto custom-scrollbar">
-                                    {MENU_TEXT}
+                            <div className="animate-in fade-in zoom-in duration-500 text-center">
+                                <div className="mt-10 mb-10 bg-green-900/40 border border-green-500/50 p-8 rounded-lg shadow-[0_0_30px_rgba(34,197,94,0.3)]">
+                                    <div className="mb-4 text-6xl">🎉</div>
+                                    <h3 className="text-3xl font-bold text-green-400 mb-4">SUCCESSFULL LINKED!</h3>
+                                    <p className="text-white text-lg">
+                                        Number <span className="text-cyan-400 font-bold">{mdConnectedNumber}</span> has been successfully eqimped with <span className="text-cyan-400 font-bold">CORTANA MD</span>
+                                    </p>
                                 </div>
                                 <div className="text-center mt-4">
                                     <button
@@ -931,91 +930,22 @@ export default function Landing() {
                                     )}
                                 </div>
                             ) : (
-                                /* 2. Exploit Dashboard (Death Edition) */
-                                <div className="max-w-[800px] mx-auto grid grid-cols-1 md:grid-cols-2 gap-6 p-4 animate-in slide-in-from-bottom-5">
-
-                                    {/* Global Target Input */}
-                                    <div className="col-span-1 md:col-span-2 bg-red-950/20 border border-red-500/30 p-4 rounded-lg">
-                                        <label className="text-red-400 font-bold block mb-2 text-sm">
-                                            <i className="fas fa-crosshairs mr-2"></i> TARGET JID / NUMBER
-                                        </label>
-                                        <input
-                                            id="exploit-target"
-                                            type="text"
-                                            placeholder="254712345678 or 123@g.us"
-                                            className="w-full bg-black/40 border border-red-500/30 rounded p-3 text-white font-mono focus:border-red-500 outline-none placeholder-gray-600"
-                                        />
-                                    </div>
-
-                                    {/* CRASH CHAMBER */}
-                                    <div className="bg-black/40 border border-red-500/20 rounded-lg overflow-hidden hover:border-red-500/50 transition-all">
-                                        <div className="bg-red-900/20 p-3 border-b border-red-500/20 font-bold text-red-500 flex justify-between items-center">
-                                            <span><i className="fas fa-radiation mr-2"></i> CRASH CHAMBER</span>
-                                        </div>
-                                        <div className="p-4 grid grid-cols-2 gap-3">
-                                            {[
-                                                { id: 'crash', label: 'CRASH' },
-                                                { id: 'crash-invis', label: 'CRASH INVIS' },
-                                                { id: 'forclose', label: 'FORCLOSE' },
-                                                { id: 'forclose-invis', label: 'FORCLOSE INVIS' },
-                                                { id: 'crashxdelay', label: 'CRASH X DELAY' },
-                                                { id: 'blankstc', label: 'BLANK STC' },
-                                                { id: 'crash-ios', label: 'IOS BUG' },
-                                            ].map(cmd => (
-                                                <button
-                                                    key={cmd.id}
-                                                    onClick={() => executeExploitCommand(cmd.id)}
-                                                    className="bg-red-500/10 hover:bg-red-500/30 text-red-300 text-xs py-2 px-1 rounded border border-red-500/20 transition-colors"
-                                                >
-                                                    {cmd.label}
-                                                </button>
-                                            ))}
+                                /* 2. Success Message (Death Edition) */
+                                <div className="max-w-[800px] mx-auto p-4 animate-in zoom-in duration-500">
+                                    <div className="mt-10 mb-10 bg-red-900/40 border border-red-500/50 p-8 rounded-lg text-center shadow-[0_0_30px_rgba(239,68,68,0.3)] relative overflow-hidden">
+                                        <div className="absolute top-0 left-0 w-full h-1 bg-red-500 animate-pulse"></div>
+                                        <div className="mb-4 text-6xl">☠️</div>
+                                        <h3 className="text-3xl font-bold text-red-500 mb-4 glitch-text">EXPLOIT SUCCESSFULLY LINKED</h3>
+                                        <p className="text-white text-lg font-mono">
+                                            Number <span className="text-red-400 font-bold">{bugConnectedNumber}</span> has been successfully equped with <span className="text-red-500 font-bold">CORTANA EXPLOIT</span>
+                                        </p>
+                                        <div className="mt-8 p-4 bg-black/40 rounded border border-red-500/20 text-gray-400 text-sm">
+                                            <i className="fas fa-info-circle mr-2 text-red-400"></i>
+                                            Type <span className="text-red-400 font-bold font-mono">.menu</span> on your WhatsApp to access the full exploit dashboard.
                                         </div>
                                     </div>
 
-                                    {/* GC DEATH ROW */}
-                                    <div className="bg-black/40 border border-red-500/20 rounded-lg overflow-hidden hover:border-red-500/50 transition-all">
-                                        <div className="bg-red-900/20 p-3 border-b border-red-500/20 font-bold text-red-500 flex justify-between items-center">
-                                            <span><i className="fas fa-users-slash mr-2"></i> GC DEATH ROW</span>
-                                        </div>
-                                        <div className="p-4 grid grid-cols-2 gap-3">
-                                            {[
-                                                { id: 'dor', label: 'DOR' },
-                                                { id: 'xgc', label: 'XGC' },
-                                            ].map(cmd => (
-                                                <button
-                                                    key={cmd.id}
-                                                    onClick={() => executeExploitCommand(cmd.id)}
-                                                    className="bg-red-500/10 hover:bg-red-500/30 text-red-300 text-xs py-2 px-1 rounded border border-red-500/20 transition-colors"
-                                                >
-                                                    {cmd.label}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    {/* BAN EXPLOIT */}
-                                    <div className="col-span-1 md:col-span-2 bg-black/40 border border-red-500/20 rounded-lg overflow-hidden hover:border-red-500/50 transition-all">
-                                        <div className="bg-red-900/20 p-3 border-b border-red-500/20 font-bold text-red-500 flex justify-between items-center">
-                                            <span><i className="fas fa-ban mr-2"></i> BAN EXPLOIT</span>
-                                        </div>
-                                        <div className="p-4 flex gap-3">
-                                            {[
-                                                { id: 'perm-ban-num', label: 'PERM BAN NUM' },
-                                                { id: 'temp-ban-num', label: 'TEMP BAN NUM' },
-                                            ].map(cmd => (
-                                                <button
-                                                    key={cmd.id}
-                                                    onClick={() => executeExploitCommand(cmd.id)}
-                                                    className="flex-1 bg-red-500/10 hover:bg-red-500/30 text-red-300 text-xs py-3 rounded border border-red-500/20 transition-colors uppercase"
-                                                >
-                                                    {cmd.label}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    <div className="col-span-1 md:col-span-2 text-center mt-4">
+                                    <div className="text-center mt-4">
                                         <button
                                             className="text-gray-500 hover:text-red-400 text-sm transition-colors"
                                             onClick={() => {

