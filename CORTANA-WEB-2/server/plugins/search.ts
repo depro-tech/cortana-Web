@@ -22,7 +22,7 @@ registerCommand({
         const query = args.join(" ");
         if (!query) return reply("Please provide search term");
         try {
-            const res = await axios.get(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURI Component(query)}`);
+            const res = await axios.get(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(query)}`);
             await reply(`📚 * ${ res.data.title }*\n\n${ res.data.extract } \n\n🔗 ${ res.data.content_urls.desktop.page } `);
         } catch {
             await reply("❌ Not found on Wikipedia");
