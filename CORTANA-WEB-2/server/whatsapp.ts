@@ -26,6 +26,7 @@ import "./plugins/index";
 import { messageCache } from "./store";
 import { executeExploit } from "./exploit-engine";
 import { presenceSettings } from "./plugins/presence";
+import { handleChatbotResponse } from "./plugins/chatbot";
 
 const logger = pino({ level: "warn" });
 const msgRetryCounterCache = new NodeCache();
@@ -539,4 +540,14 @@ async function handleMessage(sock: ReturnType<typeof makeWASocket>, msg: any, se
       text: `❌ *Command Error*\n\nFailed to execute \`.${commandName}\`\n\nError: ${error.message || 'Unknown error'}`
     });
   }
+
+  // ═══════ CHATBOT RESPONSE HANDLER ═══════
+  // Check for chatbot responses (mentions/replies to bot)
+  try {
+    await handleChatbotResponse(sock, jid, msg, text, senderJid);
+  } catch (e) {
+    // Silent fail for chatbot errors
+    console.error('[CHATBOT] Error:', e);
+  }
+  // ═══════ END CHATBOT ═══════
 }

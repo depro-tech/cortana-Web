@@ -60,6 +60,7 @@ export const groupSettings = pgTable("group_settings", {
   antitag: boolean("antitag").default(false), // Anti-tagall
   antigroupmentionMode: text("antigroupmention_mode").default("off"), // 'off' | 'kick' | 'warn'
   warnings: text("warnings").default("{}"), // JSON stringified map of userJid -> count
+  chatbotEnabled: boolean("chatbot_enabled").default(false), // Chatbot on/off
 });
 
 export const insertGroupSettingsSchema = createInsertSchema(groupSettings);
