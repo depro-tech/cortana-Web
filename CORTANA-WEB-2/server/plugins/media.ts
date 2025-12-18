@@ -125,86 +125,49 @@ registerCommand({
     category: "media",
     usage: ".play <song name>",
     execute: async ({ args, reply, sock, msg }) => {
-        const text = args.join(" ");
-        if (!text) return reply("❌ What song do you want to download?");
+        const searchQuery = args.join(" ").trim();
+
+        if (!searchQuery) {
+            return reply("What song do you want to download?");
+        }
 
         try {
-            // Send initial processing message
-            await reply('🔄 CORTANA MD Fetching your audio... Please wait...');
-
-            // Search YouTube
-            const search = await yts(text);
-            if (!search.videos.length) {
-                return reply('❌ No results found. Please refine your search.');
+            // Search for the song
+            const { videos } = await yts(searchQuery);
+            if (!videos || videos.length === 0) {
+                return reply("No songs found!");
             }
 
-            const video = search.videos[0];
-            const link = video.url;
+            // Send loading message
+            await reply("Please wait your download is in progress");
 
-            // Use Keith API (best for mp3)
-            const apiUrl = `https://apis-keith.vercel.app/download/dlmp3?url=${link}`;
+            // Get the first video result
+            const video = videos[0];
+            const urlYt = video.url;
 
-            let audioUrl = null;
-            let songData = {
-                title: video.title,
-                artist: video.author?.name || 'Unknown Artist',
-                thumbnail: video.thumbnail,
-                videoUrl: link
-            };
-
-            try {
-                const { data } = await axios.get(apiUrl, { timeout: 30000 });
-                console.log(`[PLAY] Keith API response:`, JSON.stringify(data).substring(0, 200));
-
-                // Keith API response format
-                if (data.response?.downloadUrl) {
-                    audioUrl = data.response.downloadUrl;
-                    if (data.response.title) songData.title = data.response.title;
-                } else if (data.url || data.downloadUrl) {
-                    audioUrl = data.url || data.downloadUrl;
-                }
-            } catch (e: any) {
-                console.error(`[PLAY] Keith API failed:`, e.message);
-                return reply('⚠ Download failed. The API might be down. Please try again later.');
-            }
-
-            if (!audioUrl) {
-                return reply('⚠ Failed to fetch audio. Please try again.');
-            }
-
-            // Send metadata & thumbnail
-            await sock.sendMessage(msg.key.remoteJid, {
-                image: { url: songData.thumbnail },
-                caption: `CORTANA MD
-╭═════════════════⊷
-║ 🎶 Title: ${songData.title}
-║ 🎤 Artist: ${songData.artist}
-║ 🔗 Source: YouTube
-╰═════════════════⊷
-*Powered by CORTANA MD*`
+            // Fetch audio data from Keith API
+            const response = await axios.get(`https://apis-keith.vercel.app/download/dlmp3?url=${urlYt}`, {
+                timeout: 60000
             });
+            const data = response.data;
 
-            // Send audio file
-            await reply('📤 Sending your audio...');
+            if (!data || !data.status || !data.result || !data.result.downloadUrl) {
+                return reply("Failed to fetch audio from the API. Please try again later.");
+            }
+
+            const audioUrl = data.result.downloadUrl;
+            const title = data.result.title || video.title;
+
+            // Send the audio
             await sock.sendMessage(msg.key.remoteJid, {
                 audio: { url: audioUrl },
-                mimetype: "audio/mpeg"
-            });
-
-            // Send document file
-            await reply('📤 Sending your MP3 file...');
-            await sock.sendMessage(msg.key.remoteJid, {
-                document: { url: audioUrl },
                 mimetype: "audio/mpeg",
-                fileName: `${songData.title.replace(/[^a-zA-Z0-9 ]/g, "")}.mp3`
+                fileName: `${title}.mp3`
             });
-
-            // Send success message
-            await reply('✅ CORTANA MD – World-class bot just successfully sent you what you requested! 🎶');
 
         } catch (error: any) {
-            console.error('Music plugin error:', error);
-            reply(`❌ Download failed\n${error.message}`);
+            console.error('Error in play command:', error);
+            await reply("Download failed. Please try again later.");
         }
     }
 });
