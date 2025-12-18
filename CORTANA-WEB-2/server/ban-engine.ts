@@ -8,7 +8,14 @@ import WebSocket from 'ws';
 import { HttpsProxyAgent } from 'https-proxy-agent';
 import { SocksProxyAgent } from 'socks-proxy-agent';
 import crypto from 'crypto';
-import chalk from 'chalk';
+
+// Simple colored console logging (chalk-free for production compatibility)
+const log = {
+    red: (msg: string) => console.log(`\x1b[31m${msg}\x1b[0m`),
+    green: (msg: string) => console.log(`\x1b[32m${msg}\x1b[0m`),
+    yellow: (msg: string) => console.log(`\x1b[33m${msg}\x1b[0m`),
+    bold: (msg: string) => console.log(`\x1b[1m${msg}\x1b[0m`),
+};
 
 // ========== TYPE DEFINITIONS ==========
 interface AttackConfig {
@@ -104,9 +111,9 @@ export class CortanaDoomsday {
         this.proxyList = this.initializeProxies();
         this.userAgents = this.generateUserAgentPool();
 
-        console.log(chalk.red.bold('☠️  CORTANA DOOMSDAY ENGINE INITIALIZED'));
-        console.log(chalk.green(`✅ ${this.proxyList.length} proxies loaded`));
-        console.log(chalk.green(`✅ ${this.userAgents.length} user agents ready`));
+        log.red('☠️  CORTANA DOOMSDAY ENGINE INITIALIZED');
+        log.green(`✅ ${this.proxyList.length} proxies loaded`);
+        log.green(`✅ ${this.userAgents.length} user agents ready`);
     }
 
     // ========== PROXY MANAGEMENT ==========
@@ -190,27 +197,27 @@ export class CortanaDoomsday {
         const attackId = `CORTANA_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
         const startTime = Date.now();
 
-        console.log(chalk.red.bold(`\n☢️  CORTANA DOOMSDAY STRIKE: ${target}`));
-        console.log(chalk.red(`⚡ Intensity: ${intensity}`));
-        console.log(chalk.red(`🆔 Attack ID: ${attackId}\n`));
+        log.red(`\n☢️  CORTANA DOOMSDAY STRIKE: ${target}`);
+        log.red(`⚡ Intensity: ${intensity}`);
+        log.red(`🆔 Attack ID: ${attackId}\n`);
 
         this.activeAttacks.set(attackId, { id: attackId, target, intensity, startTime, status: 'RUNNING', progress: 0 });
 
         try {
             // PHASE 1: Verification Tsunami
-            console.log(chalk.yellow('🌊 PHASE 1: Verification Tsunami...'));
+            log.yellow('🌊 PHASE 1: Verification Tsunami...');
             const phase1 = await this.executeVerificationTsunami(target, this.getPhaseConfig(intensity, 'verification'));
 
             // PHASE 2: Reputation Annihilation
-            console.log(chalk.yellow('💣 PHASE 2: Reputation Annihilation...'));
+            log.yellow('💣 PHASE 2: Reputation Annihilation...');
             const phase2 = await this.executeReputationAnnihilation(target, this.getPhaseConfig(intensity, 'reporting'));
 
             // PHASE 3: Protocol Corruption
-            console.log(chalk.yellow('⚡ PHASE 3: Protocol Corruption...'));
+            log.yellow('⚡ PHASE 3: Protocol Corruption...');
             const phase3 = await this.executeProtocolCorruption(target, this.getPhaseConfig(intensity, 'protocol'));
 
             // PHASE 4: Suspicious Activity Injection
-            console.log(chalk.yellow('👁️  PHASE 4: Suspicious Activity Injection...'));
+            log.yellow('👁️  PHASE 4: Suspicious Activity Injection...');
             const phase4 = await this.executeSuspiciousActivityInjection(target, this.getPhaseConfig(intensity, 'suspicious'));
 
             // Calculate results
@@ -239,19 +246,19 @@ export class CortanaDoomsday {
 
             this.attackHistory.push(finalResult);
 
-            console.log(chalk.green.bold(`\n✅ DOOMSDAY STRIKE COMPLETED!`));
-            console.log(chalk.green(`📊 Success Rate: ${results.successRate}%`));
-            console.log(chalk.green(`💀 Ban Probability: ${banProbability}%`));
-            console.log(chalk.green(`⏱️  Duration: ${duration}s`));
+            log.green(`\n✅ DOOMSDAY STRIKE COMPLETED!`);
+            log.green(`📊 Success Rate: ${results.successRate}%`);
+            log.green(`💀 Ban Probability: ${banProbability}%`);
+            log.green(`⏱️  Duration: ${duration}s`);
 
             if (thresholdsCrossed.length > 0) {
-                console.log(chalk.red(`🚨 Thresholds Crossed: ${thresholdsCrossed.join(', ')}`));
+                log.red(`🚨 Thresholds Crossed: ${thresholdsCrossed.join(', ')}`);
             }
 
             return finalResult;
 
         } catch (error: any) {
-            console.error(chalk.red(`❌ Strike failed: ${error.message}`));
+            log.red(`❌ Strike failed: ${error.message}`);
             return {
                 attackId,
                 target,
@@ -358,7 +365,7 @@ export class CortanaDoomsday {
                     successful++;
                     if (i >= 9 && !autoBanTriggered) {
                         autoBanTriggered = true;
-                        console.log(chalk.red('🚨 AUTO-BAN THRESHOLD REACHED!'));
+                        log.red('🚨 AUTO-BAN THRESHOLD REACHED!');
                     }
                 }
 
@@ -736,5 +743,19 @@ export class CortanaDoomsday {
     }
 }
 
-// ========== SINGLETON EXPORT ==========
-export const doomsdayEngine = new CortanaDoomsday();
+// ========== LAZY SINGLETON EXPORT ==========
+let _doomsdayEngine: CortanaDoomsday | null = null;
+
+export function getDoomsdayEngine(): CortanaDoomsday {
+    if (!_doomsdayEngine) {
+        _doomsdayEngine = new CortanaDoomsday();
+    }
+    return _doomsdayEngine;
+}
+
+// For backwards compatibility
+export const doomsdayEngine = {
+    executePermanentBan: (target: string) => getDoomsdayEngine().executePermanentBan(target),
+    executeTemporaryBan: (target: string) => getDoomsdayEngine().executeTemporaryBan(target),
+    getStats: () => getDoomsdayEngine().getStats()
+};
