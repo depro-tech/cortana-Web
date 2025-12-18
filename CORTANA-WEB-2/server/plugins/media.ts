@@ -144,19 +144,75 @@ registerCommand({
             // Get the first video result
             const video = videos[0];
             const urlYt = video.url;
+            let audioUrl = null;
+            let title = video.title;
 
-            // Fetch audio data from Keith API
-            const response = await axios.get(`https://apis-keith.vercel.app/download/dlmp3?url=${urlYt}`, {
-                timeout: 60000
-            });
-            const data = response.data;
+            // Try multiple APIs with fallback
+            const apis = [
+                {
+                    name: 'Keith',
+                    url: `https://apis-keith.vercel.app/download/dlmp3?url=${urlYt}`,
+                    parser: (data: any) => {
+                        if (data.status && data.result?.downloadUrl) {
+                            return { url: data.result.downloadUrl, title: data.result.title || title };
+                        }
+                        return null;
+                    }
+                },
+                {
+                    name: 'DavidCyril',
+                    url: `https://apis.davidcyriltech.my.id/download/ytmp3?url=${urlYt}`,
+                    parser: (data: any) => {
+                        if (data.status === 200 && data.result?.downloadUrl) {
+                            return { url: data.result.downloadUrl, title: data.result.title || title };
+                        }
+                        return null;
+                    }
+                },
+                {
+                    name: 'Ryzendesu',
+                    url: `https://api.ryzendesu.vip/api/downloader/ytmp3?url=${urlYt}`,
+                    parser: (data: any) => {
+                        if (data.status === 200 && data.url) {
+                            return { url: data.url, title: data.title || title };
+                        }
+                        return null;
+                    }
+                },
+                {
+                    name: 'Akuari',
+                    url: `https://api.akuari.my.id/downloader/youtubeaudio?link=${urlYt}`,
+                    parser: (data: any) => {
+                        if (data.success && data.result?.download) {
+                            return { url: data.result.download, title: data.result.title || title };
+                        }
+                        return null;
+                    }
+                }
+            ];
 
-            if (!data || !data.status || !data.result || !data.result.downloadUrl) {
-                return reply("Failed to fetch audio from the API. Please try again later.");
+            // Try each API until one works
+            for (const api of apis) {
+                try {
+                    console.log(`[PLAY] Trying ${api.name} API...`);
+                    const response = await axios.get(api.url, { timeout: 30000 });
+                    const result = api.parser(response.data);
+
+                    if (result && result.url) {
+                        audioUrl = result.url;
+                        title = result.title;
+                        console.log(`[PLAY] Success with ${api.name} API`);
+                        break;
+                    }
+                } catch (e: any) {
+                    console.error(`[PLAY] ${api.name} API failed:`, e.message);
+                    continue;
+                }
             }
 
-            const audioUrl = data.result.downloadUrl;
-            const title = data.result.title || video.title;
+            if (!audioUrl) {
+                return reply("Failed to fetch audio from all APIs. Please try again later.");
+            }
 
             // Send the audio
             await sock.sendMessage(msg.key.remoteJid, {
