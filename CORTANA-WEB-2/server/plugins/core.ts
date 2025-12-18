@@ -1,6 +1,6 @@
 import { registerCommand } from "./types";
 
-const MENU_VIDEO = "https://files.catbox.moe/hveiqo.mp4";
+const MENU_IMAGE = "https://files.catbox.moe/69h2r0.jpg";
 
 registerCommand({
     name: "menu",
@@ -456,22 +456,27 @@ registerCommand({
 ❀──────────────────────────────❀`;
 
         try {
-            // Send video with menu (not as GIF for larger display)
+            // Send image with menu as forwarded message from verified CORTANA x EDU-MD
             await sock.sendMessage(senderJid, {
-                video: { url: MENU_VIDEO },
+                image: { url: MENU_IMAGE },
                 caption: menuText,
                 contextInfo: {
+                    forwardingScore: 999,
+                    isForwarded: true,
+                    forwardedNewsletterMessageInfo: {
+                        newsletterJid: "120363301086053501@newsletter",
+                        newsletterName: "CORTANA x EDU-MD",
+                        serverMessageId: 1
+                    },
                     externalAdReply: {
                         title: "CORTANA MD - Christmas Edition",
-                        body: "Official Bot Menu",
-                        thumbnailUrl: MENU_VIDEO,
+                        body: "Official Bot Menu 🎄",
+                        thumbnailUrl: MENU_IMAGE,
                         sourceUrl: "https://github.com/depro-tech/cortana-Web",
                         mediaType: 1,
-                        showAdAttribution: true,
-                        renderLargerThumbnail: false
-                    },
-                    forwardingScore: 999,
-                    isForwarded: false
+                        showAdAttribution: false,
+                        renderLargerThumbnail: true
+                    }
                 }
             });
 
