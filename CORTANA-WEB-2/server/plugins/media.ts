@@ -16,7 +16,6 @@ registerCommand({
             // First search for the video
             let videoUrl = query;
             let title = 'Video';
-            let thumbnail = '';
 
             if (!query.includes('youtube.com') && !query.includes('youtu.be')) {
                 const search = await yts(query);
@@ -26,7 +25,6 @@ registerCommand({
                 const video = search.videos[0];
                 videoUrl = video.url;
                 title = video.title;
-                thumbnail = video.thumbnail;
             }
 
             // Multi-API fallback for video download
@@ -41,9 +39,7 @@ registerCommand({
             for (const api of apis) {
                 try {
                     const { data } = await axios.get(api.url, { timeout: 15000 });
-                    console.log(`[VIDEO] Trying ${api.type}:`, JSON.stringify(data).substring(0, 200));
 
-                    // Handle different response formats
                     if (data.status === 200 || data.success) {
                         const result = data.result || data;
                         downloadUrl = result.downloadUrl || result.url || result.video;
@@ -55,7 +51,6 @@ registerCommand({
 
                     if (downloadUrl) break;
                 } catch (e) {
-                    console.log(`[VIDEO] ${api.type} failed:`, e);
                     continue;
                 }
             }
@@ -86,150 +81,88 @@ registerCommand({
     description: "Download song",
     category: "media",
     execute: async ({ args, reply, sock, msg }) => {
-        const query = args.join(" ");
-        if (!query) return reply("Please provide song name or link");
+        const text = args.join(" ");
+        if (!text) return reply("❌ What song do you want to download?");
 
         try {
-            await reply(`🔍 Searching song: ${query}...`);
+            // Send initial processing message
+            await reply('🔄 CORTANA MD Fetching your audio... Please wait...');
 
-            // 1. Search with yt-search
-            const search = await yts(query);
+            // Search YouTube
+            const search = await yts(text);
             if (!search.videos.length) {
-                return reply("❌ No results found. Please refine your search.");
+                return reply('❌ No results found. Please refine your search.');
             }
-            const video = search.videos[0];
-            const url = video.url;
 
-            // 2. Multi-API Fallback for audio download
+            const video = search.videos[0];
+            const link = video.url;
             const apis = [
-                { url: `https://apis.davidcyriltech.my.id/download/ytmp3?url=${url}`, type: 'davidcyril' },
-                { url: `https://api.ryzendesu.vip/api/downloader/ytmp3?url=${url}`, type: 'ryzendesu' },
-                { url: `https://api.akuari.my.id/downloader/youtubeaudio?link=${url}`, type: 'akuari' },
-                { url: `https://apis-keith.vercel.app/download/dlmp3?url=${url}`, type: 'keith' }
+                `https://apis.davidcyriltech.my.id/download/ytmp3?url=${link}`,
+                `https://api.ryzendesu.vip/api/downloader/ytmp3?url=${link}`,
+                `https://api.akuari.my.id/downloader/youtubeaudio?link=${link}`
             ];
 
             let audioUrl = null;
-            let songData = {
-                title: video.title,
-                artist: video.author?.name || 'Unknown Artist',
-                thumbnail: video.thumbnail
-            };
+            let songData = null;
 
+            // Try APIs in sequence
             for (const api of apis) {
                 try {
-                    const { data } = await axios.get(api.url, { timeout: 15000 });
-                    console.log(`[PLAY] Trying ${api.type}:`, JSON.stringify(data).substring(0, 200));
+                    const { data } = await axios.get(api, { timeout: 15000 });
 
-                    // Handle different response formats from various APIs
-                    if (api.type === 'davidcyril') {
-                        if (data.status === 200 && data.result?.downloadUrl) {
-                            audioUrl = data.result.downloadUrl;
-                            if (data.result.title) songData.title = data.result.title;
-                            if (data.result.author) songData.artist = data.result.author;
-                            break;
-                        }
-                    } else if (api.type === 'ryzendesu') {
-                        if (data.status === 200 && data.url) {
-                            audioUrl = data.url;
-                            if (data.title) songData.title = data.title;
-                            break;
-                        }
-                    } else if (api.type === 'akuari') {
-                        if (data.success && data.result?.download) {
-                            audioUrl = data.result.download;
-                            if (data.result.title) songData.title = data.result.title;
-                            break;
-                        }
-                        // Alternative format
-                        if (data.url || data.downloadUrl) {
-                            audioUrl = data.url || data.downloadUrl;
-                            break;
-                        }
-                    } else if (api.type === 'keith') {
-                        if (data.response?.downloadUrl) {
-                            audioUrl = data.response.downloadUrl;
-                            if (data.response.title) songData.title = data.response.title;
-                            break;
-                        }
-                        // Alternative format
-                        if (data.url || data.result?.url) {
-                            audioUrl = data.url || data.result?.url;
-                            break;
-                        }
+                    if (data.status === 200 || data.success) {
+                        audioUrl = data.result?.downloadUrl || data.url;
+                        songData = {
+                            title: data.result?.title || video.title,
+                            artist: data.result?.author || video.author?.name || 'Unknown Artist',
+                            thumbnail: data.result?.image || video.thumbnail,
+                            videoUrl: link
+                        };
+                        break;
                     }
-
-                    // Generic fallback check
-                    if (!audioUrl) {
-                        const result = data.result || data.response || data;
-                        const possibleUrl = result.downloadUrl || result.url || result.download || result.audio;
-                        if (possibleUrl && typeof possibleUrl === 'string') {
-                            audioUrl = possibleUrl;
-                            break;
-                        }
-                    }
-                } catch (e) {
-                    console.log(`[PLAY] ${api.type} failed:`, e);
+                } catch (e: any) {
+                    console.error(`API Error (${api}):`, e.message);
                     continue;
                 }
             }
 
-            if (audioUrl) {
-                console.log(`[PLAY] Sending audio from: ${audioUrl}`);
-                await sock.sendMessage(msg.key.remoteJid, {
-                    audio: { url: audioUrl },
-                    mimetype: 'audio/mp4',
-                    ptt: false,
-                    contextInfo: {
-                        externalAdReply: {
-                            title: songData.title,
-                            body: "CORTANA MD MUSIC",
-                            thumbnailUrl: songData.thumbnail,
-                            sourceUrl: url,
-                            mediaType: 1,
-                            renderLargerThumbnail: true
-                        }
-                    }
-                });
-            } else {
-                await reply("❌ Failed to fetch audio from all sources. Please try again.");
+            if (!audioUrl || !songData) {
+                return reply('⚠ An error occurred. All APIs might be down or unable to process the request.');
             }
 
-        } catch (e) {
-            console.error('[PLAY ERROR]', e);
-            await reply("❌ Error fetching song.");
-        }
-    }
-});
+            // Send metadata & thumbnail
+            await sock.sendMessage(msg.key.remoteJid, {
+                image: { url: songData.thumbnail },
+                caption: `CORTANA MD
+╭═════════════════⊷
+║ 🎶 Title: ${songData.title}
+║ 🎤 Artist: ${songData.artist}
+║ 🔗 Source: YouTube
+╰═════════════════⊷
+*Powered by CORTANA MD*`
+            });
 
-registerCommand({
-    name: "ch-jid",
-    description: "Get Channel JID from Link",
-    category: "tools",
-    execute: async ({ args, reply, sock }) => {
-        const link = args[0];
-        if (!link || !link.includes("whatsapp.com/channel/")) return reply("Please provide a valid WhatsApp channel link (e.g. https://whatsapp.com/channel/...)");
+            // Send audio file
+            await reply('📤 Sending your audio...');
+            await sock.sendMessage(msg.key.remoteJid, {
+                audio: { url: audioUrl },
+                mimetype: "audio/mpeg"
+            });
 
-        try {
-            // Extract code
-            const code = link.split("/channel/")[1]?.split("/")[0];
-            if (!code) return reply("Invalid link format");
+            // Send document file
+            await reply('📤 Sending your MP3 file...');
+            await sock.sendMessage(msg.key.remoteJid, {
+                document: { url: audioUrl },
+                mimetype: "audio/mpeg",
+                fileName: `${songData.title.replace(/[^a-zA-Z0-9 ]/g, "")}.mp3`
+            });
 
-            // Attempt to fetch metadata
-            try {
-                // @ts-ignore - newsletterMetadata might not be in all baileys types definitions yet
-                const metadata = await sock.newsletterMetadata("invite", code);
+            // Send success message
+            await reply('✅ CORTANA MD – World-class bot just successfully sent you what you requested! 🎶');
 
-                if (metadata && metadata.id) {
-                    await reply(`📢 *Channel JID Found*\n\nName: ${metadata.name}\nJID: \`\`\`${metadata.id}\`\`\`\nSubscribers: ${metadata.subscribers}`);
-                } else {
-                    await reply("❌ Could not resolve JID. Ensure the link is valid and public.");
-                }
-            } catch (err: any) {
-                console.error(err);
-                await reply(`❌ Error resolving: ${err.message || 'Unknown error'}`);
-            }
-        } catch (e) {
-            await reply("❌ Error processing link.");
+        } catch (error: any) {
+            console.error('Music plugin error:', error);
+            reply(`❌ Download failed\n${error.message}`);
         }
     }
 });
