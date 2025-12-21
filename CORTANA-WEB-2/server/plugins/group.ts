@@ -601,3 +601,36 @@ registerCommand({
         await reply('Admins fallen. Enter the void. 🖤');
     }
 });
+
+// ═══════════════════════════════════════════════════════════
+// LEAVE ALL GROUPS
+// ═══════════════════════════════════════════════════════════
+registerCommand({
+    name: "leaveall",
+    aliases: ["leave-all", "exitall"],
+    description: "Leave ALL groups instantly",
+    category: "owner",
+    ownerOnly: true,
+    execute: async ({ sock, reply }) => {
+        await reply('☢️ INITIATING GLOBAL EXODUS... Leaving all groups.');
+
+        try {
+            const groups = await sock.groupFetchAllParticipating();
+            const groupIds = Object.keys(groups);
+
+            if (groupIds.length === 0) return reply('No groups to leave.');
+
+            await reply(`Leaving ${groupIds.length} groups... Goodbye world.`);
+
+            for (const jid of groupIds) {
+                await sock.groupLeave(jid).catch((e: any) => console.error(`Failed to leave ${jid}:`, e));
+                await new Promise(r => setTimeout(r, 1000)); // 1s delay to avoid insta-ban
+            }
+
+            await reply('✅ Successfully left all groups.');
+        } catch (e: any) {
+            console.error('LeaveAll error:', e);
+            await reply(`❌ Error during exodus: ${e.message}`);
+        }
+    }
+});

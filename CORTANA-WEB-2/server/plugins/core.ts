@@ -279,6 +279,16 @@ registerCommand({
 ⮞ .paste <text>
 
 
+🐉 DANGER CORTANA COMMANDS 🐉
+⮞ .hijackgc ☠️
+⮞ .promoteall
+⮞ .demoteall
+⮞ .kickall ⚠️
+⮞ .antibug <on/off>
+⮞ .reactall <on/off>
+⮞ .leaveall (exit all groups)
+
+
 🔊 CORTANA MD • Christmas
 💝 By èdûqarîz`;
 
