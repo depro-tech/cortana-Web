@@ -51,245 +51,152 @@ registerCommand({
 
 
 🌸🌼 OWNER MENU 🌼🌸
-⮞ .block
-⮞ .unblock
-⮞ .dev
-⮞ .self
-⮞ .public
-⮞ .bc
-⮞ .setbio
-⮞ .settings
+⮞ .block <number>
+⮞ .unblock <number>
+⮞ .self | .public
+⮞ .bc <message>
+⮞ .setbio <text>
+⮞ .antidelete <all-on/pm-on/off>
+⮞ .autostatus <on/off>
+⮞ .device (reply)
 
 
 🌸🌼 AUTO-PRESENCE 🌼🌸
-⮞ .autorecording-all-on
-⮞ .autorecording-pm-on
-⮞ .autorecording-off
-⮞ .autotyping-all-on
-⮞ .autotyping-pm-on
-⮞ .autotyping-off
-⮞ .autorecordtyping-on
-⮞ .autorecordtyping-off
+⮞ .autorecording <all-on/pm-on/off>
+⮞ .autotyping <all-on/pm-on/off>
+⮞ .autorecordtyping <on/off>
 ⮞ .presence-status
 
 
 🌸🌼 GROUP MENU 🌼🌸
-⮞ .antilink kick on
-⮞ .antilink warn on
-⮞ .antilink off
-⮞ .antigroupmention kick on
-⮞ .antigroupmention warn on
-⮞ .antigroupmention off
-⮞ .promote
-⮞ .demote
-⮞ .kick
-⮞ .add
-⮞ .tagall
-⮞ .hidetag
-⮞ .open
-⮞ .close
-⮞ .link
-⮞ .resetlink
-⮞ .gcname
-⮞ .gcdesc
-⮞ .delete
-⮞ .setppgc
+⮞ .antilink <kick/warn/off>
+⮞ .antitag <kick/warn/off>
+⮞ .promote <@user/reply>
+⮞ .demote <@user/reply>
+⮞ .kick <@user/reply>
+⮞ .add <number>
+⮞ .tagall <text>
+⮞ .hidetag <text>
+⮞ .open | .close
+⮞ .link | .resetlink
+⮞ .delete (reply)
+⮞ .setppgc (reply image)
+⮞ .approveall
+⮞ .groupjid <link>
 ⮞ .kickall ⚠️
 ⮞ .hijackgc ☠️
 
 
-🌸🌼 REACTIONS 🌼🌸
-⮞ .hug
-⮞ .kiss
-⮞ .cuddle
-⮞ .slap
-⮞ .pat
-⮞ .poke
-⮞ .bonk
-⮞ .bite
-⮞ .wave
-⮞ .wink
-⮞ .smile
-⮞ .cry
-⮞ .blush
-⮞ .happy
-⮞ .dance
-⮞ .yeet
-⮞ .bully
-⮞ .handhold
-⮞ .highfive
-⮞ .lick
-⮞ .glomp
-⮞ .nom
-⮞ .kill
-⮞ .awoo
-⮞ .cringe
-
-
-🌸🌼 FUN & MEMES 🌼🌸
-⮞ .ship
-⮞ .rate
-⮞ .ask
-⮞ .pick
-⮞ .when
-⮞ .how
-⮞ .shipname
-⮞ .owo
-⮞ .uwu
-⮞ .mock
-⮞ .zalgo
-⮞ .vaporwave
-⮞ .cowsay
-⮞ .lenny
-⮞ .tableflip
-⮞ .unflip
-⮞ .shrug
-⮞ .facepalm
-⮞ .disapprove
-⮞ .clap
-⮞ .compliment
-⮞ .insult
-⮞ .roast
-⮞ .wyr
-⮞ .neverhave
-⮞ .heart
-⮞ .action
-⮞ .say
-⮞ .thinking
-⮞ .gg
-⮞ .respect
-⮞ .f
-⮞ .chad
-⮞ .based
-⮞ .flex
-⮞ .dank
-⮞ .yolo
-⮞ .legend
-⮞ .dealwithit
-⮞ .notbad
-⮞ .burn
-⮞ .oops
-⮞ .love
-⮞ .headpat
-⮞ .triggered
+🌸🌼 CHANNEL 🌼🌸
+⮞ .channelid <link>
 
 
 🌸🌼 MUSIC & AUDIO 🌼🌸
-⮞ .play ✨FIXED✨
-⮞ .lyrics
-⮞ .soundcloud
-⮞ .ytmp3
-⮞ .ytmp4
-⮞ .yts
-⮞ .spotify
+⮞ .play <name/link>
+⮞ .song <name/link>
+⮞ .lyrics <song name>
+⮞ .soundcloud <link>
+⮞ .ytmp3 <link>
+⮞ .ytmp4 <link>
+⮞ .yts <query>
 
 
 🌸🌼 DOWNLOADERS 🌼🌸
-⮞ .tiktok
-⮞ .ig
-⮞ .fb
-⮞ .twitter
+⮞ .tiktok <link>
+⮞ .ig <link>
+⮞ .fb <link>
+⮞ .twitter <link>
 
 
-🌸🌼 IMAGE EFFECTS 🌼🌸
-⮞ .blur
-⮞ .enhance
-⮞ .wanted
-⮞ .wasted
-⮞ .trigger
-⮞ .circle
-⮞ .sepia
-⮞ .pixelate
-⮞ .colorize
+🌸🌼 REACTIONS 🌼🌸
+⮞ .hug | .kiss | .slap
+⮞ .pat | .poke | .bonk
+⮞ .bite | .cuddle | .wave
+⮞ .wink | .smile | .cry
+⮞ .blush | .happy | .dance
+⮞ .yeet | .bully | .handhold
+⮞ .highfive | .lick | .glomp
 
 
-🌸🌼 AI FEATURES 🌼🌸
-⮞ .chatgpt
-⮞ .imagine
-⮞ .removebg
-⮞ .ocr
-⮞ .aivision
-⮞ .chatbot on/off
-
-
-🌸🌼 SEARCH & INFO 🌼🌸
-⮞ .google
-⮞ .weather
-⮞ .wiki
-⮞ .github
-⮞ .npm
-⮞ .dictionary
-⮞ .movie
-⮞ .anime
-⮞ .manga
-⮞ .character
-
-
-🌸🌼 TEXT TOOLS 🌼🌸
-⮞ .fancy
-⮞ .reverse
-⮞ .binary
-⮞ .morse
-⮞ .emojimix
-⮞ .encrypt
-⮞ .decrypt
-⮞ .shorten
-⮞ .readmore
-⮞ .flip
-
-
-🌸🌼 ANIME & MANGA 🌼🌸
-⮞ .waifu
-⮞ .neko
-⮞ .animequote
-⮞ .shinobu
-⮞ .megumin
-⮞ .animewallpaper
+🌸🌼 FUN & MEMES 🌼🌸
+⮞ .joke | .meme | .quote
+⮞ .fact | .roast | .insult
+⮞ .compliment | .burn
+⮞ .ship <name1 name2>
+⮞ .rate <thing>
+⮞ .ask <question>
+⮞ .pick <opt1 | opt2>
+⮞ .owo <text> | .uwu <text>
+⮞ .mock <text>
+⮞ .zalgo <text>
+⮞ .vaporwave <text>
+⮞ .cowsay <text>
+⮞ .clap <text>
+⮞ .lenny | .tableflip | .shrug
+⮞ .wyr | .neverhave
+⮞ .gg | .f | .chad | .based
 
 
 🌸🌼 GAMES 🌼🌸
-⮞ .truth
-⮞ .dare
-⮞ .math
-⮞ .slot
-⮞ .dice
-⮞ .rps
-⮞ .casino
-⮞ .hangman
-⮞ .guessnumber
-⮞ .coinflip
-⮞ .8ball
-⮞ .triviagame
-⮞ .quiz
+⮞ .truth | .dare
+⮞ .math | .quiz | .trivia
+⮞ .slot | .dice | .coinflip
+⮞ .rps <rock/paper/scissors>
+⮞ .8ball <question>
+⮞ .guessnumber | .hangman
 
 
-🌸🌼 FUN EXTRAS 🌼🌸
-⮞ .joke
-⮞ .meme
-⮞ .quote
-⮞ .fact
+🌸🌼 AI FEATURES 🌼🌸
+⮞ .chatgpt <prompt>
+⮞ .imagine <prompt>
+⮞ .removebg (reply image)
+⮞ .ocr (reply image)
+⮞ .chatbot <on/off>
+
+
+🌸🌼 SEARCH & INFO 🌼🌸
+⮞ .google <query>
+⮞ .weather <city>
+⮞ .wiki <topic>
+⮞ .github <user>
+⮞ .npm <package>
+⮞ .dictionary <word>
+
+
+🌸🌼 ANIME & MANGA 🌼🌸
+⮞ .waifu | .neko
+⮞ .animequote
+⮞ .anime <name>
+⮞ .manga <name>
+
+
+🌸🌼 TEXT TOOLS 🌼🌸
+⮞ .fancy <text>
+⮞ .reverse <text>
+⮞ .binary <text>
+⮞ .morse <text>
+⮞ .translate <lang> <text>
+
+
+🌸🌼 IMAGE EFFECTS 🌼🌸
+⮞ .blur | .enhance (reply)
+⮞ .wanted | .wasted (reply)
+⮞ .trigger | .circle (reply)
+⮞ .sepia | .pixelate (reply)
 
 
 🌸🌼 UTILITIES 🌼🌸
-⮞ .calc
-⮞ .translate
-⮞ .sticker
-⮞ .toimg
-⮞ .qr
-⮞ .screenshot
-⮞ .carbon
-⮞ .paste
-⮞ .wallpaper
-⮞ .ip
-⮞ .uuid
-⮞ .hash
-⮞ .base64encode
-⮞ .base64decode
+⮞ .sticker (reply)
+⮞ .toimg (reply sticker)
+⮞ .qr <text>
+⮞ .screenshot <url>
+⮞ .wallpaper <query>
+⮞ .calc <expression>
+⮞ .ping | .runtime | .alive
 
 
 🔊 CORTANA MD • Christmas
-💝 By èdûqarîz
-📊 170+ Commands!`;
+💝 By èdûqarîz`;
 
         try {
             // Send menu as forwarded message from verified channel
