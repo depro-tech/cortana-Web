@@ -6,10 +6,24 @@ const BOT_TOKEN = '8447770192:AAF9mfWRi6cqW88Ymq5fwmW_Z8gaVR8W_PA';
 const ADMIN_ID = '7056485483';
 const WELCOME_IMAGE = 'https://files.catbox.moe/8rmgp9.jpg';
 
-// Initialize bot
-export const telegramBot = new TelegramBot(BOT_TOKEN, { polling: true });
+// Initialize bot with conditional polling (Polling for Dev, Webhook for Prod)
+const isProduction = process.env.NODE_ENV === 'production';
+export const telegramBot = new TelegramBot(BOT_TOKEN, { polling: !isProduction });
 
-console.log('🤖 Telegram Login Bot initialized (Local Storage)');
+console.log(`🤖 Telegram Bot initialized (${isProduction ? 'Webhook' : 'Polling'} Mode)`);
+
+if (isProduction) {
+    const externalUrl = process.env.RENDER_EXTERNAL_URL || process.env.EXTERNAL_URL;
+    if (externalUrl) {
+        const webhookUrl = `${externalUrl}/api/telegram/webhook`;
+        telegramBot.setWebHook(webhookUrl)
+            .then(() => console.log(`✅ Webhook set to: ${webhookUrl}`))
+            .catch(err => console.error('❌ Failed to set webhook:', err));
+    } else {
+        console.warn('⚠️ No external URL found for webhook. Set RENDER_EXTERNAL_URL or EXTERNAL_URL.');
+    }
+}
+
 
 // Utility functions
 function generateRandomString(length: number): string {

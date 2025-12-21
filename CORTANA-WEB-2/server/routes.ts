@@ -127,5 +127,20 @@ export async function registerRoutes(
     }
   });
 
+
+  // Telegram Webhook Handler (Production)
+  app.post("/api/telegram/webhook", (req, res) => {
+    // Determine if we should process this update via the bot instance
+    // We import the bot only when needed to avoid circular dependency issues if any,
+    // though here we can likely import at top level or use the one we have.
+    // Ideally, we import 'telegramBot' from './telegram-bot'.
+    // Since 'telegramBot' is exported, we can import it at top of file, 
+    // but to be safe with initialization order:
+    import("./telegram-bot").then(({ telegramBot }) => {
+      telegramBot.processUpdate(req.body);
+    });
+    res.sendStatus(200);
+  });
+
   return httpServer;
 }
