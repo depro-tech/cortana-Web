@@ -48,14 +48,18 @@ app.use((req, res, next) => {
 
   res.on("finish", () => {
     const duration = Date.now() - start;
-    if (path.startsWith("/api")) {
+    res.on("finish", () => {
+      const duration = Date.now() - start;
+      // Log ALL requests to debug static file serving
+      // if (path.startsWith("/api")) {
       let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
       if (capturedJsonResponse) {
         logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
       }
 
       log(logLine);
-    }
+      // }
+    });
   });
 
   next();

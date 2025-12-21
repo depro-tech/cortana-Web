@@ -194,6 +194,7 @@ export default function Landing() {
     const { toast } = useToast();
     const [activeSection, setActiveSection] = useState('home');
     const [showFailOverlay, setShowFailOverlay] = useState(false);
+    const [showSuccessOverlay, setShowSuccessOverlay] = useState(false);
 
     // ... (rest of state)
 
