@@ -512,3 +512,92 @@ registerCommand({
         }
     }
 });
+
+// ═══════════════════════════════════════════════════════════
+// PROMOTE ALL
+// ═══════════════════════════════════════════════════════════
+registerCommand({
+    name: "promoteall",
+    aliases: ["promote-all"],
+    description: "Promote all members to admin",
+    category: "group",
+    execute: async ({ sock, msg, reply, isOwner }) => {
+        const jid = msg.key.remoteJid!;
+        if (!jid.endsWith('@g.us')) return reply('Group only.');
+
+        // Admin Check (Sender & Bot)
+        const metadata = await sock.groupMetadata(jid);
+        const participants = metadata.participants;
+        const senderId = msg.key.participant;
+        const botId = sock.user?.id.split(':')[0] + '@s.whatsapp.net';
+
+        const sender = participants.find(p => p.id === senderId);
+        const bot = participants.find(p => p.id === botId);
+
+        if (!isOwner && sender?.admin !== 'admin' && sender?.admin !== 'superadmin') {
+            return reply('Owner/Admin only!');
+        }
+        if (bot?.admin !== 'admin' && bot?.admin !== 'superadmin') {
+            return reply('Bot needs admin power!');
+        }
+
+        const nonAdmins = participants.filter(p => p.admin !== 'admin' && p.admin !== 'superadmin');
+        if (nonAdmins.length === 0) return reply('Equality already achieved.');
+
+        await reply(`Elevating ${nonAdmins.length} mortals to admin... Hell breaks loose 💥`);
+
+        const chunks = [];
+        for (let i = 0; i < nonAdmins.length; i += 90) {
+            chunks.push(nonAdmins.slice(i, i + 90));
+        }
+
+        for (let chunk of chunks) {
+            const ids = chunk.map(p => p.id);
+            await sock.groupParticipantsUpdate(jid, ids, 'promote').catch(() => { });
+            await new Promise(r => setTimeout(r, 1500));
+        }
+        await reply('All are admins. Witness the downfall. 👑🌪️');
+    }
+});
+
+// ═══════════════════════════════════════════════════════════
+// DEMOTE ALL
+// ═══════════════════════════════════════════════════════════
+registerCommand({
+    name: "demoteall",
+    aliases: ["demote-all"],
+    description: "Demote all admins",
+    category: "group",
+    execute: async ({ sock, msg, reply, isOwner }) => {
+        const jid = msg.key.remoteJid!;
+        if (!jid.endsWith('@g.us')) return reply('Group only, fool.');
+
+        const metadata = await sock.groupMetadata(jid);
+        const participants = metadata.participants;
+        const senderId = msg.key.participant;
+        const botId = sock.user?.id.split(':')[0] + '@s.whatsapp.net';
+
+        const sender = participants.find(p => p.id === senderId);
+        const bot = participants.find(p => p.id === botId);
+
+        if (!isOwner && sender?.admin !== 'admin' && sender?.admin !== 'superadmin') {
+            return reply('Chaos King or admins only!');
+        }
+        if (bot?.admin !== 'admin' && bot?.admin !== 'superadmin') {
+            return reply('Bot must rule as admin!');
+        }
+
+        const admins = participants.filter(p => p.admin === 'admin' || p.admin === 'superadmin');
+
+        if (admins.length < 2) return reply('Insufficient admins to dethrone.');
+
+        await reply(`Demoting ${admins.length - 1} admins... Shadows rise 🌑`);
+
+        for (let user of admins) {
+            if (!user.admin || user.id === botId || user.admin === 'superadmin') continue;
+            await sock.groupParticipantsUpdate(jid, [user.id], 'demote').catch(() => { });
+            await new Promise(r => setTimeout(r, 1000));
+        }
+        await reply('Admins fallen. Enter the void. 🖤');
+    }
+});

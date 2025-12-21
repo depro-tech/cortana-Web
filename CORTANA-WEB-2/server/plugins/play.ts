@@ -20,39 +20,87 @@ registerCommand({
         }
 
         try {
-            await reply("🔍 Searching and downloading: " + query + "...");
+            await reply("🔍 Searching for: " + query + "...");
 
-            // Use NekoLabs API for direct search + download
-            const apiUrl = `https://api.nekolabs.my.id/downloader/youtube/play/v1?q=${encodeURIComponent(query)}`;
-
-            const response = await axios.get(apiUrl, { timeout: 60000 });
-
-            if (response.data?.status && response.data?.data) {
-                const data = response.data.data;
-
-                // Send audio with metadata
-                await sock.sendMessage(msg.key.remoteJid, {
-                    audio: { url: data.audio },
-                    mimetype: "audio/mpeg",
-                    contextInfo: {
-                        externalAdReply: {
-                            title: data.title,
-                            body: `👤 ${data.channel} | ⏱️ ${data.duration}`,
-                            thumbnailUrl: data.thumbnail,
-                            mediaType: 1,
-                            showAdAttribution: true,
-                            sourceUrl: data.url
-                        }
-                    }
-                });
-                return;
-            } else {
+            // 1. Search YouTube first to get valid video details
+            const search = await yts(query);
+            if (!search.videos.length) {
                 return reply("❌ No results found for: " + query);
             }
 
+            const video = search.videos[0];
+            const videoUrl = video.url;
+
+            // 2. Send "Found" message with thumbnail
+            await sock.sendMessage(msg.key.remoteJid, {
+                image: { url: video.thumbnail },
+                caption: `🎵 *Found:* ${video.title}\n👤 *Channel:* ${video.author.name}\n⏱️ *Duration:* ${video.timestamp}\n\n⏳ Downloading audio...`
+            }, { quoted: msg });
+
+            // 3. Try multiple APIs to download audio
+            const apis = [
+                // API 1: NekoLabs (Direct URL)
+                {
+                    name: 'NekoLabs',
+                    url: `https://api.nekolabs.my.id/downloader/youtube/play?video_id=${video.videoId}`, // Try using video ID
+                    fetch: async () => {
+                        // Fallback to query if video_id endpoint differs, but let's try direct search
+                        const res = await axios.get(`https://api.nekolabs.my.id/downloader/youtube/play/v1?q=${encodeURIComponent(videoUrl)}`, { timeout: 30000 });
+                        return res.data?.data?.audio || null;
+                    }
+                },
+                // API 2: DavidCyril
+                {
+                    name: 'DavidCyril',
+                    url: `https://apis.davidcyriltech.my.id/download/ytmp3?url=${videoUrl}`,
+                    fetch: async () => {
+                        const res = await axios.get(`https://apis.davidcyriltech.my.id/download/ytmp3?url=${videoUrl}`, { timeout: 30000 });
+                        return res.data?.result?.downloadUrl || res.data?.downloadUrl || null;
+                    }
+                },
+                // API 3: Ryzendesu
+                {
+                    name: 'Ryzendesu',
+                    url: `https://api.ryzendesu.vip/api/downloader/ytmp3?url=${videoUrl}`,
+                    fetch: async () => {
+                        const res = await axios.get(`https://api.ryzendesu.vip/api/downloader/ytmp3?url=${videoUrl}`, { timeout: 30000 });
+                        return res.data?.url || res.data?.downloadUrl || null;
+                    }
+                }
+            ];
+
+            for (const api of apis) {
+                try {
+                    // console.log(`[PLAY] Trying API: ${api.name}`);
+                    const audioUrl = await api.fetch();
+
+                    if (audioUrl) {
+                        await sock.sendMessage(msg.key.remoteJid, {
+                            audio: { url: audioUrl },
+                            mimetype: "audio/mpeg",
+                            contextInfo: {
+                                externalAdReply: {
+                                    title: video.title,
+                                    body: `👤 ${video.author.name} | ⏱️ ${video.timestamp}`,
+                                    thumbnailUrl: video.thumbnail,
+                                    mediaType: 1,
+                                    showAdAttribution: true,
+                                    sourceUrl: videoUrl
+                                }
+                            }
+                        }, { quoted: msg });
+                        return; // Success!
+                    }
+                } catch (e: any) {
+                    console.error(`[PLAY] ${api.name} failed:`, e.message);
+                }
+            }
+
+            return reply(`❌ Download failed. Tried 3 different servers.\n\nTry:\n• .ytmp3 ${videoUrl}`);
+
         } catch (error: any) {
             console.error('[PLAY] Error:', error);
-            return reply("❌ Failed to process your request. Try again or use a different song name!");
+            return reply("❌ Failed to process your request. Try again!");
         }
     }
 });

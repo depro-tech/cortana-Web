@@ -24,6 +24,8 @@ import "./misc-advanced";
 import "./channel";
 import "./downloaders";
 import "./play";
-import "./reactions"; // CRITICAL FIX for 'happy' etc
+import "./reactions";
 import "./chatbot";
 import "./presence";
+import "./utilities";
+import "./protection"; // Fixes antibug, reactall

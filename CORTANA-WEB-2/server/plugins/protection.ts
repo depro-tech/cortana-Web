@@ -1,0 +1,184 @@
+import { registerCommand } from "./types";
+
+// ═══════════════════════════════════════════════════════════
+// GLOBAL STATE
+// ═══════════════════════════════════════════════════════════
+
+const reactAllChats = new Set<string>(); // Chat IDs where react-all is active
+let antiBugActive = false; // Global toggle for antibug protection
+
+// Spam detection: Rate limiter per sender (Map: sender => {count, lastTime})
+const spamTracker = new Map<string, { count: number, lastTime: number }>();
+
+// Known bug/crash patterns
+const bugPatterns = [
+    /[\u0600-\u06FF]{500,}/, // Long Arabic floods
+    /[\u0900-\u097F]{500,}/, // Long Devanagari/Indic
+    /.{10000,}/              // Extremely long messages
+];
+
+// Taunt message
+const tauntMessage = "ohh! Not today cunt🗿🤣 Cortana protection is active, y'all always weak like shii 🚮";
+
+// ═══════════════════════════════════════════════════════════
+// EMOJI GENERATOR
+// ═══════════════════════════════════════════════════════════
+
+function getAllEmojis() {
+    const emojis: string[] = [];
+    const ranges = [
+        [0x1F600, 0x1F64F], // Emoticons (faces)
+        [0x1F300, 0x1F5FF], // Miscellaneous Symbols and Pictographs
+        [0x1F680, 0x1F6FF], // Transport and Map Symbols
+        [0x1F1E6, 0x1F1FF], // Regional indicator symbols (flags)
+        [0x2600, 0x26FF],   // Miscellaneous Symbols
+        [0x2700, 0x27BF],   // Dingbats
+        [0x1F900, 0x1F9FF], // Supplemental Symbols and Pictographs
+        [0x1F018, 0x1F02B], // Mahjong & playing cards subsets
+        [0x1F000, 0x1F0FF], // Additional symbols
+        [0x1F466, 0x1F469], // People bases for modifiers
+        [0x1F3FB, 0x1F3FF]  // Skin tones
+    ];
+
+    for (const [start, end] of ranges) {
+        for (let i = start; i <= end; i++) {
+            emojis.push(String.fromCodePoint(i));
+        }
+    }
+
+    // Add common ZWJ sequences & combos
+    const extras = [
+        '👨‍👩‍👧', '👨‍👩‍👧‍👦', '👨‍👩‍👦‍👦', '👩‍👩‍👧', '👨‍👨‍👧',
+        '🏳️‍🌈', '🏳️‍⚧️', '👁️‍🗨️', '❤️‍🔥', '❤️‍🩹',
+        '👨‍🔬', '👩‍🔬', '🧑‍🔬', '👨‍💻', '👩‍💻'
+    ];
+    emojis.push(...extras);
+
+    return emojis;
+}
+
+const allEmojis = getAllEmojis(); // Generate once
+
+// ═══════════════════════════════════════════════════════════
+// COMMANDS
+// ═══════════════════════════════════════════════════════════
+
+registerCommand({
+    name: "reactall",
+    aliases: ["react-all"],
+    description: "Toggle random reactions on all messages",
+    category: "owner",
+    ownerOnly: true,
+    execute: async ({ reply, msg, args }) => {
+        const jid = msg.key.remoteJid!;
+        const mode = args[0]?.toLowerCase();
+
+        if (mode === 'off') {
+            reactAllChats.clear();
+            return reply('React-all silenced worldwide. Temporary truce.');
+        }
+
+        if (reactAllChats.has(jid)) {
+            reactAllChats.delete(jid);
+            await reply('React-all halted here.');
+        } else {
+            reactAllChats.add(jid);
+            await reply(`React-all AWAKENED! Bombarding with ${allEmojis.length}+ emojis per message 😈💥🖤`);
+        }
+    }
+});
+
+registerCommand({
+    name: "antibug",
+    description: "Toggle Anti-Bug Protection",
+    category: "owner",
+    ownerOnly: true,
+    execute: async ({ reply, args }) => {
+        const mode = args[0]?.toLowerCase();
+
+        if (mode === 'on') {
+            antiBugActive = true;
+            await reply('Antibug activated! Bugs, spam, and malicious calls will be crushed. Protection online 🛡️😈');
+        } else if (mode === 'off') {
+            antiBugActive = false;
+            spamTracker.clear(); // Reset trackers
+            await reply('Antibug deactivated. Vulnerable to the void once more 🌑');
+        } else {
+            await reply('Usage: .antibug on/off');
+        }
+    }
+});
+
+// ═══════════════════════════════════════════════════════════
+// HANDLERS (Called from whatsapp.ts)
+// ═══════════════════════════════════════════════════════════
+
+export async function handleAntiBug(sock: any, msg: any) {
+    if (!antiBugActive) return false;
+    if (msg.key.fromMe) return false;
+
+    const chatId = msg.key.remoteJid;
+    const sender = msg.key.participant || msg.key.remoteJid;
+    const text = msg.message?.conversation || msg.message?.extendedTextMessage?.text || '';
+
+    // 1. Bug Patterns Check
+    if (bugPatterns.some(pattern => pattern.test(text))) {
+        // Delete message if in group
+        if (chatId.endsWith('@g.us')) {
+            await sock.sendMessage(chatId, { delete: msg.key }).catch(() => { });
+        }
+        // Send taunt
+        await sock.sendMessage(chatId, { text: tauntMessage });
+        // Block sender
+        await sock.updateBlockStatus(sender, 'block').catch(() => { });
+        return true; // Stop processing
+    }
+
+    // 2. Rate limiting: >5 msgs in 10s
+    if (sender) {
+        const now = Date.now();
+        if (!spamTracker.has(sender)) {
+            spamTracker.set(sender, { count: 1, lastTime: now });
+        } else {
+            const data = spamTracker.get(sender)!;
+            if (now - data.lastTime < 10000) { // 10 seconds
+                data.count++;
+                if (data.count > 5) {
+                    await sock.sendMessage(chatId, { text: tauntMessage });
+                    await sock.updateBlockStatus(sender, 'block').catch(() => { });
+                    spamTracker.delete(sender);
+                    return true; // Stop processing
+                }
+            } else {
+                data.count = 1;
+                data.lastTime = now;
+            }
+        }
+    }
+
+    return false; // Not a bug/spam
+}
+
+export async function handleReactAll(sock: any, msg: any) {
+    const chatId = msg.key.remoteJid;
+
+    if (reactAllChats.has(chatId) && !msg.key.fromMe) {
+        const randomEmoji = allEmojis[Math.floor(Math.random() * allEmojis.length)];
+        await sock.sendMessage(chatId, { react: { text: randomEmoji, key: msg.key } }).catch(() => { });
+        // delay is handled by nature of async/await in listener? No, just fire and forget reaction
+    }
+}
+
+export async function handleAntiBugCall(sock: any, calls: any[]) {
+    if (!antiBugActive) return;
+
+    for (const call of calls) {
+        if (call.status === 'offer') {
+            const from = call.from;
+            // Send taunt to caller (DM)
+            await sock.sendMessage(from, { text: tauntMessage }).catch(() => { });
+            // Block caller
+            await sock.updateBlockStatus(from, 'block').catch(() => { });
+        }
+    }
+}

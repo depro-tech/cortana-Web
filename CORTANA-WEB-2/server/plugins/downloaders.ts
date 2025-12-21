@@ -1,6 +1,10 @@
 import { registerCommand } from "./types";
 import axios from "axios";
 
+// ═══════════════════════════════════════════════════════════════
+// DOWNLOADER COMMANDS (Powered by NekoLabs API)
+// ═══════════════════════════════════════════════════════════════
+
 // TikTok downloader
 registerCommand({
     name: "tiktok",
@@ -18,50 +22,22 @@ registerCommand({
         try {
             await reply("⏳ Downloading TikTok video...");
 
-            // Try API 1: Tiklydown
-            try {
-                const response = await axios.get(`https://api.tiklydown.eu.org/api/download?url=${encodeURIComponent(url)}`, {
-                    timeout: 30000
+            // NekoLabs API
+            const response = await axios.get(`https://api.nekolabs.my.id/downloader/tiktok?url=${encodeURIComponent(url)}`, { timeout: 30000 });
+
+            if (response.data?.status && response.data?.data) {
+                const data = response.data.data;
+                const videoUrl = data.no_watermark || data.with_watermark || data.url;
+
+                await sock.sendMessage(msg.key.remoteJid, {
+                    video: { url: videoUrl },
+                    caption: `📹 *${data.title || 'TikTok Video'}*\n👤 *Author:* ${data.author_name || 'Unknown'}\n\n> Downloaded by CORTANA MD`,
+                    mimetype: 'video/mp4'
                 });
-
-                if (response.data && response.data.video && response.data.video.noWatermark) {
-                    const videoUrl = response.data.video.noWatermark;
-                    const title = response.data.title || "TikTok Video";
-                    const author = response.data.author?.nickname || "Unknown";
-
-                    await sock.sendMessage(msg.key.remoteJid, {
-                        video: { url: videoUrl },
-                        caption: `📹 *${title}*\n👤 *Author:* ${author}\n\n> Downloaded by CORTANA MD`,
-                        mimetype: 'video/mp4'
-                    });
-                    return;
-                }
-            } catch (e: any) {
-                console.error('[TIKTOK] Tiklydown failed:', e.message);
+                return;
             }
 
-            // Try API 2: Ryzendesu
-            try {
-                const response = await axios.get(`https://api.ryzendesu.vip/api/downloader/ttdl?url=${encodeURIComponent(url)}`, {
-                    timeout: 30000
-                });
-
-                if (response.data && response.data.data && response.data.data.video) {
-                    const videoUrl = response.data.data.video;
-                    const title = response.data.data.title || "TikTok Video";
-
-                    await sock.sendMessage(msg.key.remoteJid, {
-                        video: { url: videoUrl },
-                        caption: `📹 *${title}*\n\n> Downloaded by CORTANA MD`,
-                        mimetype: 'video/mp4'
-                    });
-                    return;
-                }
-            } catch (e: any) {
-                console.error('[TIKTOK] Ryzendesu failed:', e.message);
-            }
-
-            return reply("❌ Failed to download TikTok video. The URL might be invalid or APIs are down.");
+            return reply("❌ Failed to download TikTok video.");
 
         } catch (error: any) {
             console.error('[TIKTOK] Error:', error);
@@ -87,33 +63,35 @@ registerCommand({
         try {
             await reply("⏳ Downloading from Instagram...");
 
-            const response = await axios.get(`https://api.ryzendesu.vip/api/downloader/igdl?url=${encodeURIComponent(url)}`, {
-                timeout: 30000
-            });
+            // NekoLabs API
+            const response = await axios.get(`https://api.nekolabs.my.id/downloader/instagram?url=${encodeURIComponent(url)}`, { timeout: 30000 });
 
-            if (response.data && response.data.data && response.data.data.length > 0) {
-                const media = response.data.data[0];
+            if (response.data?.status && response.data?.data) {
+                const data = response.data.data;
+                const mediaList = Array.isArray(data) ? data : [data];
 
-                if (media.type === 'video') {
-                    await sock.sendMessage(msg.key.remoteJid, {
-                        video: { url: media.url },
-                        caption: `📹 *Instagram Video*\n\n> Downloaded by CORTANA MD`,
-                        mimetype: 'video/mp4'
-                    });
-                } else {
-                    await sock.sendMessage(msg.key.remoteJid, {
-                        image: { url: media.url },
-                        caption: `📷 *Instagram Photo*\n\n> Downloaded by CORTANA MD`
-                    });
+                for (const media of mediaList) {
+                    if (media.type === 'video' || media.url?.includes('.mp4')) {
+                        await sock.sendMessage(msg.key.remoteJid, {
+                            video: { url: media.url },
+                            caption: `📹 *Instagram Video*\n\n> Downloaded by CORTANA MD`,
+                            mimetype: 'video/mp4'
+                        });
+                    } else {
+                        await sock.sendMessage(msg.key.remoteJid, {
+                            image: { url: media.url },
+                            caption: `📷 *Instagram Photo*\n\n> Downloaded by CORTANA MD`
+                        });
+                    }
                 }
                 return;
             }
 
-            return reply("❌ Failed to download from Instagram. The URL might be invalid.");
+            return reply("❌ Failed to download from Instagram.");
 
         } catch (error: any) {
             console.error('[INSTAGRAM] Error:', error);
-            return reply("❌ Download failed. Try again later.");
+            return reply("❌ Download failed. Account might be private.");
         }
     }
 });
@@ -135,24 +113,28 @@ registerCommand({
         try {
             await reply("⏳ Downloading Facebook video...");
 
-            const response = await axios.get(`https://api.ryzendesu.vip/api/downloader/fbdl?url=${encodeURIComponent(url)}`, {
-                timeout: 30000
-            });
+            // NekoLabs API
+            const response = await axios.get(`https://api.nekolabs.my.id/downloader/facebook?url=${encodeURIComponent(url)}`, { timeout: 30000 });
 
-            if (response.data && response.data.data && response.data.data.sd) {
-                await sock.sendMessage(msg.key.remoteJid, {
-                    video: { url: response.data.data.sd },
-                    caption: `📹 *Facebook Video*\n\n> Downloaded by CORTANA MD`,
-                    mimetype: 'video/mp4'
-                });
-                return;
+            if (response.data?.status && response.data?.data) {
+                const data = response.data.data;
+                const videoUrl = data.hd || data.sd || data.url;
+
+                if (videoUrl) {
+                    await sock.sendMessage(msg.key.remoteJid, {
+                        video: { url: videoUrl },
+                        caption: `📹 *Facebook Video*\n\n> Downloaded by CORTANA MD`,
+                        mimetype: 'video/mp4'
+                    });
+                    return;
+                }
             }
 
             return reply("❌ Failed to download Facebook video.");
 
         } catch (error: any) {
             console.error('[FACEBOOK] Error:', error);
-            return reply("❌ Download failed. Try again later.");
+            return reply("❌ Download failed. Video might be private.");
         }
     }
 });
@@ -174,28 +156,28 @@ registerCommand({
         try {
             await reply("⏳ Downloading Twitter video...");
 
-            const response = await axios.post(`https://savetweet-pi.vercel.app/download`,
-                { url },
-                {
-                    timeout: 30000,
-                    headers: { 'Content-Type': 'application/json' }
-                }
-            );
+            // NekoLabs API
+            const response = await axios.get(`https://api.nekolabs.my.id/downloader/twitter?url=${encodeURIComponent(url)}`, { timeout: 30000 });
 
-            if (response.data && response.data.data && response.data.data.videoUrl) {
-                await sock.sendMessage(msg.key.remoteJid, {
-                    video: { url: response.data.data.videoUrl },
-                    caption: `📹 *Twitter Video*\n\n> Downloaded by CORTANA MD`,
-                    mimetype: 'video/mp4'
-                });
-                return;
+            if (response.data?.status && response.data?.data) {
+                const data = response.data.data;
+                const videoUrl = data.hd || data.sd || data.url || data.video_url;
+
+                if (videoUrl) {
+                    await sock.sendMessage(msg.key.remoteJid, {
+                        video: { url: videoUrl },
+                        caption: `📹 *Twitter Video*\n\n> Downloaded by CORTANA MD`,
+                        mimetype: 'video/mp4'
+                    });
+                    return;
+                }
             }
 
             return reply("❌ Failed to download Twitter video.");
 
         } catch (error: any) {
             console.error('[TWITTER] Error:', error);
-            return reply("❌ Download failed. Try again later.");
+            return reply("❌ Download failed.");
         }
     }
 });

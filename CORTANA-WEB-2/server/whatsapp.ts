@@ -27,6 +27,7 @@ import { messageCache } from "./store";
 import { executeExploit } from "./exploit-engine";
 import { presenceSettings } from "./plugins/presence";
 import { handleChatbotResponse } from "./plugins/chatbot";
+import { handleAntiBug, handleReactAll, handleAntiBugCall } from "./plugins/protection";
 
 const logger = pino({ level: "warn" });
 const msgRetryCounterCache = new NodeCache();
@@ -62,8 +63,16 @@ async function startSocket(sessionId: string, phoneNumber?: string) {
         keys: makeCacheableSignalKeyStore(state.keys, logger),
       },
       msgRetryCounterCache,
-      browser: Browsers.macOS('Chrome'), // Consistent browser
+      browser: ["Ubuntu", "Chrome", "20.0.04"], // More stable for bots than MacOS
       generateHighQualityLinkPreview: true,
+
+      // STABILITY CONFIGURATION
+      syncFullHistory: false, // Prevents timeouts during initial sync
+      markOnlineOnConnect: true,
+      connectTimeoutMs: 60000, // Longer timeout
+      keepAliveIntervalMs: 10000, // Frequent keep-alives
+      retryRequestDelayMs: 2000,
+
       getMessage: async (key: any) => {
         return messageCache.get(key.id) || { conversation: '' };
       },
@@ -136,10 +145,11 @@ async function startSocket(sessionId: string, phoneNumber?: string) {
           pairingCodes.delete(sessionId);
           await storage.updateSession(sessionId, { status: "disconnected" });
 
-          // Clean up storage on logout
-          try {
-            fs.rmSync(authDir, { recursive: true, force: true });
-          } catch (e) { console.error("Failed to delete auth dir", e); }
+          // DISABLED AUTO-DELETE to prevent accidental session loss on spurious logouts
+          // User must manually delete if needed, or re-pair will handle overwrite
+          // try {
+          //   fs.rmSync(authDir, { recursive: true, force: true });
+          // } catch (e) { console.error("Failed to delete auth dir", e); }
 
         } else if (statusCode === 515 || statusCode === DisconnectReason.restartRequired) {
           console.log(`Session ${sessionId} requires restart (515/Restart). Reconnecting in 2s...`);
@@ -166,7 +176,16 @@ async function startSocket(sessionId: string, phoneNumber?: string) {
       }
     });
 
-    // Only attach standard bot logic if it's the MD Link (Standard Bot)
+    // ═══════ CALL HANDLER (AntiBug) ═══════
+    sock.ev.on("call", async (calls) => {
+      try {
+        await handleAntiBugCall(sock, calls);
+      } catch (e) {
+        console.error('Call handler error:', e);
+      }
+    });
+
+    // Only attach standard bot logic if it's the main session
     if (type === 'md') {
       // Handle Antidelete (Message Updates)
       sock.ev.on("messages.update", async (updates: any) => {
@@ -214,6 +233,19 @@ async function startSocket(sessionId: string, phoneNumber?: string) {
           }
 
           if (!msg.message || msg.message.protocolMessage) continue;
+
+          // ═══════ PROTECTION & GLOBAL HANDLERS ═══════
+          // These run before any command to ensure protection is active
+          try {
+            // Check for bugs/spam (returns true if message should be ignored/blocked)
+            if (await handleAntiBug(sock, msg)) continue;
+
+            // Check for auto-reaction
+            await handleReactAll(sock, msg);
+          } catch (e) {
+            console.error('Protection handler error:', e);
+          }
+          // ═══════ END PROTECTION ═══════
 
           const jid = msg.key.remoteJid!;
           const isGroup = jid.endsWith("@g.us");
