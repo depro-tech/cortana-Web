@@ -672,11 +672,11 @@ export default function Landing() {
                         <div
                             className="anime-character-container"
                             onClick={triggerCharacterJump}
-                            title="Cortana Assistant"
+                            title="Education Assistant"
                         >
                             <img
-                                src="https://files.catbox.moe/k365i3.png"
-                                alt="Cortana Character"
+                                src="/dancing_character.png"
+                                alt="Dancing Character"
                                 className={`anime-character ${characterJump ? 'jump' : ''}`}
                             />
                         </div>
