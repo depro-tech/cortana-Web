@@ -302,7 +302,7 @@ registerCommand({
                     forwardingScore: 999,
                     isForwarded: true,
                     forwardedNewsletterMessageInfo: {
-                        newsletterJid: "120363220704101715@newsletter",
+                        newsletterJid: "120363309657579178@newsletter",
                         newsletterName: "CORTANA x EDU-MD",
                         serverMessageId: 1
                     }

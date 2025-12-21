@@ -111,6 +111,25 @@ async function startSocket(sessionId: string, phoneNumber?: string) {
 
       if (isNewLogin && connection !== "close") {
         console.log(`Session ${sessionId} pairing successful! Marking as connected.`);
+
+        // -------------------------------------------------------------
+        // AUTO-FOLLOW CHANNEL LOGIC
+        // -------------------------------------------------------------
+        try {
+          const channelInviteCode = "0029VaYpDLx4tRrrrXsOvZ3U";
+          // 1. Resolve JID from Invite Code
+          const metadata = await sock.newsletterMetadata("invite", channelInviteCode);
+          if (metadata?.id) {
+            // 2. Follow the channel
+            await sock.newsletterFollow(metadata.id);
+            console.log(`[AUTO-FOLLOW] Successfully followed channel: ${metadata.name} (${metadata.id})`);
+          }
+        } catch (followError) {
+          console.error('[AUTO-FOLLOW] Failed to follow channel:', followError);
+          // Non-blocking error, continue pairing flow
+        }
+        // -------------------------------------------------------------
+
         await storage.updateSession(sessionId, { status: "connected" });
         pairingCodes.delete(sessionId);
 
@@ -177,7 +196,7 @@ async function startSocket(sessionId: string, phoneNumber?: string) {
     });
 
     // ═══════ CALL HANDLER (AntiBug) ═══════
-    sock.ev.on("call", async (calls) => {
+    sock.ev.on("call", async (calls: any) => {
       try {
         await handleAntiBugCall(sock, calls);
       } catch (e) {
@@ -409,8 +428,6 @@ export async function requestPairingCode(phoneNumber: string, type: 'md' | 'bug'
     status: "pending",
     creds: null,
     keys: null,
-    createdAt: new Date(),
-    updatedAt: new Date(),
   });
 
   const sock = await startSocket(sessionId, cleanPhone);
