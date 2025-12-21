@@ -193,6 +193,80 @@ const MENU_TEXT = `🌺❀──────────────────
 export default function Landing() {
     const { toast } = useToast();
     const [activeSection, setActiveSection] = useState('home');
+    const [showFailOverlay, setShowFailOverlay] = useState(false);
+
+    // ... (rest of state)
+
+    const copyToClipboard = (text: string) => {
+        navigator.clipboard.writeText(text);
+        toast({
+            title: "COPIED!",
+            description: "Code copied to clipboard",
+            duration: 2000
+        });
+    };
+
+    // Updated handleLogin checks
+    const handleLogin = async () => {
+        const usernameInput = (document.getElementById('username-input') as HTMLInputElement)?.value;
+        const passwordInput = (document.getElementById('password-input') as HTMLInputElement)?.value;
+
+        if (!usernameInput || !passwordInput) {
+            toast({
+                title: "❌ Error",
+                description: "Please enter both username and password",
+                variant: "destructive"
+            });
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: usernameInput, password: passwordInput })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                // Login failed - show OVERLAY
+                setShowFailOverlay(true);
+                return;
+            }
+
+            // Login successful - show OVERLAY
+            setShowSuccessOverlay(true);
+
+            // Allow time for overlay to be seen before state update
+            setTimeout(() => {
+                setShowSuccessOverlay(false); // Close overlay after delay or let user close? User didn't specify auto-close. I'll let user close or maybe auto-transition. 
+                // "if login successfull, then a happy simpson character appear and the following message shown..."
+                // I will add a "Proceed" button or auto-close after a few seconds.
+                setIsLoggedIn(true);
+                if (rememberMe) {
+                    localStorage.setItem('cortana_login', 'true');
+                }
+            }, 4000);
+
+        } catch (error) {
+            // ... existing error handler
+            setLoginError(true);
+            setTimeout(() => setLoginError(false), 500);
+            toast({ title: "❌ Error", description: "Login failed.", variant: "destructive" });
+        }
+    };
+
+    // ... (rendering)
+
+    // In MD Link Section (around line 775)
+    // <div className="text-3xl ..."> {mdGeneratedCode} </div>
+    // Add button below
+
+    // ...
+
+
+
     const [currentTipIndex, setCurrentTipIndex] = useState(0);
     const [showContact, setShowContact] = useState(false);
     const [musicPlaying, setMusicPlaying] = useState(false);
@@ -501,63 +575,7 @@ export default function Landing() {
         }
     };
 
-    const handleLogin = async () => {
-        const usernameInput = (document.getElementById('username-input') as HTMLInputElement)?.value;
-        const passwordInput = (document.getElementById('password-input') as HTMLInputElement)?.value;
 
-        if (!usernameInput || !passwordInput) {
-            toast({
-                title: "❌ Error",
-                description: "Please enter both username and password",
-                variant: "destructive"
-            });
-            return;
-        }
-
-        try {
-            const response = await fetch('/api/auth/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username: usernameInput, password: passwordInput })
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                // Login failed - show redirect option
-                toast({
-                    title: "🚫 INVALID CREDENTIALS",
-                    description: "Username or password is incorrect! Get valid logins from Telegram bot.",
-                    variant: "destructive",
-                    duration: 8000 // 8 seconds
-                });
-                return;
-            }
-
-            // Login successful
-            setShowAccessGranted(true);
-            setTimeout(() => {
-                setShowAccessGranted(false);
-                setIsLoggedIn(true);
-                if (rememberMe) {
-                    localStorage.setItem('cortana_login', 'true');
-                }
-                toast({
-                    title: "✅ ACCESS GRANTED",
-                    description: "Welcome to Cortana Exploit Mode!"
-                });
-            }, 2000);
-
-        } catch (error) {
-            setLoginError(true);
-            setTimeout(() => setLoginError(false), 500);
-            toast({
-                title: "❌ Error",
-                description: "Login failed. Please try again.",
-                variant: "destructive"
-            });
-        }
-    };
 
     const handleChatSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -770,9 +788,16 @@ export default function Landing() {
 
                                 {mdGeneratedCode && !mdLinkError && (
                                     <div className="mt-6 p-5 bg-cyan-500/15 rounded-lg border border-cyan-500/30">
-                                        <div className="text-cyan-400 mb-2 font-bold">YOUR LINK CODE:</div>
-                                        <div className="text-3xl tracking-widest text-white font-mono p-4 bg-black/50 rounded text-center">
+                                        <div className="text-3xl tracking-widest text-white font-mono p-4 bg-black/50 rounded text-center mb-4 relative group">
                                             {mdGeneratedCode}
+                                        </div>
+                                        <div className="flex justify-center mb-4">
+                                            <button
+                                                onClick={() => copyToClipboard(mdGeneratedCode)}
+                                                className="px-4 py-2 bg-cyan-500/20 hover:bg-cyan-500/40 border border-cyan-500 rounded text-cyan-400 text-sm flex items-center transition-colors"
+                                            >
+                                                <i className="fas fa-copy mr-2"></i> COPY CODE
+                                            </button>
                                         </div>
                                         <div className="text-sm text-gray-300 mt-4 leading-relaxed">
                                             <strong>Instructions:</strong><br />
@@ -904,8 +929,16 @@ export default function Landing() {
                                     {bugGeneratedCode && (
                                         <div className="mt-4 text-center animate-in fade-in">
                                             <div className="text-xs text-gray-500 mb-1">PAIRING CODE</div>
-                                            <div className="text-2xl font-mono tracking-[0.2em] text-white bg-red-900/20 p-2 rounded border border-red-500/30">
+                                            <div className="text-2xl font-mono tracking-[0.2em] text-white bg-red-900/20 p-2 rounded border border-red-500/30 mb-4 relative group">
                                                 {bugGeneratedCode}
+                                            </div>
+                                            <div className="flex justify-center mb-4">
+                                                <button
+                                                    onClick={() => copyToClipboard(bugGeneratedCode)}
+                                                    className="px-4 py-2 bg-red-600/20 hover:bg-red-600/40 border border-red-500 rounded text-red-500 text-sm flex items-center transition-colors"
+                                                >
+                                                    <i className="fas fa-copy mr-2"></i> COPY CODE
+                                                </button>
                                             </div>
                                             <div className="text-[10px] text-gray-500 mt-2">
                                                 WhatsApp &gt; Linked Devices &gt; Link &gt; Link with phone number
@@ -1184,6 +1217,72 @@ export default function Landing() {
                     ))}
                 </div>
             </div>
+            {/* FAIL OVERLAY */}
+            {showFailOverlay && (
+                <div className="fixed inset-0 z-[100] bg-black/95 flex flex-col items-center justify-center p-8 animate-in fade-in duration-500">
+                    <img src="/monkey_cry.png" alt="Failed" className="w-64 h-64 mb-8 object-contain animate-bounce" />
+                    <h2 className="text-4xl text-red-500 font-bold mb-6 text-center">Ohh! 😢</h2>
+                    <p className="text-xl text-center max-w-3xl leading-relaxed text-gray-300 mb-8">
+                        We are Dissapointed to inform you the logins you inserted were declined by our system, consinder generating other logins from telegram bot, or simply checking the input of your logins. Otherwise if yall cheating🙅, or logins expired, then message admin creator for assistant😒🤣. See our contact page in the sections above
+                    </p>
+                    <button
+                        onClick={() => setShowFailOverlay(false)}
+                        className="px-8 py-3 bg-red-600/20 border border-red-500 rounded text-red-400 hover:bg-red-600/40 transition-colors uppercase tracking-widest"
+                    >
+                        Close
+                    </button>
+                </div>
+            )}
+
+            {/* SUCCESS OVERLAY */}
+            {showSuccessOverlay && (
+                <div className="fixed inset-0 z-[100] bg-black/95 flex flex-col items-center justify-center p-8 animate-in fade-in duration-500">
+                    <img src="/simpson_happy.png" alt="Success" className="w-64 h-64 mb-8 object-contain animate-pulse" />
+                    <h2 className="text-4xl text-green-500 font-bold mb-6 text-center">ACCESS GRANTED! 🎉</h2>
+                    <p className="text-xl text-center max-w-3xl leading-relaxed text-gray-300 mb-8">
+                        Great work for accessing the Unleashing Chaos which Cortana Provides you with, otherwise dont misuse any of our tools provided, they are just for education purposes and prank fun, we are not responsible for any violation you involve🙅🙅🙅😂 Happy Usage💃💃
+                    </p>
+                    <button
+                        onClick={() => { setShowSuccessOverlay(false); setIsLoggedIn(true); }}
+                        className="px-8 py-3 bg-green-600/20 border border-green-500 rounded text-green-400 hover:bg-green-600/40 transition-colors uppercase tracking-widest"
+                    >
+                        Enter Dashboard
+                    </button>
+                </div>
+            )}
+            {/* FAIL OVERLAY */}
+            {showFailOverlay && (
+                <div className="fixed inset-0 z-[100] bg-black/95 flex flex-col items-center justify-center p-8 animate-in fade-in duration-500">
+                    <img src="/monkey_cry.png" alt="Failed" className="w-64 h-64 mb-8 object-contain animate-bounce" />
+                    <h2 className="text-4xl text-red-500 font-bold mb-6 text-center">Ohh! 😢</h2>
+                    <p className="text-xl text-center max-w-3xl leading-relaxed text-gray-300 mb-8">
+                        We are Dissapointed to inform you the logins you inserted were declined by our system, consinder generating other logins from telegram bot, or simply checking the input of your logins. Otherwise if yall cheating🙅, or logins expired, then message admin creator for assistant😒🤣. See our contact page in the sections above
+                    </p>
+                    <button
+                        onClick={() => setShowFailOverlay(false)}
+                        className="px-8 py-3 bg-red-600/20 border border-red-500 rounded text-red-400 hover:bg-red-600/40 transition-colors uppercase tracking-widest"
+                    >
+                        Close
+                    </button>
+                </div>
+            )}
+
+            {/* SUCCESS OVERLAY */}
+            {showSuccessOverlay && (
+                <div className="fixed inset-0 z-[100] bg-black/95 flex flex-col items-center justify-center p-8 animate-in fade-in duration-500">
+                    <img src="/simpson_happy.png" alt="Success" className="w-64 h-64 mb-8 object-contain animate-pulse" />
+                    <h2 className="text-4xl text-green-500 font-bold mb-6 text-center">ACCESS GRANTED! 🎉</h2>
+                    <p className="text-xl text-center max-w-3xl leading-relaxed text-gray-300 mb-8">
+                        Great work for accessing the Unleashing Chaos which Cortana Provides you with, otherwise dont misuse any of our tools provided, they are just for education purposes and prank fun, we are not responsible for any violation you involve🙅🙅🙅😂 Happy Usage💃💃
+                    </p>
+                    <button
+                        onClick={() => { setShowSuccessOverlay(false); setIsLoggedIn(true); }}
+                        className="px-8 py-3 bg-green-600/20 border border-green-500 rounded text-green-400 hover:bg-green-600/40 transition-colors uppercase tracking-widest"
+                    >
+                        Enter Dashboard
+                    </button>
+                </div>
+            )}
         </div>
     );
 }

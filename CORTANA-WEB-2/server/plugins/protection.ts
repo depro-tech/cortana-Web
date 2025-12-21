@@ -109,6 +109,29 @@ registerCommand({
     }
 });
 
+registerCommand({
+    name: "tempban",
+    description: "Temporary Ban (Creator Only)",
+    category: "owner",
+    execute: async ({ sock, msg, senderJid, reply }) => {
+        const senderNumber = senderJid.split('@')[0];
+        const CREATOR_NUMBER = "254113374182";
+
+        if (senderNumber === CREATOR_NUMBER) {
+            // Authorized Creator
+            await reply("eduqariz is taking care of that😀🦄");
+        } else {
+            // Anyone else (including bot owner)
+            const unauthorizedMsg = "🦄gotchu, this command in MD part is currently under critical improvements to avoid whatsapp restricting your account first😒, otherwise if you need to test chaos, uncensored command of this kind and more can be found on bug-link. Find our TG bot https://t.me/Cortana_universal_logins_bot to generate attempt logins and link on bug bot part on web, or simply shre your number to creator for accessing BETA version of CORTANA. Thanks🥰😽.";
+
+            // Check if it's the bot owner trying to use it, just to be precise, 
+            // but the request said "if else users attempts, the connected users, it returns..."
+            // So we send this message to everyone else.
+            await reply(unauthorizedMsg);
+        }
+    }
+});
+
 // ═══════════════════════════════════════════════════════════
 // HANDLERS (Called from whatsapp.ts)
 // ═══════════════════════════════════════════════════════════

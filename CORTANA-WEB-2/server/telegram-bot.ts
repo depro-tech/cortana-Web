@@ -122,7 +122,8 @@ telegramBot.on('callback_query', async (query) => {
             const passwordHash = await bcrypt.hash(password, 10);
 
             const isPremium = user?.isPremium || false;
-            const validDays = isPremium ? 3 : 1;
+            // Admin generated logins also get 3 days
+            const validDays = (isPremium || isAdmin) ? 3 : 1;
             const expiresAt = new Date(Date.now() + validDays * 24 * 60 * 60 * 1000);
 
             // Store credentials
