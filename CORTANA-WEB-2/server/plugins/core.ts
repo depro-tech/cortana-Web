@@ -15,36 +15,37 @@ registerCommand({
         try {
             // Send initial empty message
             const sentMsg = await sock.sendMessage(senderJid, { text: "𝗖" });
-            const introKey = sentMsg.key;
+            const introKey = sentMsg?.key;
 
-            // Typing animation - update message character by character
-            for (let i = 0; i < introText.length; i++) {
-                displayText += introText[i];
+            if (introKey) {
+                // Typing animation - update message character by character
+                for (let i = 0; i < introText.length; i++) {
+                    displayText += introText[i];
 
-                // Update the message with growing text
-                await sock.sendMessage(senderJid, {
-                    text: `*${displayText}*`,
-                    edit: introKey
-                });
+                    // Update the message with growing text
+                    await sock.sendMessage(senderJid, {
+                        text: `*${displayText}*`,
+                        edit: introKey
+                    });
 
-                // Delay between characters (90ms)
-                await new Promise(resolve => setTimeout(resolve, 90));
+                    // Delay between characters (90ms)
+                    await new Promise(resolve => setTimeout(resolve, 90));
+                }
+
+                // Display complete text for 1 second (keep it visible)
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                // Don't delete - let it stay as intro
+                // Small delay before showing menu
+                await new Promise(resolve => setTimeout(resolve, 300));
+
+            } catch (e) {
+                console.error('[MENU] Intro animation error:', e);
+                // Continue to menu even if intro fails
             }
+            // ═══════ END INTRO ANIMATION ═══════
 
-            // Display complete text for 1 second (keep it visible)
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
-            // Don't delete - let it stay as intro
-            // Small delay before showing menu
-            await new Promise(resolve => setTimeout(resolve, 300));
-
-        } catch (e) {
-            console.error('[MENU] Intro animation error:', e);
-            // Continue to menu even if intro fails
-        }
-        // ═══════ END INTRO ANIMATION ═══════
-
-        const menuText = `🌺❀────────────────────────❀🌺
+            const menuText = `🌺❀────────────────────────❀🌺
      C̷O̷R̷T̷A̷N̷A̷ ̷M̷D̷ 
    C H R I S T M A S  E D.
 🌺❀────────────────────────❀🌺
@@ -53,17 +54,18 @@ registerCommand({
 🌸🌼 OWNER MENU 🌼🌸
 ⮞ .block <number>
 ⮞ .unblock <number>
-⮞ .self | .public
+⮞ .self
+⮞ .public
 ⮞ .bc <message>
 ⮞ .setbio <text>
-⮞ .antidelete <all-on/pm-on/off>
+⮞ .antidelete <mode>
 ⮞ .autostatus <on/off>
 ⮞ .device (reply)
 
 
 🌸🌼 AUTO-PRESENCE 🌼🌸
-⮞ .autorecording <all-on/pm-on/off>
-⮞ .autotyping <all-on/pm-on/off>
+⮞ .autorecording <mode>
+⮞ .autotyping <mode>
 ⮞ .autorecordtyping <on/off>
 ⮞ .presence-status
 
@@ -71,18 +73,22 @@ registerCommand({
 🌸🌼 GROUP MENU 🌼🌸
 ⮞ .antilink <kick/warn/off>
 ⮞ .antitag <kick/warn/off>
-⮞ .promote <@user/reply>
-⮞ .demote <@user/reply>
-⮞ .kick <@user/reply>
+⮞ .promote <@user>
+⮞ .demote <@user>
+⮞ .kick <@user>
 ⮞ .add <number>
 ⮞ .tagall <text>
 ⮞ .hidetag <text>
-⮞ .open | .close
-⮞ .link | .resetlink
+⮞ .open
+⮞ .close
+⮞ .link
+⮞ .resetlink
 ⮞ .delete (reply)
 ⮞ .setppgc (reply image)
 ⮞ .approveall
 ⮞ .groupjid <link>
+⮞ .gcname <text>
+⮞ .gcdesc <text>
 ⮞ .kickall ⚠️
 ⮞ .hijackgc ☠️
 
@@ -99,6 +105,7 @@ registerCommand({
 ⮞ .ytmp3 <link>
 ⮞ .ytmp4 <link>
 ⮞ .yts <query>
+⮞ .spotify <link>
 
 
 🌸🌼 DOWNLOADERS 🌼🌸
@@ -109,49 +116,103 @@ registerCommand({
 
 
 🌸🌼 REACTIONS 🌼🌸
-⮞ .hug | .kiss | .slap
-⮞ .pat | .poke | .bonk
-⮞ .bite | .cuddle | .wave
-⮞ .wink | .smile | .cry
-⮞ .blush | .happy | .dance
-⮞ .yeet | .bully | .handhold
-⮞ .highfive | .lick | .glomp
+⮞ .hug
+⮞ .kiss
+⮞ .slap
+⮞ .pat
+⮞ .poke
+⮞ .bonk
+⮞ .bite
+⮞ .cuddle
+⮞ .wave
+⮞ .wink
+⮞ .smile
+⮞ .cry
+⮞ .blush
+⮞ .happy
+⮞ .dance
+⮞ .yeet
+⮞ .bully
+⮞ .handhold
+⮞ .highfive
+⮞ .lick
+⮞ .glomp
+⮞ .nom
+⮞ .kill
+⮞ .awoo
+⮞ .cringe
 
 
 🌸🌼 FUN & MEMES 🌼🌸
-⮞ .joke | .meme | .quote
-⮞ .fact | .roast | .insult
-⮞ .compliment | .burn
+⮞ .joke
+⮞ .meme
+⮞ .quote
+⮞ .fact
+⮞ .roast
+⮞ .insult
+⮞ .compliment
+⮞ .burn
 ⮞ .ship <name1 name2>
 ⮞ .rate <thing>
 ⮞ .ask <question>
 ⮞ .pick <opt1 | opt2>
-⮞ .owo <text> | .uwu <text>
+⮞ .owo <text>
+⮞ .uwu <text>
 ⮞ .mock <text>
 ⮞ .zalgo <text>
 ⮞ .vaporwave <text>
 ⮞ .cowsay <text>
 ⮞ .clap <text>
-⮞ .lenny | .tableflip | .shrug
-⮞ .wyr | .neverhave
-⮞ .gg | .f | .chad | .based
+⮞ .lenny
+⮞ .tableflip
+⮞ .unflip
+⮞ .shrug
+⮞ .facepalm
+⮞ .disapprove
+⮞ .wyr
+⮞ .neverhave
+⮞ .gg
+⮞ .f
+⮞ .chad
+⮞ .based
+⮞ .flex
+⮞ .dank
+⮞ .yolo
+⮞ .legend
+⮞ .dealwithit
+⮞ .notbad
+⮞ .oops
+⮞ .love
+⮞ .headpat
+⮞ .triggered
+⮞ .shipname <names>
+⮞ .how <question>
+⮞ .when <question>
 
 
 🌸🌼 GAMES 🌼🌸
-⮞ .truth | .dare
-⮞ .math | .quiz | .trivia
-⮞ .slot | .dice | .coinflip
-⮞ .rps <rock/paper/scissors>
+⮞ .truth
+⮞ .dare
+⮞ .math
+⮞ .quiz
+⮞ .trivia
+⮞ .slot
+⮞ .dice
+⮞ .coinflip
+⮞ .rps <choice>
 ⮞ .8ball <question>
-⮞ .guessnumber | .hangman
+⮞ .guessnumber
+⮞ .hangman
+⮞ .casino
 
 
 🌸🌼 AI FEATURES 🌼🌸
 ⮞ .chatgpt <prompt>
 ⮞ .imagine <prompt>
-⮞ .removebg (reply image)
-⮞ .ocr (reply image)
+⮞ .removebg (reply)
+⮞ .ocr (reply)
 ⮞ .chatbot <on/off>
+⮞ .aivision (reply)
 
 
 🌸🌼 SEARCH & INFO 🌼🌸
@@ -161,13 +222,19 @@ registerCommand({
 ⮞ .github <user>
 ⮞ .npm <package>
 ⮞ .dictionary <word>
+⮞ .movie <name>
 
 
 🌸🌼 ANIME & MANGA 🌼🌸
-⮞ .waifu | .neko
+⮞ .waifu
+⮞ .neko
 ⮞ .animequote
 ⮞ .anime <name>
 ⮞ .manga <name>
+⮞ .character <name>
+⮞ .shinobu
+⮞ .megumin
+⮞ .animewallpaper
 
 
 🌸🌼 TEXT TOOLS 🌼🌸
@@ -176,48 +243,65 @@ registerCommand({
 ⮞ .binary <text>
 ⮞ .morse <text>
 ⮞ .translate <lang> <text>
+⮞ .emojimix <e1+e2>
+⮞ .encrypt <text>
+⮞ .decrypt <text>
+⮞ .shorten <url>
+⮞ .readmore <text>
+⮞ .flip
 
 
 🌸🌼 IMAGE EFFECTS 🌼🌸
-⮞ .blur | .enhance (reply)
-⮞ .wanted | .wasted (reply)
-⮞ .trigger | .circle (reply)
-⮞ .sepia | .pixelate (reply)
+⮞ .blur (reply)
+⮞ .enhance (reply)
+⮞ .wanted (reply)
+⮞ .wasted (reply)
+⮞ .trigger (reply)
+⮞ .circle (reply)
+⮞ .sepia (reply)
+⮞ .pixelate (reply)
+⮞ .colorize (reply)
 
 
 🌸🌼 UTILITIES 🌼🌸
 ⮞ .sticker (reply)
-⮞ .toimg (reply sticker)
+⮞ .toimg (reply)
 ⮞ .qr <text>
 ⮞ .screenshot <url>
 ⮞ .wallpaper <query>
 ⮞ .calc <expression>
-⮞ .ping | .runtime | .alive
+⮞ .ping
+⮞ .runtime
+⮞ .alive
+⮞ .ip <ip>
+⮞ .uuid
+⮞ .hash <text>
+⮞ .paste <text>
 
 
 🔊 CORTANA MD • Christmas
 💝 By èdûqarîz`;
 
-        try {
-            // Send menu as forwarded message from verified channel
-            await sock.sendMessage(senderJid, {
-                image: { url: MENU_IMAGE },
-                caption: menuText,
-                contextInfo: {
-                    forwardingScore: 999,
-                    isForwarded: true,
-                    forwardedNewsletterMessageInfo: {
-                        newsletterJid: "120363220704101715@newsletter",
-                        newsletterName: "CORTANA x EDU-MD",
-                        serverMessageId: 1
+            try {
+                // Send menu as forwarded message from verified channel
+                await sock.sendMessage(senderJid, {
+                    image: { url: MENU_IMAGE },
+                    caption: menuText,
+                    contextInfo: {
+                        forwardingScore: 999,
+                        isForwarded: true,
+                        forwardedNewsletterMessageInfo: {
+                            newsletterJid: "120363220704101715@newsletter",
+                            newsletterName: "CORTANA x EDU-MD",
+                            serverMessageId: 1
+                        }
                     }
-                }
-            });
-        } catch (error) {
-            console.error('Error sending menu:', error);
-            await reply(menuText);
+                });
+            } catch (error) {
+                console.error('Error sending menu:', error);
+                await reply(menuText);
+            }
         }
-    }
 });
 
 registerCommand({
