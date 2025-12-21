@@ -207,35 +207,90 @@ async function startSocket(sessionId: string, phoneNumber?: string) {
     // Only attach standard bot logic if it's the main session
     if (type === 'md') {
       // Handle Antidelete (Message Updates)
+      // Handle Antidelete & AntiEdit (Message Updates)
       sock.ev.on("messages.update", async (updates: any) => {
         for (const update of updates) {
+          const botSettings = await storage.getBotSettings(sessionId);
+          if (!botSettings) continue;
+
+          // 1. Anti-Delete Logic
           if (update.update.messageStubType === proto.WebMessageInfo.StubType.REVOKE && update.key.id) {
-            // Message was deleted
-            const botSettings = await storage.getBotSettings(sessionId);
-            if (!botSettings || botSettings.antideleteMode === 'off') continue;
+            if (botSettings.antideleteMode === 'off') continue;
 
             const originalMsg = messageCache.get(update.key.id);
             if (originalMsg && originalMsg.message) {
               const deletedTime = new Date();
               const sender = update.key.participant || update.key.remoteJid;
-              const textContent = originalMsg.message.conversation || originalMsg.message.extendedTextMessage?.text || "[Media Message]";
+              const textContent = originalMsg.message.conversation || originalMsg.message.extendedTextMessage?.text || "[Media/Other Code]";
 
-              const caption = `🚫 *Anti-Delete Detected*\n\n👤 *Sender:* @${sender.split('@')[0]}\n🕒 *Time:* ${deletedTime.toLocaleTimeString()}\n📝 *Message:* ${textContent}`;
-
-              const messageContent = { ...originalMsg.message };
+              // Determine caption based on mode
+              let headerTitle = "";
+              let destinationJid = "";
 
               if (botSettings.antideleteMode === 'all') {
-                // Resend to chat
-                await sock.sendMessage(update.key.remoteJid, { text: caption, mentions: [sender] });
-                if (!messageContent.conversation && !messageContent.extendedTextMessage) {
-                  await sock.sendMessage(update.key.remoteJid, { forward: originalMsg, forceForward: true });
-                }
+                headerTitle = "~🤏😎 DELETION ALERT~";
+                destinationJid = update.key.remoteJid!;
               } else if (botSettings.antideleteMode === 'pm') {
-                // Send to Bot Owner
-                const owner = botSettings.ownerNumber + '@s.whatsapp.net';
-                await sock.sendMessage(owner, { text: `[Deleted in ${update.key.remoteJid}]\n${caption}`, mentions: [sender] });
-                if (!messageContent.conversation && !messageContent.extendedTextMessage) {
-                  await sock.sendMessage(owner, { forward: originalMsg, forceForward: true });
+                headerTitle = "*⚠️DELETED MESSAGE*";
+                destinationJid = botSettings.ownerNumber ? botSettings.ownerNumber + '@s.whatsapp.net' : "";
+              }
+
+              if (!destinationJid) continue;
+
+              const caption = `${headerTitle}
+              
+🚮  Deleted by = @${sender.split('@')[0]}
+⏰ Time = ${deletedTime.toLocaleTimeString()}
+🤣 Message = ${textContent}
+${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(media deleted down 👇)' : ''}
+
+🗿You can't Hide from Cortana😃😫`;
+
+              // Send Text/Caption
+              await sock.sendMessage(destinationJid, { text: caption, mentions: [sender] });
+
+              // Forward Media if present
+              const isMedia = originalMsg.message.imageMessage || originalMsg.message.videoMessage || originalMsg.message.audioMessage || originalMsg.message.stickerMessage;
+              if (isMedia) {
+                await sock.sendMessage(destinationJid, { forward: originalMsg, forceForward: true });
+              }
+            }
+          }
+
+          // 2. Anti-Edit Logic
+          // Baileys 'messages.update' provides partial updates. If a message is edited, it usually comes with 'message' property in update, but exact detection varies.
+          // We will check if the update contains a new message text for an existing ID.
+          if (update.update.message) {
+            const oldMsg = messageCache.get(update.key.id!);
+            if (oldMsg && botSettings.antieditMode !== 'off') {
+              // Check if it's an edit (protocolMessage usually handling this, but sometimes direct update)
+              // Or we see 'editedMessage' field in newer types.
+              // Simplest detection: ID exists, content changed.
+              // Note: Baileys sometimes triggers update for status delivery too.
+              // We only care if text changed.
+
+              const newText = update.update.message.conversation || update.update.message.extendedTextMessage?.text;
+              const oldText = oldMsg.message?.conversation || oldMsg.message?.extendedTextMessage?.text;
+
+              if (newText && oldText && newText !== oldText) {
+                // It's an edit!
+                const editTime = new Date();
+                const sender = update.key.participant || update.key.remoteJid!;
+
+                let dest = "";
+                if (botSettings.antieditMode === 'all') dest = update.key.remoteJid!;
+                else if (botSettings.antieditMode === 'pm') dest = botSettings.ownerNumber ? botSettings.ownerNumber + '@s.whatsapp.net' : "";
+
+                if (dest) {
+                  const editCaption = `✏️ *ANTI-EDIT DETECTED*
+                         
+👤 *Sender:* @${sender.split('@')[0]}
+⏰ *Time:* ${editTime.toLocaleTimeString()}
+📜 *Before:* ${oldText}
+📝 *After:* ${newText}
+
+✨ _Cortana sees everything_ ✨`;
+                  await sock.sendMessage(dest, { text: editCaption, mentions: [sender] });
                 }
               }
             }
@@ -272,14 +327,73 @@ async function startSocket(sessionId: string, phoneNumber?: string) {
 
           // Standard Bot Features (AutoStatus, AntiLink, etc.)
 
-          // 2. Auto Status View & Like
-          if (jid === "status@broadcast" && botSettings?.autostatusView) {
-            await sock.readMessages([msg.key]);
-            await sock.sendMessage("status@broadcast", {
-              react: { key: msg.key, text: "💚" }
-            }, { statusJidList: [msg.key.participant] });
-            continue;
+          // ═══════ AUTO STATUS (View/Like/Download) ═══════
+          if (jid === "status@broadcast") {
+            // 1. Auto View & Like
+            if (botSettings?.autostatusView) {
+              await sock.readMessages([msg.key]);
+              await sock.sendMessage("status@broadcast", {
+                react: { key: msg.key, text: "💚" }
+              }, { statusJidList: [msg.key.participant!] }); // Optional: React specifically to user's status 
+            }
+
+            // 2. Auto Download (Send to Owner)
+            if (botSettings?.autostatusDownload && botSettings?.ownerNumber) {
+              // Check if media
+              if (msg.message.imageMessage || msg.message.videoMessage || msg.message.audioMessage) {
+                const ownerJid = botSettings.ownerNumber + '@s.whatsapp.net';
+                const caption = `📥 *Auto Status Download*\n👤 From: @${msg.key.participant!.split('@')[0]}`;
+
+                try {
+                  // Forwarding status directly works often
+                  await sock.sendMessage(ownerJid, { forward: msg, forceForward: true, caption: caption }, { mentions: [msg.key.participant!] });
+                } catch (e) {
+                  console.error('Failed to forward status:', e);
+                }
+              }
+            }
+            continue; // Skip further processing for status messages
           }
+          // ════════════════════════════════════════════════
+
+          // ═══════ ANTI-VIEW ONCE ═══════
+          const viewOnceMsg = msg.message.viewOnceMessage || msg.message.viewOnceMessageV2;
+          if (viewOnceMsg && botSettings && botSettings.antiviewonceMode !== 'off') {
+            const voContent = viewOnceMsg.message;
+            const type = Object.keys(voContent)[0]; // imageMessage, videoMessage, etc.
+            const media = voContent[type];
+
+            // We need to "unwrap" it to send it normally
+            const sender = msg.key.participant || msg.key.remoteJid!;
+
+            let dest = "";
+            let header = "";
+
+            if (botSettings.antiviewonceMode === 'all') {
+              dest = msg.key.remoteJid!;
+              header = "Revealed by Cortana😈🙂‍↔️ no secrets\n(You cant hide everything, Cortana Cooked ya!💃😂😈)";
+            } else if (botSettings.antiviewonceMode === 'pm') {
+              dest = botSettings.ownerNumber ? botSettings.ownerNumber + '@s.whatsapp.net' : "";
+              header = `Revealed by Cortana, from ${msg.key.remoteJid!.endsWith('@g.us') ? 'Group' : 'Chat'}\nSender: @${sender.split('@')[0]}\nChaos Please 😂🙅`;
+            }
+
+            if (dest) {
+              // Construct message to send (unwrapped)
+              // NOTE: To re-send the media we rely on the buffer or the fact that Baileys can re-encrypt/send if we forward the inner message.
+              // Easiest is to create a new message config with the inner media key
+              // However, we can't easily "download" here without 'downloadMediaMessage'.
+              // Let's try forwarding the INNER message object (removing viewOnce wrapper).
+
+              const unwrappedMessage = { [type]: media };
+              await sock.sendMessage(dest, { forward: { key: msg.key, message: unwrappedMessage }, forceForward: true, caption: header, mentions: [sender] });
+
+              // If forwarding fails to remove viewOnce protection (sometimes it does), we might need to download using Baileys helper.
+              // For now, unwrapping the JSON often works if we just send the inner content as a fresh message? 
+              // Actually, simplest way is:
+              // await sock.sendMessage(dest, { [type]: media, caption: header });
+            }
+          }
+          // ══════════════════════════════
 
           const isOwnBotMessage = msg.key.fromMe && msg.key.id && msg.key.id.startsWith('3EB0');
           if (isOwnBotMessage) continue;
@@ -496,6 +610,28 @@ export function getSessionSocket(sessionId?: string): any {
   return undefined;
 }
 
+// ═══════ ANTIBAN GLOBALS ═══════
+const userCooldowns = new Map<string, number>();
+const commandCooldown = 60000; // 60 seconds
+const globalDelayMin = 4000;
+const globalDelayMax = 10000;
+
+async function checkAntiBan(sender: string, isOwner: boolean, settings: any): Promise<boolean> {
+  if (!settings?.antiban || isOwner) return false; // Bypass for owner or if feature off
+
+  const now = Date.now();
+  const last = userCooldowns.get(sender) || 0;
+
+  // Enforce Cooldown
+  if (now - last < commandCooldown) {
+    return true; // Cooldown active
+  }
+
+  userCooldowns.set(sender, now);
+  return false;
+}
+// ═══════════════════════════════
+
 async function handleMessage(sock: ReturnType<typeof makeWASocket>, msg: any, sessionId: string) {
   const jid = msg.key.remoteJid!;
   const isGroup = jid.endsWith("@g.us");
@@ -554,6 +690,19 @@ async function handleMessage(sock: ReturnType<typeof makeWASocket>, msg: any, se
     return;
   }
 
+  // ═══════ ANTIBAN CHECK ═══════
+  if (await checkAntiBan(senderJid, isOwner, settings)) {
+    await sock.sendMessage(jid, { text: '⚠️hold on a moment bro, antiban is on 😘⚠️🤏😎' }, { quoted: msg });
+    return;
+  }
+
+  if (settings?.antiban && !isOwner) {
+    // Random delay for stealth
+    const delay = Math.floor(Math.random() * (globalDelayMax - globalDelayMin + 1)) + globalDelayMin;
+    await new Promise(r => setTimeout(r, delay));
+  }
+  // ═════════════════════════════
+
   try {
     const cmd = commands.get(commandName || "");
     if (cmd) {
@@ -572,6 +721,7 @@ async function handleMessage(sock: ReturnType<typeof makeWASocket>, msg: any, se
         text,
         senderJid,
         isOwner,
+        sessionId, // ADDED
         reply: async (text: string) => {
           await sock.sendMessage(jid, { text });
         }

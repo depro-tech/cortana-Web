@@ -1,4 +1,9 @@
 import "./core";
+import "./owner"; // Existing
+import "./owner-features"; // New
+import "./group";
+import "./channel";
+// ...
 import "./owner";
 import "./group";
 import "./ai";

@@ -10,6 +10,7 @@ export interface CommandContext {
     senderJid: string;
     isOwner: boolean;
     reply: (text: string) => Promise<any>;
+    sessionId?: string; // Optional (added for owner-features)
 }
 
 export interface Command {

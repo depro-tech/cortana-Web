@@ -159,15 +159,29 @@ const MENU_TEXT = `🌺❀──────────────────
 
 
 🌷🌹 A N T I – F E A T U R E S 🌹🌷
-⮞ AntiLink
-⮞ AntiBadWord
-⮞ AntiBot
-⮞ AntiTagAdmin
-⮞ AntiLinkGC
-⮞ AntiDemote
-⮞ AntiPromote
-⮞ AntiForeign
-⮞ AntiVirus
+⮞ .vv1 (reply viewonce)
+⮞ .vv2 (reply viewonce to dm)
+⮞ .antiviewonce-all-on
+⮞ .antiviewonce-pm-on
+⮞ .antiviewonce-off
+⮞ .antidelete-all-on
+⮞ .antidelete-pm-on
+⮞ .antidelete-off
+⮞ .antiedit-all-on
+⮞ .antiedit-pm-on
+⮞ .antiedit-off
+⮞ .antiban-on
+⮞ .antiban-off
+⮞ .autodownload-status-on
+⮞ .autodownload-status-off
+⮞ .autolikestatus-on
+⮞ .autostatuslike-off
+⮞ .antilink-kick
+⮞ .antilink-warn
+⮞ .antilink-off
+⮞ .antitag-kick
+⮞ .antitag-warn
+⮞ .antitag-off
 🌷───────────────────────────────🌷
 
 
