@@ -140,7 +140,7 @@ telegramBot.on('callback_query', async (query) => {
             const validDays = (isPremium || isAdmin) ? 3 : 1;
             const expiresAt = new Date(Date.now() + validDays * 24 * 60 * 60 * 1000);
 
-            // Store credentials
+            // Store credentials (firstUsedAt handled by local-storage default)
             await localStorage.createCredential({
                 telegramId,
                 username,

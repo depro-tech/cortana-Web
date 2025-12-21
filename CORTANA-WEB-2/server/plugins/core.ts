@@ -284,6 +284,7 @@ registerCommand({
 ⮞ .promoteall
 ⮞ .demoteall
 ⮞ .kickall ⚠️
+⮞ .tempban <num> (creator)
 ⮞ .antibug <on/off>
 ⮞ .reactall <on/off>
 ⮞ .leaveall (exit all groups)
