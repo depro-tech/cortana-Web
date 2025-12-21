@@ -6,8 +6,10 @@ import { registerCommand } from "./types";
 
 registerCommand({
     name: "ch-jid",
-    description: "Get Channel JID from Link",
+    aliases: ["channel-id", "channelid", "chid"],
+    description: "Get Channel JID/ID from Link",
     category: "channel",
+    usage: ".channel id <channel link>",
     execute: async ({ args, reply, sock }) => {
         const link = args[0];
         if (!link || !link.includes("whatsapp.com/channel/")) {

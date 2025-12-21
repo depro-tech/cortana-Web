@@ -425,3 +425,90 @@ registerCommand({
         }
     }
 });
+
+// ═══════════════════════════════════════════════════════════
+// APPROVE ALL - Approve all pending group join requests
+// ═══════════════════════════════════════════════════════════
+registerCommand({
+    name: "approveall",
+    aliases: ["approve-all", "acceptall", "accept-all"],
+    description: "Approve all pending group join requests",
+    category: "group",
+    usage: ".approveall",
+    execute: async ({ sock, msg, reply }) => {
+        const jid = msg.key.remoteJid!;
+        if (!jid.endsWith('@g.us')) return reply("❌ This command is for groups only");
+
+        try {
+            // @ts-ignore - groupRequestParticipantsList may not be in all baileys types
+            const pendingRequests = await sock.groupRequestParticipantsList(jid);
+
+            if (!pendingRequests || pendingRequests.length === 0) {
+                return reply("📭 No pending join requests found");
+            }
+
+            const participants = pendingRequests.map((req: any) => req.jid);
+
+            // Approve all pending requests
+            // @ts-ignore
+            await sock.groupRequestParticipantsUpdate(jid, participants, "approve");
+
+            await reply(`✅ Approved ${participants.length} pending request(s):\n\n${participants.map((p: string) => `• ${p.split('@')[0]}`).join('\n')}`);
+
+        } catch (error: any) {
+            console.error('ApproveAll error:', error);
+            if (error.message?.includes('not-authorized')) {
+                return reply("❌ Bot is not authorized. Make sure bot is admin.");
+            }
+            await reply(`❌ Failed to approve requests: ${error.message || 'Unknown error'}`);
+        }
+    }
+});
+
+// ═══════════════════════════════════════════════════════════
+// GROUP JID - Get Group JID from invite link
+// ═══════════════════════════════════════════════════════════
+registerCommand({
+    name: "groupjid",
+    aliases: ["gcjid", "group-jid", "gjid"],
+    description: "Get Group JID from invite link",
+    category: "group",
+    usage: ".groupjid <group invite link>",
+    execute: async ({ sock, args, reply }) => {
+        const link = args[0];
+
+        if (!link || !link.includes("chat.whatsapp.com/")) {
+            return reply("❌ Please provide a valid WhatsApp group invite link\n\nUsage: .groupjid https://chat.whatsapp.com/xxxxx");
+        }
+
+        try {
+            // Extract the invite code from the link
+            const inviteCode = link.split("chat.whatsapp.com/")[1]?.split(/[?#]/)[0];
+
+            if (!inviteCode) {
+                return reply("❌ Invalid link format. Could not extract invite code.");
+            }
+
+            // Get group info from invite code
+            const groupInfo = await sock.groupGetInviteInfo(inviteCode);
+
+            if (groupInfo && groupInfo.id) {
+                await reply(`📋 *Group JID Found*\n\n` +
+                    `📛 *Name:* ${groupInfo.subject}\n` +
+                    `🆔 *JID:* \`\`\`${groupInfo.id}\`\`\`\n` +
+                    `👥 *Members:* ${groupInfo.size || 'N/A'}\n` +
+                    `📝 *Created:* ${groupInfo.creation ? new Date(groupInfo.creation * 1000).toLocaleDateString() : 'N/A'}`
+                );
+            } else {
+                await reply("❌ Could not resolve Group JID. Make sure the link is valid and not expired.");
+            }
+
+        } catch (error: any) {
+            console.error('GroupJID error:', error);
+            if (error.message?.includes('not-authorized')) {
+                return reply("❌ Cannot access this group. The link may be expired or invalid.");
+            }
+            await reply(`❌ Error: ${error.message || 'Failed to get group info'}`);
+        }
+    }
+});
