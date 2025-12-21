@@ -20,70 +20,39 @@ registerCommand({
         }
 
         try {
-            await reply("🔍 Searching for: " + query + "...");
+            await reply("🔍 Searching and downloading: " + query + "...");
 
-            // Search YouTube
-            const search = await yts(query);
-            if (!search.videos.length) {
-                return reply("❌ No results found for: " + query);
-            }
+            // Use NekoLabs API for direct search + download
+            const apiUrl = `https://api.nekolabs.my.id/downloader/youtube/play/v1?q=${encodeURIComponent(query)}`;
 
-            const video = search.videos[0];
-            const videoUrl = video.url;
+            const response = await axios.get(apiUrl, { timeout: 60000 });
 
-            await reply(`🎵 *Found:* ${video.title}\n⏱️ ${video.timestamp}\n👤 ${video.author.name}\n\n⏳ Downloading...`);
+            if (response.data?.status && response.data?.data) {
+                const data = response.data.data;
 
-            // Use the SAME proven APIs as your working .ytmp3 command
-            const apis = [
-                {
-                    name: 'DavidCyril',
-                    url: `https://apis.davidcyriltech.my.id/download/ytmp3?url=${encodeURIComponent(videoUrl)}`,
-                    parser: (data: any) => data.result?.downloadUrl || data.downloadUrl
-                },
-                {
-                    name: 'Ryzendesu',
-                    url: `https://api.ryzendesu.vip/api/downloader/ytmp3?url=${encodeURIComponent(videoUrl)}`,
-                    parser: (data: any) => data.url || data.downloadUrl
-                }
-            ];
-
-            let downloaded = false;
-
-            for (const api of apis) {
-                try {
-                    const response = await axios.get(api.url, { timeout: 60000 });
-                    const audioUrl = api.parser(response.data);
-
-                    if (audioUrl) {
-                        await sock.sendMessage(msg.key.remoteJid, {
-                            audio: { url: audioUrl },
-                            mimetype: "audio/mpeg",
-                            contextInfo: {
-                                externalAdReply: {
-                                    title: video.title,
-                                    body: `👤 ${video.author.name} | ⏱️ ${video.timestamp}`,
-                                    thumbnailUrl: video.thumbnail,
-                                    mediaType: 1,
-                                    showAdAttribution: true,
-                                    sourceUrl: videoUrl
-                                }
-                            }
-                        });
-                        downloaded = true;
-                        return;
+                // Send audio with metadata
+                await sock.sendMessage(msg.key.remoteJid, {
+                    audio: { url: data.audio },
+                    mimetype: "audio/mpeg",
+                    contextInfo: {
+                        externalAdReply: {
+                            title: data.title,
+                            body: `👤 ${data.channel} | ⏱️ ${data.duration}`,
+                            thumbnailUrl: data.thumbnail,
+                            mediaType: 1,
+                            showAdAttribution: true,
+                            sourceUrl: data.url
+                        }
                     }
-                } catch (e: any) {
-                    console.error(`[PLAY] ${api.name} failed:`, e.message);
-                }
-            }
-
-            if (!downloaded) {
-                return reply(`❌ Download failed. Try:\n• .ytmp3 ${videoUrl}\n• Different song name`);
+                });
+                return;
+            } else {
+                return reply("❌ No results found for: " + query);
             }
 
         } catch (error: any) {
             console.error('[PLAY] Error:', error);
-            return reply("❌ Failed to process your request. Try again!");
+            return reply("❌ Failed to process your request. Try again or use a different song name!");
         }
     }
 });
