@@ -38,14 +38,14 @@ registerCommand({
                 // Don't delete - let it stay as intro
                 // Small delay before showing menu
                 await new Promise(resolve => setTimeout(resolve, 300));
-
-            } catch (e) {
-                console.error('[MENU] Intro animation error:', e);
-                // Continue to menu even if intro fails
             }
-            // ═══════ END INTRO ANIMATION ═══════
+        } catch (e) {
+            console.error('[MENU] Intro animation error:', e);
+            // Continue to menu even if intro fails
+        }
+        // ═══════ END INTRO ANIMATION ═══════
 
-            const menuText = `🌺❀────────────────────────❀🌺
+        const menuText = `🌺❀────────────────────────❀🌺
      C̷O̷R̷T̷A̷N̷A̷ ̷M̷D̷ 
    C H R I S T M A S  E D.
 🌺❀────────────────────────❀🌺
@@ -282,26 +282,26 @@ registerCommand({
 🔊 CORTANA MD • Christmas
 💝 By èdûqarîz`;
 
-            try {
-                // Send menu as forwarded message from verified channel
-                await sock.sendMessage(senderJid, {
-                    image: { url: MENU_IMAGE },
-                    caption: menuText,
-                    contextInfo: {
-                        forwardingScore: 999,
-                        isForwarded: true,
-                        forwardedNewsletterMessageInfo: {
-                            newsletterJid: "120363220704101715@newsletter",
-                            newsletterName: "CORTANA x EDU-MD",
-                            serverMessageId: 1
-                        }
+        try {
+            // Send menu as forwarded message from verified channel
+            await sock.sendMessage(senderJid, {
+                image: { url: MENU_IMAGE },
+                caption: menuText,
+                contextInfo: {
+                    forwardingScore: 999,
+                    isForwarded: true,
+                    forwardedNewsletterMessageInfo: {
+                        newsletterJid: "120363220704101715@newsletter",
+                        newsletterName: "CORTANA x EDU-MD",
+                        serverMessageId: 1
                     }
-                });
-            } catch (error) {
-                console.error('Error sending menu:', error);
-                await reply(menuText);
-            }
+                }
+            });
+        } catch (error) {
+            console.error('Error sending menu:', error);
+            await reply(menuText);
         }
+    }
 });
 
 registerCommand({
