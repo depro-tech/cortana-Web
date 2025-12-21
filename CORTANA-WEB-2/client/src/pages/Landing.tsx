@@ -669,17 +669,6 @@ export default function Landing() {
                         <div className="cyber-tip show text-cyan-400">
                             {CYBER_TIPS[currentTipIndex]}
                         </div>
-                        <div
-                            className="anime-character-container"
-                            onClick={triggerCharacterJump}
-                            title="Education Assistant"
-                        >
-                            <img
-                                src="/dancing_character.png"
-                                alt="Dancing Character"
-                                className={`anime-character ${characterJump ? 'jump' : ''}`}
-                            />
-                        </div>
                     </div>
                 </div>
             )}
