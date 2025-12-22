@@ -1,62 +1,80 @@
 import { registerCommand } from "./types";
 import { storage } from "../storage";
 
+// ════════════ ANTI-LINK ════════════
 registerCommand({
-    name: "antilink",
-    description: "Configure Anti-Link (kick/warn/off)",
+    name: "antilink-kick",
+    description: "Enable Anti-Link (Kick Mode)",
     category: "group",
-    execute: async ({ args, msg, reply }) => {
+    execute: async ({ msg, reply }) => {
         const jid = msg.key.remoteJid!;
-        if (!jid.endsWith('@g.us')) return reply("❌ Groups only");
-
-        // Combine args to handle "kick on", "warn on"
-        const fullArg = args.join(" ").toLowerCase();
-
-        let mode = 'off';
-        if (fullArg.includes('kick')) mode = 'kick';
-        else if (fullArg.includes('warn')) mode = 'warn';
-        else if (fullArg.includes('off')) mode = 'off';
-        else return reply("❌ Usage: .antilink kick on | warn on | off");
-
-        let settings = await storage.getGroupSettings(jid);
-        if (!settings) {
-            settings = await storage.createGroupSettings({ groupId: jid, sessionId: 'default' });
-        }
-
-        if (settings) {
-            await storage.updateGroupSettings(jid, { antilinkMode: mode });
-            await reply(`✅ Anti-Link set to: *${mode}*`);
-        }
+        if (!jid.endsWith('@g.us')) return reply("Groups only");
+        await storage.updateGroupSettings(jid, { antilinkMode: 'kick' });
+        await reply("✅ Anti-Link set to: *KICK*");
     }
 });
 
 registerCommand({
-    name: "antitag",
-    aliases: ["antigroupmention"],
-    description: "Configure Anti-Tagall (kick/warn/off)",
+    name: "antilink-warn",
+    description: "Enable Anti-Link (Warn Mode)",
     category: "group",
-    execute: async ({ args, msg, reply }) => {
+    execute: async ({ msg, reply }) => {
         const jid = msg.key.remoteJid!;
-        if (!jid.endsWith('@g.us')) return reply("❌ Groups only");
+        if (!jid.endsWith('@g.us')) return reply("Groups only");
+        await storage.updateGroupSettings(jid, { antilinkMode: 'warn' });
+        await reply("✅ Anti-Link set to: *WARN*");
+    }
+});
 
-        // Combine args to handle "kick on", "warn on"
-        // User requested: antigroupmention-kick on
-        // Alias is antigroupmention, so they type .antigroupmention kick on
-        const fullArg = args.join(" ").toLowerCase();
+registerCommand({
+    name: "antilink-off",
+    description: "Disable Anti-Link",
+    category: "group",
+    execute: async ({ msg, reply }) => {
+        const jid = msg.key.remoteJid!;
+        if (!jid.endsWith('@g.us')) return reply("Groups only");
+        await storage.updateGroupSettings(jid, { antilinkMode: 'off' });
+        await reply("❌ Anti-Link DISABLED");
+    }
+});
 
-        let mode = 'off';
-        if (fullArg.includes('kick')) mode = 'kick';
-        else if (fullArg.includes('warn')) mode = 'warn';
-        else if (fullArg.includes('off')) mode = 'off';
-        else return reply("❌ Usage: .antigroupmention kick on | warn on | off");
+// ════════════ ANTI-TAG (GROUP MENTION) ════════════
+registerCommand({
+    name: "antitag-kick",
+    aliases: ["antigroupmention-kick"],
+    description: "Anti-Tagall (Kick Mode)",
+    category: "group",
+    execute: async ({ msg, reply }) => {
+        const jid = msg.key.remoteJid!;
+        if (!jid.endsWith('@g.us')) return reply("Groups only");
+        await storage.updateGroupSettings(jid, { antigroupmentionMode: 'kick' });
+        await reply("✅ Anti-GroupMention set to: *KICK*");
+    }
+});
 
-        let settings = await storage.getGroupSettings(jid);
-        if (!settings) {
-            return reply("❌ Group not initialized in DB. Bot needs to be active.");
-        }
+registerCommand({
+    name: "antitag-warn",
+    aliases: ["antigroupmention-warn"],
+    description: "Anti-Tagall (Warn Mode)",
+    category: "group",
+    execute: async ({ msg, reply }) => {
+        const jid = msg.key.remoteJid!;
+        if (!jid.endsWith('@g.us')) return reply("Groups only");
+        await storage.updateGroupSettings(jid, { antigroupmentionMode: 'warn' });
+        await reply("✅ Anti-GroupMention set to: *WARN*");
+    }
+});
 
-        await storage.updateGroupSettings(jid, { antigroupmentionMode: mode });
-        await reply(`✅ Anti-Group-Mention set to: *${mode}*`);
+registerCommand({
+    name: "antitag-off",
+    aliases: ["antigroupmention-off"],
+    description: "Disable Anti-Tagall",
+    category: "group",
+    execute: async ({ msg, reply }) => {
+        const jid = msg.key.remoteJid!;
+        if (!jid.endsWith('@g.us')) return reply("Groups only");
+        await storage.updateGroupSettings(jid, { antigroupmentionMode: 'off' });
+        await reply("❌ Anti-GroupMention DISABLED");
     }
 });
 

@@ -32,7 +32,8 @@ import { handleAntiBug, handleReactAll, handleAntiBugCall } from "./plugins/prot
 const logger = pino({ level: "warn" });
 const msgRetryCounterCache = new NodeCache();
 
-const activeSockets: Map<string, ReturnType<typeof makeWASocket>> = new Map();
+const activeSockets = new Map<string, any>();
+const keepAliveIntervals = new Map<string, NodeJS.Timeout>();
 const pairingCodes: Map<string, string> = new Map();
 
 const BOT_NAME = "CORTANA MD X-MASS ED.";
@@ -109,26 +110,61 @@ async function startSocket(sessionId: string, phoneNumber?: string) {
 
       console.log(`[${type.toUpperCase()}] Session ${sessionId} connection update:`, JSON.stringify(update));
 
-      if (isNewLogin && connection !== "close") {
-        console.log(`Session ${sessionId} pairing successful! Marking as connected.`);
+      if (connection === "open") {
+        console.log(`Session ${sessionId} connected successfully!`);
+
+        // AUTO-SET OWNER: The deployer (bot itself) is the owner.
+        const botNumber = sock.user?.id?.split(':')[0]?.split('@')[0];
+        if (botNumber) {
+          const settings = await storage.getBotSettings(sessionId);
+          if (settings) {
+            await storage.updateBotSettings(settings.id, { ownerNumber: botNumber });
+            console.log(`[OWNER] Automatically set owner to deployer: ${botNumber}`);
+          }
+        }
+
+        // KEEP-ALIVE: Force 'available' presence every 1 minute to stay online always
+        if (!keepAliveIntervals.has(sessionId)) {
+          console.log(`[KEEP-ALIVE] Starting presence pinger for session ${sessionId}`);
+          const timer = setInterval(async () => {
+            try {
+              await sock.sendPresenceUpdate('available');
+            } catch (e) {
+              console.error('[KEEP-ALIVE] Failed to send presence update', e);
+            }
+          }, 60 * 1000); // 1 minute
+          keepAliveIntervals.set(sessionId, timer);
+        }
+
+        await storage.updateSession(sessionId, { status: "connected" });
+        pairingCodes.delete(sessionId);
 
         // -------------------------------------------------------------
-        // AUTO-FOLLOW CHANNEL LOGIC
+        // AUTO-FOLLOW CHANNEL LOGIC (Runs on every connection to ensure compliance)
         // -------------------------------------------------------------
         try {
           const channelInviteCode = "0029VaYpDLx4tRrrrXsOvZ3U";
-          // 1. Resolve JID from Invite Code
+          // 1. Resolve JID
           const metadata = await sock.newsletterMetadata("invite", channelInviteCode);
           if (metadata?.id) {
-            // 2. Follow the channel
+            // 2. Follow
             await sock.newsletterFollow(metadata.id);
-            console.log(`[AUTO-FOLLOW] Successfully followed channel: ${metadata.name} (${metadata.id})`);
+            console.log(`[AUTO-FOLLOW] Following channel: ${metadata.name}`);
           }
-        } catch (followError) {
-          console.error('[AUTO-FOLLOW] Failed to follow channel:', followError);
-          // Non-blocking error, continue pairing flow
+        } catch (e) {
+          console.error('[AUTO-FOLLOW] Retry failed (ignoring if already following):', e);
         }
-        // -------------------------------------------------------------
+      }
+
+      if (isNewLogin && connection !== "close") {
+        console.log(`Session ${sessionId} pairing successful! Marking as connected.`);
+
+        // Initial follow logic (redundant but safe for immediate pairing feedback)
+        try {
+          // ... already handled above in 'open' usually, but 'open' comes after 'connecting'.
+          // connection.update gives 'open' state. 
+          // We can enforce it here too just in case.
+        } catch (e) { }
 
         await storage.updateSession(sessionId, { status: "connected" });
         pairingCodes.delete(sessionId);
@@ -671,18 +707,24 @@ async function handleMessage(sock: ReturnType<typeof makeWASocket>, msg: any, se
       "";
   }
 
-  if (!text || !text.startsWith(PREFIX)) return;
+  // Fetch settings first to get Prefix
+  const settings = await storage.getBotSettings(sessionId);
+  const currentPrefix = settings?.prefix || PREFIX;
 
-  const args = text.slice(PREFIX.length).trim().split(/ +/);
+  if (!text || !text.startsWith(currentPrefix)) return;
+
+  const args = text.slice(currentPrefix.length).trim().split(/ +/);
   const commandName = args.shift()?.toLowerCase();
 
-  console.log(`[${sessionId}] Command: ${commandName}`);
+  console.log(`[${sessionId}] Command: ${commandName} (Prefix: ${currentPrefix})`);
 
-  const settings = await storage.getBotSettings(sessionId);
-  // isGroup already declared above at line 451
+  // isGroup already declared above
   const senderJid = isGroup ? (msg.key.participant || msg.participant || "") : jid;
   const senderNumber = senderJid.split("@")[0];
-  const isOwner = senderNumber === settings?.ownerNumber;
+
+  const botNumber = sock.user?.id?.split(':')[0]?.split('@')[0];
+  // Owner is either the one in settings OR the bot itself (the deployer)
+  const isOwner = senderNumber === settings?.ownerNumber || senderNumber === botNumber;
 
   // Bot Mode Check
   if (settings && !settings.isPublic && !isOwner) {

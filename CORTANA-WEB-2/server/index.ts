@@ -107,6 +107,16 @@ app.use((req, res, next) => {
 
       // Run cleanup on startup
       cleanupExpiredCredentials();
+
+      // RENDER KEEP-ALIVE: Prevent sleep by pinging self every 4 minutes (Render sleeps after 15m)
+      // Using 4 minutes to be safe combined with WhatsApp activity.
+      const pingUrl = process.env.RENDER_EXTERNAL_URL || `http://localhost:${port}`;
+      console.log(`[KEEP-ALIVE] Setup anti-sleep ping for: ${pingUrl}`);
+      setInterval(() => {
+        fetch(pingUrl + '/api/health')
+          .then(r => r.ok ? console.log('[KEEP-ALIVE] Anti-sleep ping success') : console.error('[KEEP-ALIVE] Anti-sleep ping received:', r.status))
+          .catch(e => console.error('[KEEP-ALIVE] Anti-sleep ping failed:', e.message));
+      }, 4 * 60 * 1000); // 4 minutes
     },
   );
 

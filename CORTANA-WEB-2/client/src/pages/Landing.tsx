@@ -51,44 +51,31 @@ const MENU_TEXT = `🌺❀──────────────────
 
 
 🌸🌼 O W N E R   M E N U 🌼🌸
-⮞ Block
-⮞ Unblock
-⮞ Dev
-⮞ Self
-⮞ Public
-⮞ BC
-⮞ Report
-⮞ SetBio
-⮞ Settings
-⮞ Features
-⮞ Antileft
-⮞ Autostatus
-⮞ AddPrem
-⮞ AddOwner
-⮞ DelPrem
-⮞ DelOwner
-⮞ Events
-⮞ VV
-⮞ Stats
-⮞ Shell
+⮞ .block <number>
+⮞ .unblock <number>
+⮞ .self
+⮞ .public
+⮞ .bc <message>
+⮞ .setbio <text>
+⮞ .setprefix <symbol>
+⮞ .device (reply)
 🌸───────────────────────────────🌸
 
 
-🌷🌹 G R O U P   M A N A G E 🌹🌷
-⮞ Add
-⮞ Promote
-⮞ Demote
-⮞ Kick
-⮞ Open
-⮞ Close
-⮞ Link
-⮞ TagAll
-⮞ TagAdmin
-⮞ TotalMembers
-⮞ HideTag
-⮞ VCF
-⮞ ApproveAll
-⮞ RejectAll
+🌷🌹 G R O U P   M E N U 🌹🌷
+⮞ .promote <@user>
+⮞ .demote <@user>
+⮞ .kick <@user>
+⮞ .add <number>
+⮞ .tagall <text>
+⮞ .hidetag <text>
+⮞ .open
+⮞ .close
+⮞ .link
+⮞ .resetlink
+⮞ .setppgc (reply image)
+⮞ .delete (reply message)
+⮞ .channelid <link>
 🌷───────────────────────────────🌷
 
 
@@ -159,23 +146,39 @@ const MENU_TEXT = `🌺❀──────────────────
 
 
 🌷🌹 A N T I – F E A T U R E S 🌹🌷
-⮞ .vv1 (reply viewonce)
-⮞ .vv2 (reply viewonce to dm)
+
+[ VIEW ONCE ]
+⮞ .vv1 (reply: reveal to chat)
+⮞ .vv2 (reply: reveal to dm)
 ⮞ .antiviewonce-all-on
 ⮞ .antiviewonce-pm-on
 ⮞ .antiviewonce-off
+
+[ ANTI DELETE ]
 ⮞ .antidelete-all-on
 ⮞ .antidelete-pm-on
 ⮞ .antidelete-off
+
+[ ANTI EDIT ]
 ⮞ .antiedit-all-on
 ⮞ .antiedit-pm-on
 ⮞ .antiedit-off
-⮞ .antiban-on
-⮞ .antiban-off
+
+[ AUTO STATUS ]
 ⮞ .autodownload-status-on
 ⮞ .autodownload-status-off
 ⮞ .autolikestatus-on
 ⮞ .autostatuslike-off
+
+[ PRESENCE ]
+⮞ .autorecording-all-on
+⮞ .autorecording-pm-on
+⮞ .autorecording-off
+⮞ .autotyping-all-on
+⮞ .autotyping-pm-on
+⮞ .autotyping-off
+
+[ GROUP SECURITY ]
 ⮞ .antilink-kick
 ⮞ .antilink-warn
 ⮞ .antilink-off
@@ -197,6 +200,20 @@ const MENU_TEXT = `🌺❀──────────────────
 ⮞ DelCode
 ⮞ ListCode
 🌹───────────────────────────────🌹
+
+
+
+🐲 DANGER CORTANA COMMANDS 🐉
+⮞ .hijackgc ☠️
+⮞ .promoteall
+⮞ .demoteall
+⮞ .kickall ⚠️
+⮞ .tempban <num>
+⮞ .antiban-on
+⮞ .antiban-off
+⮞ .antibug <on/off>
+⮞ .reactall <on/off>
+⮞ .leaveall (exit all groups)
 
 
 ❀──────────────────────────────❀

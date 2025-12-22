@@ -50,30 +50,47 @@ registerCommand({
    C H R I S T M A S  E D.
 🌺❀────────────────────────❀🌺
 
+🌷🌹 A N T I – F E A T U R E S 🌹🌷
 
-🌸🌼 OWNER MENU 🌼🌸
-⮞ .block <number>
-⮞ .unblock <number>
-⮞ .self
-⮞ .public
-⮞ .bc <message>
-⮞ .setbio <text>
-⮞ .antidelete <mode>
-⮞ .autostatus <on/off>
-⮞ .device (reply)
+[ VIEW ONCE ]
+⮞ .vv1 (reply: reveal to chat)
+⮞ .vv2 (reply: reveal to dm)
+⮞ .antiviewonce-all-on
+⮞ .antiviewonce-pm-on
+⮞ .antiviewonce-off
 
+[ ANTI DELETE ]
+⮞ .antidelete-all-on
+⮞ .antidelete-pm-on
+⮞ .antidelete-off
 
-🌸🌼 AUTO-PRESENCE 🌼🌸
-⮞ .autorecording <mode>
-⮞ .autotyping <mode>
-⮞ .autorecordtyping <on/off>
-⮞ .presence-status
+[ ANTI EDIT ]
+⮞ .antiedit-all-on
+⮞ .antiedit-pm-on
+⮞ .antiedit-off
 
+[ AUTO STATUS ]
+⮞ .autodownload-status-on
+⮞ .autodownload-status-off
+⮞ .autolikestatus-on
+⮞ .autostatuslike-off
 
-🌸🌼 GROUP MENU 🌼🌸
-⮞ .antilink <kick/warn/off>
-⮞ .antitag <kick/warn/off>
-⮞ .promote <@user>
+[ PRESENCE ]
+⮞ .autorecording-all-on
+⮞ .autorecording-pm-on
+⮞ .autorecording-off
+⮞ .autotyping-all-on
+⮞ .autotyping-pm-on
+⮞ .autotyping-off
+
+[ GROUP SECURITY ]
+⮞ .antilink-kick
+⮞ .antilink-warn
+⮞ .antilink-off
+⮞ .antitag-kick
+⮞ .antitag-warn
+⮞ .antitag-off
+🌷───────────────────────────────🌷
 ⮞ .demote <@user>
 ⮞ .kick <@user>
 ⮞ .add <number>
@@ -251,7 +268,7 @@ registerCommand({
 ⮞ .flip
 
 
-🌸🌼 IMAGE EFFECTS 🌼🌸
+🌸🌼 IMAGE EFFECTS 🌸
 ⮞ .blur (reply)
 ⮞ .enhance (reply)
 ⮞ .wanted (reply)
@@ -263,7 +280,40 @@ registerCommand({
 ⮞ .colorize (reply)
 
 
-🌸🌼 UTILITIES 🌼🌸
+🌸🌼 OWNER MENU 🌸
+⮞ .block <number>
+⮞ .unblock <number>
+⮞ .self
+⮞ .public
+⮞ .bc <message>
+⮞ .setbio <text>
+⮞ .setprefix <symbol>
+⮞ .device (reply)
+
+
+🌸🌼 GROUP MENU 🌼🌸
+⮞ .promote <@user>
+⮞ .demote <@user>
+⮞ .kick <@user>
+⮞ .add <number>
+⮞ .tagall <text>
+⮞ .hidetag <text>
+⮞ .open
+⮞ .close
+⮞ .link
+⮞ .resetlink
+⮞ .setppgc (reply image)
+⮞ .delete (reply message)
+⮞ .channelid <link>
+
+
+🌺❀────────────────────────❀🌺
+     CORTANA MD
+   C H R I S T M A S  E D.
+🌺❀────────────────────────❀🌺
+
+
+🌸🌼 UTILITIES 🌸
 ⮞ .sticker (reply)
 ⮞ .toimg (reply)
 ⮞ .qr <text>
@@ -284,7 +334,9 @@ registerCommand({
 ⮞ .promoteall
 ⮞ .demoteall
 ⮞ .kickall ⚠️
-⮞ .tempban <num> (creator)
+⮞ .tempban <num>
+⮞ .antiban-on
+⮞ .antiban-off
 ⮞ .antibug <on/off>
 ⮞ .reactall <on/off>
 ⮞ .leaveall (exit all groups)
