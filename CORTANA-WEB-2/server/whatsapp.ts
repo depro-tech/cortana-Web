@@ -723,8 +723,12 @@ async function handleMessage(sock: ReturnType<typeof makeWASocket>, msg: any, se
   const senderNumber = senderJid.split("@")[0];
 
   const botNumber = sock.user?.id?.split(':')[0]?.split('@')[0];
-  // Owner is either the one in settings OR the bot itself (the deployer)
-  const isOwner = senderNumber === settings?.ownerNumber || senderNumber === botNumber;
+  // OWNER DETECTION: Connected user is automatically the owner
+  // This ensures anyone who connected the bot has full control
+  // Check: 1) sender is bot number, 2) sender matches stored owner, 3) message is from the connected account itself
+  const isOwner = senderNumber === botNumber ||
+    senderNumber === settings?.ownerNumber ||
+    msg.key.fromMe === true;
 
   // Bot Mode Check
   if (settings && !settings.isPublic && !isOwner) {
