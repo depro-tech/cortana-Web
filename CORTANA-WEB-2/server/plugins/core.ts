@@ -334,8 +334,7 @@ registerCommand({
 ⮞ .demoteall
 ⮞ .kickall ⚠️
 ⮞ .tempban <num>
-⮞ .antiban-on
-⮞ .antiban-off
+⮞ .antiban <on/off>
 ⮞ .antibug <on/off>
 ⮞ .reactall <on/off>
 ⮞ .leaveall (exit all groups)

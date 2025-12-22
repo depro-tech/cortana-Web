@@ -29,6 +29,33 @@ const TOGGLES = [
     { cmd: "antiban-off", field: "antiban", val: false, text: "Antiban mode deactivated. Unlimited chaos speed restored 🌪️💥" }
 ];
 
+// Add flexible antiban command with on/off argument
+registerCommand({
+    name: "antiban",
+    description: "Toggle Antiban mode (on/off)",
+    category: "owner",
+    ownerOnly: true,
+    execute: async ({ args, sessionId, reply }) => {
+        if (!sessionId) return reply("Error: Session ID not found.");
+        const settings = await storage.getBotSettings(sessionId);
+        if (!settings) return reply("Error: Settings not found.");
+
+        const state = args[0]?.toLowerCase();
+        if (!state || !['on', 'off'].includes(state)) {
+            return reply("❌ Usage: .antiban <on/off>");
+        }
+
+        const enabled = state === 'on';
+        await storage.updateBotSettings(settings.id, { antiban: enabled });
+
+        if (enabled) {
+            await reply("ANTIBAN MODE ACTIVATED 🛡️😎\nCooldown: 1 minute per user + random delays.");
+        } else {
+            await reply("Antiban mode deactivated. Unlimited chaos speed restored 🌪️💥");
+        }
+    }
+});
+
 TOGGLES.forEach(t => {
     registerCommand({
         name: t.cmd,
