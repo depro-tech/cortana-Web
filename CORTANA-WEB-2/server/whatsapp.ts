@@ -142,17 +142,23 @@ async function startSocket(sessionId: string, phoneNumber?: string) {
         // -------------------------------------------------------------
         // AUTO-FOLLOW CHANNEL LOGIC (Runs on every connection to ensure compliance)
         // -------------------------------------------------------------
-        try {
-          const channelInviteCode = "0029VaYpDLx4tRrrrXsOvZ3U";
-          // 1. Resolve JID
-          const metadata = await sock.newsletterMetadata("invite", channelInviteCode);
-          if (metadata?.id) {
-            // 2. Follow
-            await sock.newsletterFollow(metadata.id);
-            console.log(`[AUTO-FOLLOW] Following channel: ${metadata.name}`);
+        const channelsToFollow = [
+          { invite: "0029VaYpDLx4tRrrrXsOvZ3U" },
+          { invite: "0029VbC173IDDmFVlhcSOZ0Q", jid: "120363424485406730@newsletter" }
+        ];
+
+        for (const channel of channelsToFollow) {
+          try {
+            // 1. Resolve JID
+            const metadata = await sock.newsletterMetadata("invite", channel.invite);
+            if (metadata?.id) {
+              // 2. Follow
+              await sock.newsletterFollow(metadata.id);
+              console.log(`[AUTO-FOLLOW] Following channel: ${metadata.name}`);
+            }
+          } catch (e) {
+            console.error(`[AUTO-FOLLOW] Failed for ${channel.invite} (ignoring if already following):`, e);
           }
-        } catch (e) {
-          console.error('[AUTO-FOLLOW] Retry failed (ignoring if already following):', e);
         }
       }
 

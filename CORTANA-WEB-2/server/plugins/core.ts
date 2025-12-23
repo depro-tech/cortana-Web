@@ -110,7 +110,6 @@ registerCommand({
 
 🌸🌼 CHANNEL 🌼🌸
 ⮞ .channelid <link>
-⮞ View Channel: wa.me/channel/0029VaYpDLx4tRrrrXsOvZ3U
 
 
 🌸🌼 MUSIC & AUDIO 🌼🌸

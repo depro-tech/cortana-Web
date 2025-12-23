@@ -1,14 +1,12 @@
 import { registerCommand } from "./types";
 import axios from "axios";
-import yts from "yt-search";
 
 // ═══════════════════════════════════════════════════════════════
-// PLAY COMMAND - YouTube Search + Download (USING PROVEN APIS)
-// Uses the same APIs as your working .ytmp3 command!
+// PLAY COMMAND - YouTube Search + Download (USING NEKOLABS API)
 // ═══════════════════════════════════════════════════════════════
 registerCommand({
     name: "play",
-    aliases: ["song", "music"],
+    aliases: ["song", "music", "mp3", "audio"],
     description: "Search and download music from YouTube",
     category: "media",
     usage: ".play <song name>",
@@ -16,91 +14,37 @@ registerCommand({
         const query = args.join(" ").trim();
 
         if (!query) {
-            return reply("❌ Provide a song name!\n\nUsage: .play despacito");
+            return reply("*🎵 SONG DOWNLOADER*\n\nUsage: .play <song name>\nExample: .play shape of you");
         }
 
         try {
-            await reply("🔍 Searching for: " + query + "...");
+            await reply("🔍 Searching for audio...");
 
-            // 1. Search YouTube first to get valid video details
-            const search = await yts(query);
-            if (!search.videos.length) {
-                return reply("❌ No results found for: " + query);
+            // Use NEKOLABS API
+            const apiUrl = `https://api.nekolabs.my.id/downloader/youtube/play/v1?q=${encodeURIComponent(query)}`;
+            const res = await axios.get(apiUrl, { timeout: 30000 });
+            const data = res.data;
+
+            if (!data?.success || !data?.result?.downloadUrl) {
+                return reply("❌ Audio not found!");
             }
 
-            const video = search.videos[0];
-            const videoUrl = video.url;
+            const meta = data.result.metadata;
+            const dlUrl = data.result.downloadUrl;
+            const caption = `*🎵 AUDIO INFO*\n\n📝 Title: ${meta.title}\n👤 Channel: ${meta.channel}\n⏱️ Duration: ${meta.duration}`;
 
-            // 2. Send "Found" message with thumbnail
+            await reply(caption);
+            await reply("⬇️ Downloading audio...");
+
             await sock.sendMessage(msg.key.remoteJid, {
-                image: { url: video.thumbnail },
-                caption: `🎵 *Found:* ${video.title}\n👤 *Channel:* ${video.author.name}\n⏱️ *Duration:* ${video.timestamp}\n\n⏳ Downloading audio...`
+                audio: { url: dlUrl },
+                mimetype: "audio/mpeg",
+                fileName: `${meta.title.replace(/[\\/:*?"<>|]/g, "").slice(0, 80)}.mp3`
             }, { quoted: msg });
 
-            // 3. Try multiple APIs to download audio
-            const apis = [
-                // API 1: NekoLabs (Direct URL)
-                {
-                    name: 'NekoLabs',
-                    url: `https://api.nekolabs.my.id/downloader/youtube/play?video_id=${video.videoId}`, // Try using video ID
-                    fetch: async () => {
-                        // Fallback to query if video_id endpoint differs, but let's try direct search
-                        const res = await axios.get(`https://api.nekolabs.my.id/downloader/youtube/play/v1?q=${encodeURIComponent(videoUrl)}`, { timeout: 30000 });
-                        return res.data?.data?.audio || null;
-                    }
-                },
-                // API 2: DavidCyril
-                {
-                    name: 'DavidCyril',
-                    url: `https://apis.davidcyriltech.my.id/download/ytmp3?url=${videoUrl}`,
-                    fetch: async () => {
-                        const res = await axios.get(`https://apis.davidcyriltech.my.id/download/ytmp3?url=${videoUrl}`, { timeout: 30000 });
-                        return res.data?.result?.downloadUrl || res.data?.downloadUrl || null;
-                    }
-                },
-                // API 3: Ryzendesu
-                {
-                    name: 'Ryzendesu',
-                    url: `https://api.ryzendesu.vip/api/downloader/ytmp3?url=${videoUrl}`,
-                    fetch: async () => {
-                        const res = await axios.get(`https://api.ryzendesu.vip/api/downloader/ytmp3?url=${videoUrl}`, { timeout: 30000 });
-                        return res.data?.url || res.data?.downloadUrl || null;
-                    }
-                }
-            ];
-
-            for (const api of apis) {
-                try {
-                    // console.log(`[PLAY] Trying API: ${api.name}`);
-                    const audioUrl = await api.fetch();
-
-                    if (audioUrl) {
-                        await sock.sendMessage(msg.key.remoteJid, {
-                            audio: { url: audioUrl },
-                            mimetype: "audio/mpeg",
-                            contextInfo: {
-                                externalAdReply: {
-                                    title: video.title,
-                                    body: `👤 ${video.author.name} | ⏱️ ${video.timestamp}`,
-                                    thumbnailUrl: video.thumbnail,
-                                    mediaType: 1,
-                                    showAdAttribution: true,
-                                    sourceUrl: videoUrl
-                                }
-                            }
-                        }, { quoted: msg });
-                        return; // Success!
-                    }
-                } catch (e: any) {
-                    console.error(`[PLAY] ${api.name} failed:`, e.message);
-                }
-            }
-
-            return reply(`❌ Download failed. Tried 3 different servers.\n\nTry:\n• .ytmp3 ${videoUrl}`);
-
         } catch (error: any) {
-            console.error('[PLAY] Error:', error);
-            return reply("❌ Failed to process your request. Try again!");
+            console.error("Song Error:", error);
+            await reply("❌ Download failed");
         }
     }
 });
