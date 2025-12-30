@@ -386,27 +386,19 @@ registerCommand({
             let botId = sock.user?.id;
             if (!botId) return reply('❌ Could not determine bot ID');
 
-            // Try different bot ID variations to match participants format
-            const botIdVariations = [
-                botId,
-                botId.replace(/:\d+/, ''),
-                botId.split(':')[0] + '@s.whatsapp.net',
-                botId.includes('@') ? botId : botId + '@s.whatsapp.net'
-            ];
+            // Extract bot number (the part before @ or :)
+            const botNumber = botId.split('@')[0].split(':')[0];
 
-            // Find bot in participants
-            let finalBot = participants.find(p => botIdVariations.includes(p.id));
-
-            // If still not found, try to find by checking if any participant ID starts with our bot number
-            if (!finalBot) {
-                const botNumber = botId.split('@')[0].split(':')[0];
-                finalBot = participants.find(p => p.id.startsWith(botNumber));
-            }
+            // Find bot in participants by matching the number prefix
+            let finalBot = participants.find(p => {
+                const participantNumber = p.id.split('@')[0].split(':')[0];
+                return participantNumber === botNumber;
+            });
 
             if (!finalBot) {
                 // Debug info
                 console.log('Bot ID:', botId);
-                console.log('Bot variations:', botIdVariations);
+                console.log('Bot Number:', botNumber);
                 console.log('Participant IDs:', participants.map(p => p.id));
                 return reply(`❌ Could not find bot in group.\nBot ID: ${botId}\nMake bot admin and try again.`);
             }

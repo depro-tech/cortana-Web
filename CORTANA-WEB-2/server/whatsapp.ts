@@ -355,23 +355,18 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
           }
 
           // 2. Anti-Edit Logic
-          // Baileys 'messages.update' provides partial updates. If a message is edited, it usually comes with 'message' property in update, but exact detection varies.
-          // We will check if the update contains a new message text for an existing ID.
-          // IMPORTANT: Skip bot's own messages to not interfere with menu intro animation
-          if (update.update.message && !update.key.fromMe) {
-            const oldMsg = messageCache.get(update.key.id!);
-            if (oldMsg && botSettings.antieditMode !== 'off') {
-              // Check if it's an edit (protocolMessage usually handling this, but sometimes direct update)
-              // Or we see 'editedMessage' field in newer types.
-              // Simplest detection: ID exists, content changed.
-              // Note: Baileys sometimes triggers update for status delivery too.
-              // We only care if text changed.
+          // SKIP: Bot's own messages (fromMe), only check if antiedit is enabled
+          // Also skip if update doesn't have proper message content
+          const isOwnMessage = update.key.fromMe === true;
+          const antieditEnabled = botSettings && botSettings.antieditMode && botSettings.antieditMode !== 'off';
 
+          if (update.update.message && !isOwnMessage && antieditEnabled) {
+            const oldMsg = messageCache.get(update.key.id!);
+            if (oldMsg && oldMsg.message) {
               const newText = update.update.message.conversation || update.update.message.extendedTextMessage?.text;
               const oldText = oldMsg.message?.conversation || oldMsg.message?.extendedTextMessage?.text;
 
               if (newText && oldText && newText !== oldText) {
-                // It's an edit!
                 const editTime = new Date();
                 const sender = update.key.participant || update.key.remoteJid!;
 
@@ -763,28 +758,32 @@ async function handleMessage(sock: ReturnType<typeof makeWASocket>, msg: any, se
   const isGroup = jid.endsWith("@g.us");
 
   // ═══════ AUTO-PRESENCE SIMULATION ═══════
-  try {
-    if (presenceSettings.autoRecordTyping) {
-      // Alternate mode: random between recording and typing
-      presenceSettings.messageCounter++;
-      const mode = presenceSettings.messageCounter % 2 === 0 ? 'recording' : 'composing';
-      await sock.sendPresenceUpdate(mode, jid);
-      setTimeout(() => sock.sendPresenceUpdate('available', jid), 8000);
-    } else if (presenceSettings.autoRecording !== 'off') {
-      // Recording mode
-      if (presenceSettings.autoRecording === 'all' || (presenceSettings.autoRecording === 'pm' && !isGroup)) {
-        await sock.sendPresenceUpdate('recording', jid);
+  // Only runs if explicitly enabled by user
+  const isRecordingEnabled = presenceSettings.autoRecording === 'all' || presenceSettings.autoRecording === 'pm';
+  const isTypingEnabled = presenceSettings.autoTyping === 'all' || presenceSettings.autoTyping === 'pm';
+  const isAlternateEnabled = presenceSettings.autoRecordTyping === true;
+
+  if (isAlternateEnabled || isRecordingEnabled || isTypingEnabled) {
+    try {
+      if (isAlternateEnabled) {
+        presenceSettings.messageCounter++;
+        const mode = presenceSettings.messageCounter % 2 === 0 ? 'recording' : 'composing';
+        await sock.sendPresenceUpdate(mode, jid);
         setTimeout(() => sock.sendPresenceUpdate('available', jid), 8000);
+      } else if (isRecordingEnabled) {
+        if (presenceSettings.autoRecording === 'all' || (presenceSettings.autoRecording === 'pm' && !isGroup)) {
+          await sock.sendPresenceUpdate('recording', jid);
+          setTimeout(() => sock.sendPresenceUpdate('available', jid), 8000);
+        }
+      } else if (isTypingEnabled) {
+        if (presenceSettings.autoTyping === 'all' || (presenceSettings.autoTyping === 'pm' && !isGroup)) {
+          await sock.sendPresenceUpdate('composing', jid);
+          setTimeout(() => sock.sendPresenceUpdate('available', jid), 8000);
+        }
       }
-    } else if (presenceSettings.autoTyping !== 'off') {
-      // Typing mode
-      if (presenceSettings.autoTyping === 'all' || (presenceSettings.autoTyping === 'pm' && !isGroup)) {
-        await sock.sendPresenceUpdate('composing', jid);
-        setTimeout(() => sock.sendPresenceUpdate('available', jid), 8000);
-      }
+    } catch (e) {
+      // Silently fail if presence update fails
     }
-  } catch (e) {
-    // Silently fail if presence update fails
   }
   // ═══════ END AUTO-PRESENCE ═══════
 
