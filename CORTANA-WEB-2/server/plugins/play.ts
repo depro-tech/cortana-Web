@@ -1,8 +1,6 @@
 import { registerCommand } from "./types";
 import axios from "axios";
 
-const DAVID_API = "https://apis.davidcyriltech.my.id";
-
 // ═══════════════════════════════════════════════════════════════
 // PLAY COMMAND - YouTube Audio Download (Multiple API Fallbacks)
 // ═══════════════════════════════════════════════════════════════
@@ -28,37 +26,44 @@ registerCommand({
             let duration = "N/A";
             let apiUsed = "";
 
-            // Try API 1: DavidCyril Play
+            // Try API 1: BK9 API
             try {
-                const res = await axios.get(`${DAVID_API}/download/play?query=${encodeURIComponent(query)}`, {
-                    timeout: 25000
+                const res = await axios.get(`https://bk9.fun/download/ytsearch?q=${encodeURIComponent(query)}`, {
+                    timeout: 20000
                 });
-                if (res.data?.status && res.data?.result?.download_url) {
-                    downloadUrl = res.data.result.download_url;
-                    title = res.data.result.title || query;
-                    thumbnail = res.data.result.thumbnail;
-                    duration = res.data.result.duration || "N/A";
-                    apiUsed = "DavidCyril";
-                }
-            } catch (e: any) {
-                console.log("[PLAY] DavidCyril API failed:", e.message);
-            }
+                if (res.data?.BK9?.[0]) {
+                    const video = res.data.BK9[0];
+                    title = video.title || query;
+                    thumbnail = video.thumbnail;
+                    duration = video.duration || "N/A";
 
-            // Try API 2: DavidCyril Song (alternative endpoint)
-            if (!downloadUrl) {
-                try {
-                    const res = await axios.get(`${DAVID_API}/download/song?query=${encodeURIComponent(query)}`, {
+                    // Get download URL
+                    const dlRes = await axios.get(`https://bk9.fun/download/ytmp3?url=${encodeURIComponent(video.url)}`, {
                         timeout: 25000
                     });
-                    if (res.data?.status && res.data?.result?.audio?.download_url) {
-                        downloadUrl = res.data.result.audio.download_url;
+                    if (dlRes.data?.BK9?.downloadUrl) {
+                        downloadUrl = dlRes.data.BK9.downloadUrl;
+                        apiUsed = "BK9";
+                    }
+                }
+            } catch (e: any) {
+                console.log("[PLAY] BK9 API failed:", e.message);
+            }
+
+            // Try API 2: Nexoracle
+            if (!downloadUrl) {
+                try {
+                    const res = await axios.get(`https://api.nexoracle.com/downloader/yt-audio?apikey=free_key@maher_apis&url=https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`, {
+                        timeout: 25000
+                    });
+                    if (res.data?.result?.downloadUrl) {
+                        downloadUrl = res.data.result.downloadUrl;
                         title = res.data.result.title || query;
                         thumbnail = res.data.result.thumbnail;
-                        duration = res.data.result.duration || "N/A";
-                        apiUsed = "DavidCyril-Song";
+                        apiUsed = "Nexoracle";
                     }
                 } catch (e: any) {
-                    console.log("[PLAY] DavidCyril Song API failed:", e.message);
+                    console.log("[PLAY] Nexoracle API failed:", e.message);
                 }
             }
 
