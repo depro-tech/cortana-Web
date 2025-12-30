@@ -4,7 +4,7 @@ import axios from "axios";
 const DAVID_API = "https://apis.davidcyriltech.my.id";
 
 // ═══════════════════════════════════════════════════════════════
-// PLAY COMMAND - YouTube Audio Download (DavidCyril API)
+// PLAY COMMAND - YouTube Audio Download (Multiple API Fallbacks)
 // ═══════════════════════════════════════════════════════════════
 registerCommand({
     name: "play",
@@ -22,40 +22,104 @@ registerCommand({
         try {
             await reply("🔍 Searching for audio...");
 
-            // DavidCyril Play API
-            const res = await axios.get(`${DAVID_API}/download/play?query=${encodeURIComponent(query)}`, {
-                timeout: 30000
-            });
-            const data = res.data;
+            let downloadUrl = null;
+            let title = query;
+            let thumbnail = null;
+            let duration = "N/A";
+            let apiUsed = "";
 
-            if (!data?.status || !data?.result?.download_url) {
-                return reply("❌ Audio not found! Try a different search.");
+            // Try API 1: DavidCyril Play
+            try {
+                const res = await axios.get(`${DAVID_API}/download/play?query=${encodeURIComponent(query)}`, {
+                    timeout: 25000
+                });
+                if (res.data?.status && res.data?.result?.download_url) {
+                    downloadUrl = res.data.result.download_url;
+                    title = res.data.result.title || query;
+                    thumbnail = res.data.result.thumbnail;
+                    duration = res.data.result.duration || "N/A";
+                    apiUsed = "DavidCyril";
+                }
+            } catch (e: any) {
+                console.log("[PLAY] DavidCyril API failed:", e.message);
             }
 
-            const result = data.result;
-            const caption = `*🎵 AUDIO INFO*\n\n📝 Title: ${result.title}\n⏱️ Duration: ${result.duration}\n👁️ Views: ${result.views?.toLocaleString() || 'N/A'}\n📅 Published: ${result.published}`;
+            // Try API 2: DavidCyril Song (alternative endpoint)
+            if (!downloadUrl) {
+                try {
+                    const res = await axios.get(`${DAVID_API}/download/song?query=${encodeURIComponent(query)}`, {
+                        timeout: 25000
+                    });
+                    if (res.data?.status && res.data?.result?.audio?.download_url) {
+                        downloadUrl = res.data.result.audio.download_url;
+                        title = res.data.result.title || query;
+                        thumbnail = res.data.result.thumbnail;
+                        duration = res.data.result.duration || "N/A";
+                        apiUsed = "DavidCyril-Song";
+                    }
+                } catch (e: any) {
+                    console.log("[PLAY] DavidCyril Song API failed:", e.message);
+                }
+            }
 
-            // Send thumbnail with info
-            await sock.sendMessage(msg.key.remoteJid, {
-                image: { url: result.thumbnail },
-                caption: caption
-            }, { quoted: msg });
+            // Try API 3: Ryzendesu
+            if (!downloadUrl) {
+                try {
+                    const searchRes = await axios.get(`https://api.ryzendesu.vip/api/search/youtube?query=${encodeURIComponent(query)}`, {
+                        timeout: 15000
+                    });
+                    if (searchRes.data?.result?.[0]?.url) {
+                        const videoUrl = searchRes.data.result[0].url;
+                        title = searchRes.data.result[0].title || query;
+                        thumbnail = searchRes.data.result[0].thumbnail;
+
+                        const dlRes = await axios.get(`https://api.ryzendesu.vip/api/downloader/ytmp3?url=${encodeURIComponent(videoUrl)}`, {
+                            timeout: 25000
+                        });
+                        if (dlRes.data?.url) {
+                            downloadUrl = dlRes.data.url;
+                            apiUsed = "Ryzendesu";
+                        }
+                    }
+                } catch (e: any) {
+                    console.log("[PLAY] Ryzendesu API failed:", e.message);
+                }
+            }
+
+            if (!downloadUrl) {
+                return reply("❌ Audio not found! Try a different search or use .ytmp3 <youtube link>");
+            }
+
+            // Send info with thumbnail if available
+            const caption = `*🎵 AUDIO INFO*\n\n📝 Title: ${title}\n⏱️ Duration: ${duration}`;
+
+            if (thumbnail) {
+                await sock.sendMessage(msg.key.remoteJid, {
+                    image: { url: thumbnail },
+                    caption: caption
+                }, { quoted: msg });
+            } else {
+                await reply(caption);
+            }
 
             await reply("⬇️ Downloading audio...");
 
             // Send audio
             await sock.sendMessage(msg.key.remoteJid, {
-                audio: { url: result.download_url },
+                audio: { url: downloadUrl },
                 mimetype: "audio/mpeg",
-                fileName: `${result.title.replace(/[\\/:*?"<>|]/g, "").slice(0, 80)}.mp3`
+                fileName: `${title.replace(/[\\/:*?"<>|]/g, "").slice(0, 80)}.mp3`
             }, { quoted: msg });
+
+            console.log(`[PLAY] Success using ${apiUsed}`);
 
         } catch (error: any) {
             console.error("Play Error:", error);
-            await reply("❌ Download failed. Try again!");
+            await reply("❌ Download failed. Try again or use .ytmp3 <link>");
         }
     }
 });
+
 
 // ═══════════════════════════════════════════════════════════════
 // SONG COMMAND - YouTube Audio/Video (DavidCyril API)

@@ -357,7 +357,8 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
           // 2. Anti-Edit Logic
           // Baileys 'messages.update' provides partial updates. If a message is edited, it usually comes with 'message' property in update, but exact detection varies.
           // We will check if the update contains a new message text for an existing ID.
-          if (update.update.message) {
+          // IMPORTANT: Skip bot's own messages to not interfere with menu intro animation
+          if (update.update.message && !update.key.fromMe) {
             const oldMsg = messageCache.get(update.key.id!);
             if (oldMsg && botSettings.antieditMode !== 'off') {
               // Check if it's an edit (protocolMessage usually handling this, but sometimes direct update)
