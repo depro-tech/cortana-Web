@@ -424,3 +424,23 @@ registerCommand({
         await reply(`✅ *CORTANA MD is alive!*\n\n🎄 Christmas Edition\n💝 Developed by èdûqarîz`);
     }
 });
+
+registerCommand({
+    name: "creator",
+    aliases: ["dev", "owner", "developer"],
+    description: "Show bot creator info",
+    category: "core",
+    execute: async ({ reply }) => {
+        await reply(`👨‍💻 *CORTANA MD CREATOR* 👨‍💻
+
+🌟 Here is my beloved creator:
+📱 *+254113374182*
+
+💬 Wanna message him? Don't hesitate! 😊
+☕ Buy him tea also! 🍵
+
+🔗 wa.me/254113374182
+
+_Made with 💖 by èdûqarîz_`);
+    }
+});

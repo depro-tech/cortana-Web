@@ -34,11 +34,11 @@
         "id": "ba610f22-3ab0-4bfc-bf59-a5d002025159",
         "phoneNumber": "255619406167",
         "type": "md",
-        "status": "connected",
+        "status": "disconnected",
         "creds": null,
         "keys": null,
         "createdAt": "2025-12-30T12:22:57.321Z",
-        "updatedAt": "2025-12-30T12:23:33.670Z"
+        "updatedAt": "2025-12-30T12:53:52.861Z"
       }
     ]
   ],

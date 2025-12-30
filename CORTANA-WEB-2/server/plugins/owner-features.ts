@@ -77,7 +77,7 @@ TOGGLES.forEach(t => {
 // VV1 and VV2 Manual Commands
 registerCommand({
     name: "vv1",
-    description: "Reveal ViewOnce to Chat",
+    description: "Reveal ViewOnce to Chat (or resend quoted media)",
     category: "owner",
     ownerOnly: true,
     execute: async ({ msg, sock, reply }) => {
@@ -85,39 +85,61 @@ registerCommand({
         const contextInfo = msg.message?.extendedTextMessage?.contextInfo
             || msg.message?.imageMessage?.contextInfo
             || msg.message?.videoMessage?.contextInfo
-            || msg.message?.conversation?.contextInfo
             || (msg as any).contextInfo;
 
         const quoted = contextInfo?.quotedMessage;
 
-        // Check for viewOnce in multiple formats
-        const voMsg = quoted?.viewOnceMessage
-            || quoted?.viewOnceMessageV2
-            || quoted?.viewOnceMessageV2Extension
-            || msg.message?.viewOnceMessage
-            || msg.message?.viewOnceMessageV2;
-
-        if (!voMsg) {
-            console.log('[VV1] No viewOnce found. Quoted:', JSON.stringify(quoted).slice(0, 200));
-            return reply("❌ Reply to a ViewOnce message!\n\nMake sure you're replying directly to a view-once photo/video.");
+        if (!quoted) {
+            return reply("❌ Reply to a message with media!");
         }
 
-        try {
-            const content = voMsg.message;
-            const type = Object.keys(content)[0];
-            const media = content[type];
+        // Check for viewOnce wrapper first
+        const voMsg = quoted?.viewOnceMessage
+            || quoted?.viewOnceMessageV2
+            || quoted?.viewOnceMessageV2Extension;
 
-            await sock.sendMessage(msg.key.remoteJid!, { [type]: media, caption: "Revealed by Cortana😈🙂‍↔️ no secrets" } as any, { quoted: msg });
+        try {
+            let mediaType: string;
+            let mediaContent: any;
+
+            if (voMsg?.message) {
+                // It's a viewOnce - extract the inner content
+                const content = voMsg.message;
+                mediaType = Object.keys(content)[0];
+                mediaContent = content[mediaType];
+                console.log('[VV1] Found viewOnce, type:', mediaType);
+            } else if (quoted.imageMessage) {
+                // It's a regular/already-viewed image
+                mediaType = 'imageMessage';
+                mediaContent = quoted.imageMessage;
+                console.log('[VV1] Found regular imageMessage');
+            } else if (quoted.videoMessage) {
+                // It's a regular/already-viewed video
+                mediaType = 'videoMessage';
+                mediaContent = quoted.videoMessage;
+                console.log('[VV1] Found regular videoMessage');
+            } else {
+                console.log('[VV1] No media found. Keys:', Object.keys(quoted || {}));
+                return reply("❌ Reply to a view-once or media message!");
+            }
+
+            // Send the media
+            const sendType = mediaType.replace('Message', '');
+            await sock.sendMessage(msg.key.remoteJid!, {
+                [sendType]: mediaContent,
+                caption: "Revealed by Cortana😈🙂‍↔️ no secrets"
+            } as any, { quoted: msg });
+
         } catch (e) {
             console.error('[VV1] Error:', e);
-            return reply("❌ Failed to reveal. The view-once may have expired.");
+            return reply("❌ Failed to reveal. The media may have expired.");
         }
     }
 });
 
 registerCommand({
     name: "vv2",
-    description: "Reveal ViewOnce to DM",
+    description: "Reveal ViewOnce to DM (or resend quoted media)",
     category: "owner",
     ownerOnly: true,
     execute: async ({ msg, sock, reply, senderJid, sessionId }) => {
@@ -125,38 +147,60 @@ registerCommand({
         const contextInfo = msg.message?.extendedTextMessage?.contextInfo
             || msg.message?.imageMessage?.contextInfo
             || msg.message?.videoMessage?.contextInfo
-            || msg.message?.conversation?.contextInfo
             || (msg as any).contextInfo;
 
         const quoted = contextInfo?.quotedMessage;
 
-        // Check for viewOnce in multiple formats
+        if (!quoted) {
+            return reply("❌ Reply to a message with media!");
+        }
+
+        // Check for viewOnce wrapper first
         const voMsg = quoted?.viewOnceMessage
             || quoted?.viewOnceMessageV2
-            || quoted?.viewOnceMessageV2Extension
-            || msg.message?.viewOnceMessage
-            || msg.message?.viewOnceMessageV2;
-
-        if (!voMsg) {
-            console.log('[VV2] No viewOnce found. Quoted:', JSON.stringify(quoted).slice(0, 200));
-            return reply("❌ Reply to a ViewOnce message!\n\nMake sure you're replying directly to a view-once photo/video.");
-        }
+            || quoted?.viewOnceMessageV2Extension;
 
         if (!sessionId) return reply("Error: Session context missing.");
         const settings = await storage.getBotSettings(sessionId);
         if (!settings?.ownerNumber) return reply("Owner number not set.");
 
         try {
-            const content = voMsg.message;
-            const type = Object.keys(content)[0];
-            const media = content[type];
+            let mediaType: string;
+            let mediaContent: any;
 
+            if (voMsg?.message) {
+                // It's a viewOnce - extract the inner content
+                const content = voMsg.message;
+                mediaType = Object.keys(content)[0];
+                mediaContent = content[mediaType];
+                console.log('[VV2] Found viewOnce, type:', mediaType);
+            } else if (quoted.imageMessage) {
+                // It's a regular/already-viewed image
+                mediaType = 'imageMessage';
+                mediaContent = quoted.imageMessage;
+                console.log('[VV2] Found regular imageMessage');
+            } else if (quoted.videoMessage) {
+                // It's a regular/already-viewed video
+                mediaType = 'videoMessage';
+                mediaContent = quoted.videoMessage;
+                console.log('[VV2] Found regular videoMessage');
+            } else {
+                console.log('[VV2] No media found. Keys:', Object.keys(quoted || {}));
+                return reply("❌ Reply to a view-once or media message!");
+            }
+
+            // Send the media to DM
+            const sendType = mediaType.replace('Message', '');
             const dest = settings.ownerNumber + "@s.whatsapp.net";
-            await sock.sendMessage(dest, { [type]: media, caption: "Revealed by Cortana (Private)" } as any, { quoted: msg });
+            await sock.sendMessage(dest, {
+                [sendType]: mediaContent,
+                caption: "Revealed by Cortana (Private)"
+            } as any, { quoted: msg });
             await reply("Sent to DM ✅");
+
         } catch (e) {
             console.error('[VV2] Error:', e);
-            return reply("❌ Failed to reveal. The view-once may have expired.");
+            return reply("❌ Failed to reveal. The media may have expired.");
         }
     }
 });
