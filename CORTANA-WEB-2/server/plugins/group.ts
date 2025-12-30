@@ -1,38 +1,72 @@
 import { registerCommand } from "./types";
 import { storage } from "../storage";
 
-// Helper function to find bot in group participants (handles various ID formats)
+// Helper function to find bot in group participants (handles various ID formats including lid)
 function findBotInParticipants(botId: string, participants: any[]): any | undefined {
-    if (!botId) return undefined;
-
-    // Extract bot number
-    let botNumber = botId.split('@')[0].split(':')[0];
-    if (botId.includes(':')) {
-        botNumber = botId.split(':')[0];
+    if (!botId) {
+        console.log('[BOT-DETECT] No botId provided');
+        return undefined;
     }
 
-    // Try multiple matching strategies
-    let bot = participants.find(p => {
-        const pid = p.id;
-        const pNum = pid.split('@')[0].split(':')[0];
+    console.log('[BOT-DETECT] Looking for bot:', botId);
+    console.log('[BOT-DETECT] Participants:', participants.map(p => p.id).slice(0, 5), '...');
 
-        if (pNum === botNumber) return true;
-        if (pid.includes(botNumber)) return true;
-        if (botId.includes(pNum)) return true;
+    // Extract bot number - get just the phone number digits
+    let botNumber = botId.replace(/@.*$/, '').replace(/:.*$/, '');
+    console.log('[BOT-DETECT] Extracted botNumber:', botNumber);
 
+    // Strategy 1: Direct match
+    let bot = participants.find(p => p.id === botId);
+    if (bot) {
+        console.log('[BOT-DETECT] Found via direct match');
+        return bot;
+    }
+
+    // Strategy 2: Match by phone number in ID
+    bot = participants.find(p => {
+        const pNum = p.id.replace(/@.*$/, '').replace(/:.*$/, '');
+        return pNum === botNumber;
+    });
+    if (bot) {
+        console.log('[BOT-DETECT] Found via phone number match');
+        return bot;
+    }
+
+    // Strategy 3: Check if either ID contains the other's number
+    bot = participants.find(p => {
+        return p.id.includes(botNumber) || botId.includes(p.id.split('@')[0].split(':')[0]);
+    });
+    if (bot) {
+        console.log('[BOT-DETECT] Found via includes match');
+        return bot;
+    }
+
+    // Strategy 4: Check lid property if present (new WhatsApp format)
+    bot = participants.find(p => {
+        if (p.lid && p.lid.includes(botNumber)) return true;
         return false;
     });
-
-    // Last resort: digits-only match
-    if (!bot) {
-        const botDigits = botNumber.replace(/\D/g, '');
-        bot = participants.find(p => {
-            const pDigits = p.id.split('@')[0].split(':')[0].replace(/\D/g, '');
-            return pDigits === botDigits || pDigits.endsWith(botDigits) || botDigits.endsWith(pDigits);
-        });
+    if (bot) {
+        console.log('[BOT-DETECT] Found via lid match');
+        return bot;
     }
 
-    return bot;
+    // Strategy 5: Partial digits match
+    const botDigits = botNumber.replace(/\D/g, '');
+    if (botDigits.length >= 10) {
+        bot = participants.find(p => {
+            const pDigits = p.id.replace(/@.*$/, '').replace(/:.*$/, '').replace(/\D/g, '');
+            // Match last 10 digits
+            return pDigits.endsWith(botDigits.slice(-10)) || botDigits.endsWith(pDigits.slice(-10));
+        });
+        if (bot) {
+            console.log('[BOT-DETECT] Found via digits match');
+            return bot;
+        }
+    }
+
+    console.log('[BOT-DETECT] Bot NOT FOUND in participants!');
+    return undefined;
 }
 
 // Helper function to find sender in group participants

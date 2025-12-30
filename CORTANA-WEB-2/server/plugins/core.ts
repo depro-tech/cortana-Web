@@ -1,12 +1,13 @@
 import { registerCommand } from "./types";
 import axios from "axios";
 
-// Random menu images
+// Menu images - rotate sequentially
 const MENU_IMAGES = [
     "https://files.catbox.moe/y0yjzu.jpg",
     "https://files.catbox.moe/2ob13q.jpg",
     "https://files.catbox.moe/zn4l18.jpg"
 ];
+let menuImageIndex = 0; // Counter for sequential rotation
 const MENU_AUDIO = "https://files.catbox.moe/4rj6pk.mp3";
 
 registerCommand({
@@ -359,8 +360,9 @@ registerCommand({
 💝 By èdûqarîz`;
 
         try {
-            // Pick random menu image
-            const randomImage = MENU_IMAGES[Math.floor(Math.random() * MENU_IMAGES.length)];
+            // Pick menu image sequentially (rotating through the list)
+            const randomImage = MENU_IMAGES[menuImageIndex % MENU_IMAGES.length];
+            menuImageIndex++; // Increment for next menu request
 
             // Send menu as forwarded message from verified channel
             await sock.sendMessage(chatJid, {

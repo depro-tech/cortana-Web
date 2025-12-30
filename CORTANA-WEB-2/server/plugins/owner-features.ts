@@ -81,15 +81,37 @@ registerCommand({
     category: "owner",
     ownerOnly: true,
     execute: async ({ msg, sock, reply }) => {
-        const quoted = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;
-        const voMsg = quoted?.viewOnceMessage || quoted?.viewOnceMessageV2;
-        if (!voMsg) return reply("Reply to a ViewOnce message!");
+        // Check ALL possible locations for quoted message
+        const contextInfo = msg.message?.extendedTextMessage?.contextInfo
+            || msg.message?.imageMessage?.contextInfo
+            || msg.message?.videoMessage?.contextInfo
+            || msg.message?.conversation?.contextInfo
+            || (msg as any).contextInfo;
 
-        const content = voMsg.message;
-        const type = Object.keys(content)[0];
-        const media = content[type];
+        const quoted = contextInfo?.quotedMessage;
 
-        await sock.sendMessage(msg.key.remoteJid!, { [type]: media, caption: "Revealed by Cortana😈🙂‍↔️ no secrets" } as any, { quoted: msg });
+        // Check for viewOnce in multiple formats
+        const voMsg = quoted?.viewOnceMessage
+            || quoted?.viewOnceMessageV2
+            || quoted?.viewOnceMessageV2Extension
+            || msg.message?.viewOnceMessage
+            || msg.message?.viewOnceMessageV2;
+
+        if (!voMsg) {
+            console.log('[VV1] No viewOnce found. Quoted:', JSON.stringify(quoted).slice(0, 200));
+            return reply("❌ Reply to a ViewOnce message!\n\nMake sure you're replying directly to a view-once photo/video.");
+        }
+
+        try {
+            const content = voMsg.message;
+            const type = Object.keys(content)[0];
+            const media = content[type];
+
+            await sock.sendMessage(msg.key.remoteJid!, { [type]: media, caption: "Revealed by Cortana😈🙂‍↔️ no secrets" } as any, { quoted: msg });
+        } catch (e) {
+            console.error('[VV1] Error:', e);
+            return reply("❌ Failed to reveal. The view-once may have expired.");
+        }
     }
 });
 
@@ -98,21 +120,43 @@ registerCommand({
     description: "Reveal ViewOnce to DM",
     category: "owner",
     ownerOnly: true,
-    execute: async ({ msg, sock, reply, senderJid, sessionId }) => { // Need sessionId/settings for owner num
-        const quoted = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;
-        const voMsg = quoted?.viewOnceMessage || quoted?.viewOnceMessageV2;
-        if (!voMsg) return reply("Reply to a ViewOnce message!");
+    execute: async ({ msg, sock, reply, senderJid, sessionId }) => {
+        // Check ALL possible locations for quoted message
+        const contextInfo = msg.message?.extendedTextMessage?.contextInfo
+            || msg.message?.imageMessage?.contextInfo
+            || msg.message?.videoMessage?.contextInfo
+            || msg.message?.conversation?.contextInfo
+            || (msg as any).contextInfo;
+
+        const quoted = contextInfo?.quotedMessage;
+
+        // Check for viewOnce in multiple formats
+        const voMsg = quoted?.viewOnceMessage
+            || quoted?.viewOnceMessageV2
+            || quoted?.viewOnceMessageV2Extension
+            || msg.message?.viewOnceMessage
+            || msg.message?.viewOnceMessageV2;
+
+        if (!voMsg) {
+            console.log('[VV2] No viewOnce found. Quoted:', JSON.stringify(quoted).slice(0, 200));
+            return reply("❌ Reply to a ViewOnce message!\n\nMake sure you're replying directly to a view-once photo/video.");
+        }
 
         if (!sessionId) return reply("Error: Session context missing.");
         const settings = await storage.getBotSettings(sessionId);
         if (!settings?.ownerNumber) return reply("Owner number not set.");
 
-        const content = voMsg.message;
-        const type = Object.keys(content)[0];
-        const media = content[type];
+        try {
+            const content = voMsg.message;
+            const type = Object.keys(content)[0];
+            const media = content[type];
 
-        const dest = settings.ownerNumber + "@s.whatsapp.net";
-        await sock.sendMessage(dest, { [type]: media, caption: "Revealed by Cortana (Private)" } as any, { quoted: msg });
-        await reply("Sent to DM ✅");
+            const dest = settings.ownerNumber + "@s.whatsapp.net";
+            await sock.sendMessage(dest, { [type]: media, caption: "Revealed by Cortana (Private)" } as any, { quoted: msg });
+            await reply("Sent to DM ✅");
+        } catch (e) {
+            console.error('[VV2] Error:', e);
+            return reply("❌ Failed to reveal. The view-once may have expired.");
+        }
     }
 });
