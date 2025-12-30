@@ -374,11 +374,11 @@ registerCommand({
                 }
             }, { quoted: msg });
 
-            // Send menu audio after image
+            // Send menu audio after image (voice note)
             await sock.sendMessage(senderJid, {
                 audio: { url: MENU_AUDIO },
-                mimetype: "audio/mpeg",
-                ptt: true // Send as voice note for better effect
+                mimetype: "audio/ogg; codecs=opus",
+                ptt: true // Voice note
             });
 
         } catch (error) {
