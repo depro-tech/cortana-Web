@@ -1,4 +1,5 @@
 import { registerCommand } from "./types";
+import axios from "axios";
 
 // Random menu images
 const MENU_IMAGES = [
@@ -14,6 +15,8 @@ registerCommand({
     description: "Show the bot menu",
     category: "core",
     execute: async ({ sock, msg, senderJid, reply }) => {
+        // Use remoteJid for the chat (works for both groups and PMs)
+        const chatJid = msg.key.remoteJid!;
         // ═══════ REACT TO MENU COMMAND ═══════
         try {
             await sock.sendMessage(msg.key.remoteJid, {
@@ -25,8 +28,8 @@ registerCommand({
 
         // ═══════ LETTER BY LETTER INTRO ═══════
         try {
-            // Send initial message
-            const sentMsg = await sock.sendMessage(senderJid, { text: "𝗖" });
+            // Send initial message to the chat
+            const sentMsg = await sock.sendMessage(chatJid, { text: "𝗖" });
             const introKey = sentMsg?.key;
 
             if (introKey) {
@@ -37,7 +40,7 @@ registerCommand({
                 for (let i = 0; i < introText.length; i++) {
                     displayText += introText[i];
 
-                    await sock.sendMessage(senderJid, {
+                    await sock.sendMessage(chatJid, {
                         text: `*${displayText}*`,
                         edit: introKey
                     });
@@ -360,7 +363,7 @@ registerCommand({
             const randomImage = MENU_IMAGES[Math.floor(Math.random() * MENU_IMAGES.length)];
 
             // Send menu as forwarded message from verified channel
-            await sock.sendMessage(senderJid, {
+            await sock.sendMessage(chatJid, {
                 image: { url: randomImage },
                 caption: menuText,
                 contextInfo: {
@@ -374,12 +377,21 @@ registerCommand({
                 }
             }, { quoted: msg });
 
-            // Send menu audio after image (voice note - MP3 format)
-            await sock.sendMessage(senderJid, {
-                audio: { url: MENU_AUDIO },
-                mimetype: "audio/mpeg",
-                ptt: true
-            });
+            // Send menu audio after image (voice note - download as buffer first)
+            try {
+                const audioResponse = await axios.get(MENU_AUDIO, {
+                    responseType: 'arraybuffer',
+                    timeout: 15000
+                });
+                await sock.sendMessage(chatJid, {
+                    audio: Buffer.from(audioResponse.data),
+                    mimetype: "audio/mpeg",
+                    ptt: true
+                });
+            } catch (audioErr) {
+                console.error('[MENU] Audio failed:', audioErr);
+                // Continue without audio if it fails
+            }
 
         } catch (error) {
             console.error('Error sending menu:', error);

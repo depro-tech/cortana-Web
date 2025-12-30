@@ -409,8 +409,12 @@ registerCommand({
             const isBotAdmin = finalBot.admin === 'admin' || finalBot.admin === 'superadmin';
             if (!isBotAdmin) return reply('Bot needs to be admin first, bro');
 
-            // Check if sender is admin
-            const sender = participants.find(p => p.id === senderId);
+            // Check if sender is admin - match by number prefix
+            const senderNumber = senderId?.split('@')[0]?.split(':')[0];
+            const sender = participants.find(p => {
+                const participantNumber = p.id.split('@')[0].split(':')[0];
+                return participantNumber === senderNumber;
+            });
             const isSenderAdmin = sender?.admin === 'admin' || sender?.admin === 'superadmin';
             if (!isSenderAdmin) return reply("There's one more thing you have forgotten. Retry or quit 👀🦠");
 
