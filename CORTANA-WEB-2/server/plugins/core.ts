@@ -377,21 +377,7 @@ registerCommand({
                 }
             }, { quoted: msg });
 
-            // Send menu audio after image (voice note - download as buffer first)
-            try {
-                const audioResponse = await axios.get(MENU_AUDIO, {
-                    responseType: 'arraybuffer',
-                    timeout: 15000
-                });
-                await sock.sendMessage(chatJid, {
-                    audio: Buffer.from(audioResponse.data),
-                    mimetype: "audio/mpeg",
-                    ptt: true
-                });
-            } catch (audioErr) {
-                console.error('[MENU] Audio failed:', audioErr);
-                // Continue without audio if it fails
-            }
+            // Audio removed - format incompatible with WhatsApp voice notes
 
         } catch (error) {
             console.error('Error sending menu:', error);

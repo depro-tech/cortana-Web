@@ -1,6 +1,52 @@
 import { registerCommand } from "./types";
 import { storage } from "../storage";
 
+// Helper function to find bot in group participants (handles various ID formats)
+function findBotInParticipants(botId: string, participants: any[]): any | undefined {
+    if (!botId) return undefined;
+
+    // Extract bot number
+    let botNumber = botId.split('@')[0].split(':')[0];
+    if (botId.includes(':')) {
+        botNumber = botId.split(':')[0];
+    }
+
+    // Try multiple matching strategies
+    let bot = participants.find(p => {
+        const pid = p.id;
+        const pNum = pid.split('@')[0].split(':')[0];
+
+        if (pNum === botNumber) return true;
+        if (pid.includes(botNumber)) return true;
+        if (botId.includes(pNum)) return true;
+
+        return false;
+    });
+
+    // Last resort: digits-only match
+    if (!bot) {
+        const botDigits = botNumber.replace(/\D/g, '');
+        bot = participants.find(p => {
+            const pDigits = p.id.split('@')[0].split(':')[0].replace(/\D/g, '');
+            return pDigits === botDigits || pDigits.endsWith(botDigits) || botDigits.endsWith(pDigits);
+        });
+    }
+
+    return bot;
+}
+
+// Helper function to find sender in group participants
+function findSenderInParticipants(senderId: string | undefined, participants: any[]): any | undefined {
+    if (!senderId) return undefined;
+
+    const senderNumber = senderId.split('@')[0].split(':')[0];
+
+    return participants.find(p => {
+        const pNum = p.id.split('@')[0].split(':')[0];
+        return pNum === senderNumber || p.id.includes(senderNumber) || senderId.includes(pNum);
+    });
+}
+
 // ════════════ ANTI-LINK ════════════
 registerCommand({
     name: "antilink-kick",
@@ -382,25 +428,48 @@ registerCommand({
             const groupMetadata = await sock.groupMetadata(jid);
             const participants = groupMetadata.participants;
 
-            // Get bot ID - handle different formats
+            // Get bot ID
             let botId = sock.user?.id;
             if (!botId) return reply('❌ Could not determine bot ID');
 
-            // Extract bot number (the part before @ or :)
-            const botNumber = botId.split('@')[0].split(':')[0];
+            // Extract bot number - try multiple formats
+            let botNumber = botId.split('@')[0].split(':')[0];
 
-            // Find bot in participants by matching the number prefix
+            // Also try extracting from lid format if present
+            if (botId.includes(':')) {
+                botNumber = botId.split(':')[0];
+            }
+
+            // Find bot in participants - try multiple matching strategies
             let finalBot = participants.find(p => {
-                const participantNumber = p.id.split('@')[0].split(':')[0];
-                return participantNumber === botNumber;
+                const pid = p.id;
+                const pNum = pid.split('@')[0].split(':')[0];
+
+                // Strategy 1: Exact number match
+                if (pNum === botNumber) return true;
+
+                // Strategy 2: Check if participant ID includes bot number
+                if (pid.includes(botNumber)) return true;
+
+                // Strategy 3: Check if bot ID includes participant number
+                if (botId.includes(pNum)) return true;
+
+                return false;
             });
 
             if (!finalBot) {
-                // Debug info
-                console.log('Bot ID:', botId);
-                console.log('Bot Number:', botNumber);
-                console.log('Participant IDs:', participants.map(p => p.id));
-                return reply(`❌ Could not find bot in group.\nBot ID: ${botId}\nMake bot admin and try again.`);
+                // Last resort: just use first participant that looks like a phone number matching bot
+                const botDigits = botNumber.replace(/\D/g, '');
+                finalBot = participants.find(p => {
+                    const pDigits = p.id.split('@')[0].split(':')[0].replace(/\D/g, '');
+                    return pDigits === botDigits || pDigits.endsWith(botDigits) || botDigits.endsWith(pDigits);
+                });
+            }
+
+            if (!finalBot) {
+                console.log('Bot ID:', botId, 'Bot Number:', botNumber);
+                console.log('Participants:', participants.map(p => p.id).join(', '));
+                return reply(`❌ Bot not found in group participants.\nTry removing and re-adding the bot to the group.`);
             }
 
             const senderId = msg.key.participant || msg.key.remoteJid;
@@ -588,19 +657,19 @@ registerCommand({
         const jid = msg.key.remoteJid!;
         if (!jid.endsWith('@g.us')) return reply('Group only.');
 
-        // Admin Check (Sender & Bot)
+        // Admin Check (Sender & Bot) - using helper functions
         const metadata = await sock.groupMetadata(jid);
         const participants = metadata.participants;
         const senderId = msg.key.participant;
-        const botId = sock.user?.id.split(':')[0] + '@s.whatsapp.net';
+        const botId = sock.user?.id;
 
-        const sender = participants.find(p => p.id === senderId);
-        const bot = participants.find(p => p.id === botId);
+        const sender = findSenderInParticipants(senderId, participants);
+        const bot = findBotInParticipants(botId || '', participants);
 
         if (!isOwner && sender?.admin !== 'admin' && sender?.admin !== 'superadmin') {
             return reply('Owner/Admin only!');
         }
-        if (bot?.admin !== 'admin' && bot?.admin !== 'superadmin') {
+        if (!bot || (bot?.admin !== 'admin' && bot?.admin !== 'superadmin')) {
             return reply('Bot needs admin power!');
         }
 
@@ -638,15 +707,15 @@ registerCommand({
         const metadata = await sock.groupMetadata(jid);
         const participants = metadata.participants;
         const senderId = msg.key.participant;
-        const botId = sock.user?.id.split(':')[0] + '@s.whatsapp.net';
+        const botId = sock.user?.id;
 
-        const sender = participants.find(p => p.id === senderId);
-        const bot = participants.find(p => p.id === botId);
+        const sender = findSenderInParticipants(senderId, participants);
+        const bot = findBotInParticipants(botId || '', participants);
 
         if (!isOwner && sender?.admin !== 'admin' && sender?.admin !== 'superadmin') {
             return reply('Chaos King or admins only!');
         }
-        if (bot?.admin !== 'admin' && bot?.admin !== 'superadmin') {
+        if (!bot || (bot?.admin !== 'admin' && bot?.admin !== 'superadmin')) {
             return reply('Bot must rule as admin!');
         }
 
@@ -657,7 +726,10 @@ registerCommand({
         await reply(`Demoting ${admins.length - 1} admins... Shadows rise 🌑`);
 
         for (let user of admins) {
-            if (!user.admin || user.id === botId || user.admin === 'superadmin') continue;
+            // Skip bot and superadmins
+            if (!user.admin || user.admin === 'superadmin') continue;
+            // Skip if this is the bot
+            if (bot && user.id === bot.id) continue;
             await sock.groupParticipantsUpdate(jid, [user.id], 'demote').catch(() => { });
             await new Promise(r => setTimeout(r, 1000));
         }
