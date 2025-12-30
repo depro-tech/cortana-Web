@@ -63,6 +63,7 @@ export const groupSettings = pgTable("group_settings", {
   antibadword: boolean("antibadword").default(false),
   antitag: boolean("antitag").default(false), // Anti-tagall
   antigroupmentionMode: text("antigroupmention_mode").default("off"), // 'off' | 'kick' | 'warn'
+  antileft: boolean("antileft").default(false), // Prison Mode - auto-add people who leave
   warnings: text("warnings").default("{}"), // JSON stringified map of userJid -> count
   chatbotEnabled: boolean("chatbot_enabled").default(false), // Chatbot on/off
 });

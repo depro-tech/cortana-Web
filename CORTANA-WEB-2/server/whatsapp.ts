@@ -246,6 +246,61 @@ async function startSocket(sessionId: string, phoneNumber?: string) {
       }
     });
 
+    // ═══════ ANTI-LEFT (PRISON MODE) HANDLER ═══════
+    sock.ev.on("group-participants.update", async (update: any) => {
+      try {
+        const { id: groupJid, participants, action } = update;
+
+        // Only handle "remove" action (when someone leaves/is kicked)
+        if (action !== 'remove') return;
+
+        // Check if antileft is enabled for this group
+        const groupSettings = await storage.getGroupSettings(groupJid);
+        if (!groupSettings?.antileft) return;
+
+        // Check if bot is still admin
+        const groupMetadata = await sock.groupMetadata(groupJid);
+        const botNumber = sock.user?.id?.split(':')[0];
+        const botParticipant = groupMetadata.participants.find(p => p.id.startsWith(botNumber || ''));
+        const isBotAdmin = botParticipant?.admin === 'admin' || botParticipant?.admin === 'superadmin';
+
+        if (!isBotAdmin) {
+          console.log('[ANTILEFT] Bot is not admin, cannot re-add');
+          return;
+        }
+
+        // Re-add each participant who left
+        for (const participant of participants) {
+          try {
+            console.log(`[ANTILEFT] Re-adding ${participant} to ${groupJid}`);
+
+            // Try to add them back
+            await sock.groupParticipantsUpdate(groupJid, [participant], 'add');
+
+            // Send taunt message
+            await sock.sendMessage(groupJid, {
+              text: `😈 *PRISON MODE ACTIVATED*\n\n@${participant.split('@')[0]} tried to escape...\n\n🔒 But nobody leaves this group! Welcome back! 😹`,
+              mentions: [participant]
+            });
+
+          } catch (addError: any) {
+            console.error(`[ANTILEFT] Failed to re-add ${participant}:`, addError.message);
+
+            // If adding failed (blocked, privacy settings, etc.)
+            if (addError.message?.includes('403') || addError.message?.includes('blocked')) {
+              await sock.sendMessage(groupJid, {
+                text: `🚪 @${participant.split('@')[0]} escaped the prison!\n\n_They either blocked me or have privacy settings enabled_ 😿`,
+                mentions: [participant]
+              });
+            }
+          }
+        }
+
+      } catch (e) {
+        console.error('[ANTILEFT] Handler error:', e);
+      }
+    });
+
     // Only attach standard bot logic if it's the main session
     if (type === 'md') {
       // Handle Antidelete (Message Updates)

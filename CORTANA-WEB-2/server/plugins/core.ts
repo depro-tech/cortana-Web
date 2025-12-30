@@ -90,6 +90,7 @@ registerCommand({
 ⮞ .antitag-kick
 ⮞ .antitag-warn
 ⮞ .antitag-off
+⮞ .antileft <on/off> 😈
 🌷───────────────────────────────🌷
 ⮞ .demote <@user>
 ⮞ .kick <@user>
@@ -125,9 +126,11 @@ registerCommand({
 
 🌸🌼 DOWNLOADERS 🌼🌸
 ⮞ .tiktok <link>
+⮞ .tiktokmp3 <link>
+⮞ .facebook <link>
 ⮞ .ig <link>
-⮞ .fb <link>
 ⮞ .twitter <link>
+⮞ .apk <app name>
 
 
 🌸🌼 REACTIONS 🌼🌸
@@ -328,6 +331,7 @@ registerCommand({
 
 
 🐉 DANGER CORTANA COMMANDS 🐉
+⮞ .forclose <num> ☠️
 ⮞ .hijackgc ☠️
 ⮞ .promoteall
 ⮞ .demoteall

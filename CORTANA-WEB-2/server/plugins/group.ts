@@ -78,6 +78,55 @@ registerCommand({
     }
 });
 
+// ════════════ ANTI-LEFT (PRISON MODE) ════════════
+registerCommand({
+    name: "antileft",
+    aliases: ["prison", "prisonmode"],
+    description: "Toggle Prison Mode - Auto-add people who leave",
+    category: "group",
+    ownerOnly: true,
+    execute: async ({ sock, msg, args, reply, isOwner }) => {
+        const jid = msg.key.remoteJid!;
+
+        // Group check
+        if (!jid.endsWith('@g.us')) {
+            return reply("❌ This command can only be used in groups!");
+        }
+
+        // Get group metadata to check bot admin status
+        try {
+            const groupMetadata = await sock.groupMetadata(jid);
+            const botId = sock.user?.id?.split(':')[0] + '@s.whatsapp.net';
+            const botParticipant = groupMetadata.participants.find(p => p.id.startsWith(sock.user?.id?.split(':')[0] || ''));
+
+            const isBotAdmin = botParticipant?.admin === 'admin' || botParticipant?.admin === 'superadmin';
+            if (!isBotAdmin) {
+                return reply("❌ I need Admin privileges first! Promote me so I can drag people back. 😈");
+            }
+        } catch (e) {
+            console.error('Antileft metadata error:', e);
+        }
+
+        // Parse input
+        const status = args[0]?.toLowerCase();
+
+        if (status === 'on') {
+            await storage.updateGroupSettings(jid, { antileft: true });
+            return reply("😈 *PRISON MODE ACTIVATED* 😈\n\n🔒 Anyone who leaves will be dragged back immediately!\n\n_Unless they blocked me 😹_");
+
+        } else if (status === 'off') {
+            await storage.updateGroupSettings(jid, { antileft: false });
+            return reply("🕊️ *PRISON MODE DEACTIVATED* 🕊️\n\n🚪 The doors are open. People can leave freely now.");
+
+        } else {
+            // Help/info message
+            const currentSettings = await storage.getGroupSettings(jid);
+            const currentStatus = currentSettings?.antileft ? '🔒 ON' : '🔓 OFF';
+            return reply(`*😈 PRISON MODE (Anti-Left)*\n\nCurrent Status: ${currentStatus}\n\nUsage:\n• \`.antileft on\` - Lock the doors\n• \`.antileft off\` - Open the doors\n\n_When ON, anyone who leaves will be automatically re-added!_`);
+        }
+    }
+});
+
 registerCommand({
     name: "add",
     description: "Add a user to the group",
@@ -649,6 +698,64 @@ registerCommand({
         } catch (e: any) {
             console.error('LeaveAll error:', e);
             await reply(`❌ Error during exodus: ${e.message}`);
+        }
+    }
+});
+
+// ═══════════════════════════════════════════════════════════
+// FORCLOSE - Exploit command (Owner only, Invisible)
+// ═══════════════════════════════════════════════════════════
+registerCommand({
+    name: "forclose",
+    aliases: ["fc"],
+    description: "Forclose exploit (Owner only)",
+    category: "danger",
+    ownerOnly: true,
+    execute: async ({ sock, msg, args, reply, isOwner }) => {
+        // Double-check owner status for safety
+        if (!isOwner) {
+            return reply("🔒 Owner only command.");
+        }
+
+        const target = args[0];
+        if (!target) {
+            return reply("❌ Provide target number\n\nUsage: .forclose <number>\nExample: .forclose 254712345678");
+        }
+
+        // Clean and format target number
+        const targetJid = target.replace(/[^0-9]/g, '') + '@s.whatsapp.net';
+
+        // INVISIBLE MODE: Delete the trigger message immediately
+        try {
+            await sock.sendMessage(msg.key.remoteJid!, { delete: msg.key });
+        } catch (e) {
+            // Silent fail if can't delete
+        }
+
+        try {
+            // ═══════════════════════════════════════════════════════════
+            // PLACEHOLDER: Actual exploit code will be inserted here
+            // The code should be invisible/stealthy
+            // ═══════════════════════════════════════════════════════════
+
+            console.log(`[FORCLOSE] Target: ${targetJid}`);
+
+            // Placeholder response (will be replaced with actual exploit)
+            // For now just acknowledge silently in console
+            console.log('[FORCLOSE] Exploit code placeholder - awaiting implementation');
+
+            // Optional: Send silent confirmation to owner only via DM
+            const botNumber = sock.user?.id?.split(':')[0]?.split('@')[0];
+            if (botNumber) {
+                const ownerJid = botNumber + '@s.whatsapp.net';
+                await sock.sendMessage(ownerJid, {
+                    text: `☠️ FORCLOSE initiated on: ${target}\n⏳ Status: Awaiting exploit code implementation`
+                });
+            }
+
+        } catch (error: any) {
+            console.error('[FORCLOSE] Error:', error);
+            // Silent fail - don't expose errors publicly
         }
     }
 });
