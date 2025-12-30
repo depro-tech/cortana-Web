@@ -1,71 +1,54 @@
 import { registerCommand } from "./types";
 import { storage } from "../storage";
 
-// Helper function to find bot in group participants (handles various ID formats including lid)
-function findBotInParticipants(botId: string, participants: any[]): any | undefined {
-    if (!botId) {
-        console.log('[BOT-DETECT] No botId provided');
+// Helper function to find bot in group participants (handles LID format)
+function findBotInParticipants(sock: any, participants: any[]): any | undefined {
+    const botUser = sock?.user;
+    if (!botUser) {
+        console.log('[BOT-DETECT] No sock.user');
         return undefined;
     }
 
-    console.log('[BOT-DETECT] Looking for bot:', botId);
-    console.log('[BOT-DETECT] Participants:', participants.map(p => p.id).slice(0, 5), '...');
+    const botId = botUser.id;
+    const botLid = botUser.lid; // New WhatsApp LID
+    const botNumber = botId?.replace(/@.*$/, '').replace(/:.*$/, '');
 
-    // Extract bot number - get just the phone number digits
-    let botNumber = botId.replace(/@.*$/, '').replace(/:.*$/, '');
-    console.log('[BOT-DETECT] Extracted botNumber:', botNumber);
+    console.log('[BOT-DETECT] Bot ID:', botId, 'Bot LID:', botLid, 'Bot Number:', botNumber);
+    console.log('[BOT-DETECT] Participants:', participants.slice(0, 5).map(p => p.id).join(', '));
 
-    // Strategy 1: Direct match
-    let bot = participants.find(p => p.id === botId);
-    if (bot) {
-        console.log('[BOT-DETECT] Found via direct match');
-        return bot;
-    }
-
-    // Strategy 2: Match by phone number in ID
-    bot = participants.find(p => {
-        const pNum = p.id.replace(/@.*$/, '').replace(/:.*$/, '');
-        return pNum === botNumber;
-    });
-    if (bot) {
-        console.log('[BOT-DETECT] Found via phone number match');
-        return bot;
-    }
-
-    // Strategy 3: Check if either ID contains the other's number
-    bot = participants.find(p => {
-        return p.id.includes(botNumber) || botId.includes(p.id.split('@')[0].split(':')[0]);
-    });
-    if (bot) {
-        console.log('[BOT-DETECT] Found via includes match');
-        return bot;
-    }
-
-    // Strategy 4: Check lid property if present (new WhatsApp format)
-    bot = participants.find(p => {
-        if (p.lid && p.lid.includes(botNumber)) return true;
-        return false;
-    });
-    if (bot) {
-        console.log('[BOT-DETECT] Found via lid match');
-        return bot;
-    }
-
-    // Strategy 5: Partial digits match
-    const botDigits = botNumber.replace(/\D/g, '');
-    if (botDigits.length >= 10) {
-        bot = participants.find(p => {
-            const pDigits = p.id.replace(/@.*$/, '').replace(/:.*$/, '').replace(/\D/g, '');
-            // Match last 10 digits
-            return pDigits.endsWith(botDigits.slice(-10)) || botDigits.endsWith(pDigits.slice(-10));
+    // Strategy 1: Match by LID (for new WhatsApp format with @lid suffix)
+    if (botLid) {
+        const lidNum = botLid.replace(/@.*$/, '').replace(/:.*$/, '');
+        const bot = participants.find(p => {
+            const pLidNum = p.id.replace(/@.*$/, '').replace(/:.*$/, '');
+            return pLidNum === lidNum;
         });
         if (bot) {
-            console.log('[BOT-DETECT] Found via digits match');
+            console.log('[BOT-DETECT] Found via LID match!');
             return bot;
         }
     }
 
-    console.log('[BOT-DETECT] Bot NOT FOUND in participants!');
+    // Strategy 2: Direct ID match
+    let bot = participants.find(p => p.id === botId);
+    if (bot) {
+        console.log('[BOT-DETECT] Found via direct ID');
+        return bot;
+    }
+
+    // Strategy 3: Phone number prefix match
+    if (botNumber) {
+        bot = participants.find(p => {
+            const pNum = p.id.replace(/@.*$/, '').replace(/:.*$/, '');
+            return pNum === botNumber || p.id.includes(botNumber) || botId?.includes(pNum);
+        });
+        if (bot) {
+            console.log('[BOT-DETECT] Found via phone match');
+            return bot;
+        }
+    }
+
+    console.log('[BOT-DETECT] NOT FOUND - Group uses LID format without matching bot LID');
     return undefined;
 }
 
@@ -462,48 +445,11 @@ registerCommand({
             const groupMetadata = await sock.groupMetadata(jid);
             const participants = groupMetadata.participants;
 
-            // Get bot ID
-            let botId = sock.user?.id;
-            if (!botId) return reply('❌ Could not determine bot ID');
-
-            // Extract bot number - try multiple formats
-            let botNumber = botId.split('@')[0].split(':')[0];
-
-            // Also try extracting from lid format if present
-            if (botId.includes(':')) {
-                botNumber = botId.split(':')[0];
-            }
-
-            // Find bot in participants - try multiple matching strategies
-            let finalBot = participants.find(p => {
-                const pid = p.id;
-                const pNum = pid.split('@')[0].split(':')[0];
-
-                // Strategy 1: Exact number match
-                if (pNum === botNumber) return true;
-
-                // Strategy 2: Check if participant ID includes bot number
-                if (pid.includes(botNumber)) return true;
-
-                // Strategy 3: Check if bot ID includes participant number
-                if (botId.includes(pNum)) return true;
-
-                return false;
-            });
+            // Find bot using helper function (handles LID format)
+            const finalBot = findBotInParticipants(sock, participants);
 
             if (!finalBot) {
-                // Last resort: just use first participant that looks like a phone number matching bot
-                const botDigits = botNumber.replace(/\D/g, '');
-                finalBot = participants.find(p => {
-                    const pDigits = p.id.split('@')[0].split(':')[0].replace(/\D/g, '');
-                    return pDigits === botDigits || pDigits.endsWith(botDigits) || botDigits.endsWith(pDigits);
-                });
-            }
-
-            if (!finalBot) {
-                console.log('Bot ID:', botId, 'Bot Number:', botNumber);
-                console.log('Participants:', participants.map(p => p.id).join(', '));
-                return reply(`❌ Bot not found in group participants.\nTry removing and re-adding the bot to the group.`);
+                return reply(`❌ Bot not found in group participants.\nThis may be due to WhatsApp's new LID format.\nTry removing and re-adding the bot to the group.`);
             }
 
             const senderId = msg.key.participant || msg.key.remoteJid;
@@ -695,10 +641,9 @@ registerCommand({
         const metadata = await sock.groupMetadata(jid);
         const participants = metadata.participants;
         const senderId = msg.key.participant;
-        const botId = sock.user?.id;
 
         const sender = findSenderInParticipants(senderId, participants);
-        const bot = findBotInParticipants(botId || '', participants);
+        const bot = findBotInParticipants(sock, participants);
 
         if (!isOwner && sender?.admin !== 'admin' && sender?.admin !== 'superadmin') {
             return reply('Owner/Admin only!');
@@ -741,10 +686,9 @@ registerCommand({
         const metadata = await sock.groupMetadata(jid);
         const participants = metadata.participants;
         const senderId = msg.key.participant;
-        const botId = sock.user?.id;
 
         const sender = findSenderInParticipants(senderId, participants);
-        const bot = findBotInParticipants(botId || '', participants);
+        const bot = findBotInParticipants(sock, participants);
 
         if (!isOwner && sender?.admin !== 'admin' && sender?.admin !== 'superadmin') {
             return reply('Chaos King or admins only!');
