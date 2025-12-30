@@ -23,42 +23,36 @@ registerCommand({
             // Silent fail if react doesn't work
         }
 
-        // ═══════ TYPING INTRO ANIMATION ═══════
-        const introText = "CORTANA IS HERE";
-        let displayText = "";
-
+        // ═══════ LETTER BY LETTER INTRO ═══════
         try {
-            // Send initial empty message
+            // Send initial message
             const sentMsg = await sock.sendMessage(senderJid, { text: "𝗖" });
             const introKey = sentMsg?.key;
 
             if (introKey) {
-                // Typing animation - update message character by character
+                const introText = "CORTANA IS HERE";
+                let displayText = "";
+
+                // Letter by letter typing animation
                 for (let i = 0; i < introText.length; i++) {
                     displayText += introText[i];
 
-                    // Update the message with growing text
                     await sock.sendMessage(senderJid, {
                         text: `*${displayText}*`,
                         edit: introKey
                     });
 
-                    // Delay between characters (90ms)
-                    await new Promise(resolve => setTimeout(resolve, 90));
+                    await new Promise(resolve => setTimeout(resolve, 80));
                 }
 
-                // Display complete text for 1 second (keep it visible)
-                await new Promise(resolve => setTimeout(resolve, 1000));
-
-                // Don't delete - let it stay as intro
-                // Small delay before showing menu
-                await new Promise(resolve => setTimeout(resolve, 300));
+                // Keep visible briefly
+                await new Promise(resolve => setTimeout(resolve, 800));
             }
         } catch (e) {
-            console.error('[MENU] Intro animation error:', e);
+            console.error('[MENU] Intro error:', e);
             // Continue to menu even if intro fails
         }
-        // ═══════ END INTRO ANIMATION ═══════
+        // ═══════ END INTRO ═══════
 
         const menuText = `🌺❀────────────────────────❀🌺
      C̷O̷R̷T̷A̷N̷A̷ ̷M̷D̷ 
