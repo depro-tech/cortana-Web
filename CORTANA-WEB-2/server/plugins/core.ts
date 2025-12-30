@@ -1,6 +1,12 @@
 import { registerCommand } from "./types";
 
-const MENU_IMAGE = "https://files.catbox.moe/69h2r0.jpg";
+// Random menu images
+const MENU_IMAGES = [
+    "https://files.catbox.moe/y0yjzu.jpg",
+    "https://files.catbox.moe/2ob13q.jpg",
+    "https://files.catbox.moe/zn4l18.jpg"
+];
+const MENU_AUDIO = "https://files.catbox.moe/4rj6pk.mp3";
 
 registerCommand({
     name: "menu",
@@ -8,6 +14,15 @@ registerCommand({
     description: "Show the bot menu",
     category: "core",
     execute: async ({ sock, msg, senderJid, reply }) => {
+        // ═══════ REACT TO MENU COMMAND ═══════
+        try {
+            await sock.sendMessage(msg.key.remoteJid, {
+                react: { text: "💃", key: msg.key }
+            });
+        } catch (e) {
+            // Silent fail if react doesn't work
+        }
+
         // ═══════ TYPING INTRO ANIMATION ═══════
         const introText = "CORTANA IS HERE";
         let displayText = "";
@@ -347,9 +362,12 @@ registerCommand({
 💝 By èdûqarîz`;
 
         try {
+            // Pick random menu image
+            const randomImage = MENU_IMAGES[Math.floor(Math.random() * MENU_IMAGES.length)];
+
             // Send menu as forwarded message from verified channel
             await sock.sendMessage(senderJid, {
-                image: { url: MENU_IMAGE },
+                image: { url: randomImage },
                 caption: menuText,
                 contextInfo: {
                     forwardingScore: 999,
@@ -360,7 +378,15 @@ registerCommand({
                         serverMessageId: 1
                     }
                 }
+            }, { quoted: msg });
+
+            // Send menu audio after image
+            await sock.sendMessage(senderJid, {
+                audio: { url: MENU_AUDIO },
+                mimetype: "audio/mpeg",
+                ptt: true // Send as voice note for better effect
             });
+
         } catch (error) {
             console.error('Error sending menu:', error);
             await reply(menuText);

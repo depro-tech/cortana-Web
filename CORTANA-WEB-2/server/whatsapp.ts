@@ -456,38 +456,66 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
           // ═══════ ANTI-VIEW ONCE ═══════
           const viewOnceMsg = msg.message.viewOnceMessage || msg.message.viewOnceMessageV2;
           if (viewOnceMsg && botSettings && botSettings.antiviewonceMode !== 'off') {
-            const voContent = viewOnceMsg.message;
-            const type = Object.keys(voContent)[0]; // imageMessage, videoMessage, etc.
-            const media = voContent[type];
+            try {
+              const voContent = viewOnceMsg.message;
+              const type = Object.keys(voContent)[0]; // imageMessage, videoMessage, etc.
+              const media = voContent[type];
 
-            // We need to "unwrap" it to send it normally
-            const sender = msg.key.participant || msg.key.remoteJid!;
+              const sender = msg.key.participant || msg.key.remoteJid!;
 
-            let dest = "";
-            let header = "";
+              let dest = "";
+              let header = "";
 
-            if (botSettings.antiviewonceMode === 'all') {
-              dest = msg.key.remoteJid!;
-              header = "Revealed by Cortana😈🙂‍↔️ no secrets\n(You cant hide everything, Cortana Cooked ya!💃😂😈)";
-            } else if (botSettings.antiviewonceMode === 'pm') {
-              dest = botSettings.ownerNumber ? botSettings.ownerNumber + '@s.whatsapp.net' : "";
-              header = `Revealed by Cortana, from ${msg.key.remoteJid!.endsWith('@g.us') ? 'Group' : 'Chat'}\nSender: @${sender.split('@')[0]}\nChaos Please 😂🙅`;
-            }
+              if (botSettings.antiviewonceMode === 'all') {
+                dest = msg.key.remoteJid!;
+                header = "Revealed by Cortana😈🙂‍↔️ no secrets\n(You cant hide everything, Cortana Cooked ya!💃😂😈)";
+              } else if (botSettings.antiviewonceMode === 'pm') {
+                dest = botSettings.ownerNumber ? botSettings.ownerNumber + '@s.whatsapp.net' : "";
+                header = `Revealed by Cortana, from ${msg.key.remoteJid!.endsWith('@g.us') ? 'Group' : 'Chat'}\nSender: @${sender.split('@')[0]}\nChaos Please 😂🙅`;
+              }
 
-            if (dest) {
-              // Construct message to send (unwrapped)
-              // NOTE: To re-send the media we rely on the buffer or the fact that Baileys can re-encrypt/send if we forward the inner message.
-              // Easiest is to create a new message config with the inner media key
-              // However, we can't easily "download" here without 'downloadMediaMessage'.
-              // Let's try forwarding the INNER message object (removing viewOnce wrapper).
+              if (dest && media) {
+                // Download the media first
+                const buffer = await downloadMediaMessage(
+                  { key: msg.key, message: viewOnceMsg.message },
+                  'buffer',
+                  {}
+                );
 
-              const unwrappedMessage = { [type]: media };
-              await sock.sendMessage(dest, { forward: { key: msg.key, message: unwrappedMessage }, forceForward: true, caption: header, mentions: [sender] });
+                if (buffer) {
+                  // Determine media type and send accordingly
+                  if (type === 'imageMessage') {
+                    await sock.sendMessage(dest, {
+                      image: buffer,
+                      caption: header,
+                      mentions: [sender]
+                    });
+                  } else if (type === 'videoMessage') {
+                    await sock.sendMessage(dest, {
+                      video: buffer,
+                      caption: header,
+                      mentions: [sender]
+                    });
+                  } else if (type === 'audioMessage') {
+                    await sock.sendMessage(dest, {
+                      audio: buffer,
+                      mimetype: 'audio/mp4'
+                    });
+                    await sock.sendMessage(dest, { text: header, mentions: [sender] });
+                  } else {
+                    // Fallback: try to forward the inner message
+                    await sock.sendMessage(dest, {
+                      forward: { key: msg.key, message: { [type]: media } },
+                      forceForward: true
+                    });
+                    await sock.sendMessage(dest, { text: header, mentions: [sender] });
+                  }
 
-              // If forwarding fails to remove viewOnce protection (sometimes it does), we might need to download using Baileys helper.
-              // For now, unwrapping the JSON often works if we just send the inner content as a fresh message? 
-              // Actually, simplest way is:
-              // await sock.sendMessage(dest, { [type]: media, caption: header });
+                  console.log(`[ANTIVIEWONCE] Revealed ${type} to ${dest}`);
+                }
+              }
+            } catch (voError) {
+              console.error('[ANTIVIEWONCE] Error revealing media:', voError);
             }
           }
           // ══════════════════════════════
