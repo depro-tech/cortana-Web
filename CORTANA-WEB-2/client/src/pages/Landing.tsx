@@ -353,6 +353,21 @@ export default function Landing() {
             setIsLoggedIn(true);
         }
 
+        // Browser history navigation (back button support)
+        const handlePopState = (event: PopStateEvent) => {
+            if (event.state && event.state.section) {
+                setActiveSection(event.state.section);
+            } else {
+                setActiveSection('home');
+            }
+        };
+        window.addEventListener('popstate', handlePopState);
+
+        // Set initial history state
+        if (!window.history.state?.section) {
+            window.history.replaceState({ section: 'home' }, '', window.location.pathname);
+        }
+
         // Ticker Animation handled by CSS
         // Tips Cycle
         const interval = setInterval(() => {
@@ -379,6 +394,7 @@ export default function Landing() {
         return () => {
             clearInterval(interval);
             clearInterval(sessionInterval);
+            window.removeEventListener('popstate', handlePopState);
         };
     }, []);
 
@@ -697,7 +713,10 @@ export default function Landing() {
                     <button
                         key={item.id}
                         className={`nav-btn ${activeSection === item.id ? 'active' : ''}`}
-                        onClick={() => setActiveSection(item.id)}
+                        onClick={() => {
+                            setActiveSection(item.id);
+                            window.history.pushState({ section: item.id }, '', window.location.pathname);
+                        }}
                     >
                         {item.label}
                     </button>

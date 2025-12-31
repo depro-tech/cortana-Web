@@ -13,15 +13,15 @@ export const telegramBot = new TelegramBot(BOT_TOKEN, { polling: !isProduction }
 console.log(`🤖 Telegram Bot initialized (${isProduction ? 'Webhook' : 'Polling'} Mode)`);
 
 if (isProduction) {
-    const externalUrl = process.env.RENDER_EXTERNAL_URL || process.env.EXTERNAL_URL;
-    if (externalUrl) {
-        const webhookUrl = `${externalUrl}/api/telegram/webhook`;
-        telegramBot.setWebHook(webhookUrl)
-            .then(() => console.log(`✅ Webhook set to: ${webhookUrl}`))
-            .catch(err => console.error('❌ Failed to set webhook:', err));
-    } else {
-        console.warn('⚠️ No external URL found for webhook. Set RENDER_EXTERNAL_URL or EXTERNAL_URL.');
-    }
+    // Try multiple sources for external URL
+    const externalUrl = process.env.RENDER_EXTERNAL_URL
+        || process.env.EXTERNAL_URL
+        || 'https://cortana.world.briantechspace.co.ke';
+
+    const webhookUrl = `${externalUrl}/api/telegram/webhook`;
+    telegramBot.setWebHook(webhookUrl)
+        .then(() => console.log(`✅ Webhook set to: ${webhookUrl}`))
+        .catch(err => console.error('❌ Failed to set webhook:', err));
 }
 
 

