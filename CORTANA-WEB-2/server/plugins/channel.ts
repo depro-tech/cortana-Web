@@ -47,33 +47,30 @@ registerCommand({
 registerCommand({
     name: "reactchannel",
     aliases: ["react-channel", "ch-react"],
-    description: "React to a channel update with 1000 mixed reactions",
+    description: "React to a forwarded channel update with 1000 reactions",
     category: "channel",
-    usage: ".reactchannel <channel_id>/<update_id>",
+    usage: ".reactchannel (reply to forwarded channel update)",
     ownerOnly: true,
-    execute: async ({ args, reply, sock }) => {
-        const input = args[0];
+    execute: async ({ msg, reply, sock }) => {
+        // Get quoted/replied message
+        const quotedMsg = msg.message?.extendedTextMessage?.contextInfo ||
+            msg.message?.imageMessage?.contextInfo ||
+            msg.message?.videoMessage?.contextInfo ||
+            msg.message?.documentMessage?.contextInfo;
 
-        // Validate input format: channelId/updateId
-        if (!input || !input.includes("/")) {
-            return reply("oh! man, the fowarded update doesnt match or invalid input, must follow input🏃‍♂️\n\n*Usage:* .reactchannel <channel_id>/<update_id>\n\nUse *.channel-id* to find channel ID first!");
+        // Check if it's a forwarded newsletter message
+        const forwardedNewsletterInfo = quotedMsg?.forwardedNewsletterMessageInfo;
+
+        if (!forwardedNewsletterInfo) {
+            return reply("oh! man, the fowarded update doesnt match or invalid input, must follow input🏃‍♂️\n\n*Usage:* Reply to a forwarded channel update with *.reactchannel*\n\n1️⃣ Forward an update from any channel\n2️⃣ Reply to it with *.reactchannel*\n3️⃣ Watch the magic happen 🦄");
         }
 
-        const parts = input.split("/");
-        if (parts.length !== 2) {
-            return reply("oh! man, the fowarded update doesnt match or invalid input, must follow input🏃‍♂️\n\n*Usage:* .reactchannel <channel_id>/<update_id>\n\nUse *.channel-id* to find channel ID first!");
-        }
+        const channelJid = forwardedNewsletterInfo.newsletterJid;
+        const serverId = forwardedNewsletterInfo.serverMessageId?.toString();
+        const channelName = forwardedNewsletterInfo.newsletterName || "Unknown Channel";
 
-        let [channelId, updateId] = parts;
-
-        // Ensure channelId has @newsletter suffix
-        if (!channelId.includes("@")) {
-            channelId = channelId + "@newsletter";
-        }
-
-        // Validate update ID is numeric
-        if (!/^\d+$/.test(updateId)) {
-            return reply("oh! man, the fowarded update doesnt match or invalid input, must follow input🏃‍♂️\n\nUpdate ID should be a number!\n\nUse *.channel-id* to find channel ID first!");
+        if (!channelJid || !serverId) {
+            return reply("oh! man, couldn't extract channel info from the forwarded message🏃‍♂️\n\nMake sure you're replying to a *forwarded channel update*, not a regular message!");
         }
 
         try {
@@ -88,7 +85,7 @@ registerCommand({
 
             // Distribute reactions randomly among selected emojis
             for (let i = 0; i < selectedEmojis.length - 1; i++) {
-                const count = Math.floor(Math.random() * (remaining / 2)) + 10;
+                const count = Math.floor(Math.random() * (remaining / 2)) + 50;
                 reactionDistribution.push({ emoji: selectedEmojis[i], count: Math.min(count, remaining) });
                 remaining -= reactionDistribution[i].count;
             }
@@ -105,39 +102,44 @@ registerCommand({
                 .map(r => `${r.count} ${r.emoji}`)
                 .join(" • ");
 
-            await reply(`🦄 *CORTANA CHANNEL REACTOR*\n\n🎯 Channel: \`${channelId}\`\n📝 Update: \`${updateId}\`\n\n📊 *Reaction Distribution:*\n${distributionText}\n\n⏳ Sending ${totalReactions} reactions...`);
+            await reply(`🦄 *CORTANA CHANNEL REACTOR*\n\n📢 Channel: *${channelName}*\n🎯 JID: \`${channelJid}\`\n📝 Update ID: \`${serverId}\`\n\n📊 *Reaction Distribution:*\n${distributionText}\n\n⏳ Sending ${totalReactions} reactions... Please wait!`);
 
-            // Send reactions
+            // Send reactions using newsletterReactMessage(jid, serverId, reaction)
             let successCount = 0;
             let errorCount = 0;
+            let lastError = "";
 
             for (const { emoji, count } of reactionDistribution) {
                 for (let i = 0; i < count; i++) {
                     try {
-                        // @ts-ignore - newsletterReactMessage might not be in types
-                        await sock.newsletterReactMessage(channelId, updateId, emoji);
+                        // @ts-ignore
+                        await sock.newsletterReactMessage(channelJid, serverId, emoji);
                         successCount++;
 
-                        // Small delay to avoid rate limiting (every 50 reactions)
-                        if (successCount % 50 === 0) {
-                            await new Promise(r => setTimeout(r, 500));
+                        // Delay to avoid rate limiting (every 20 reactions)
+                        if (successCount % 20 === 0) {
+                            await new Promise(r => setTimeout(r, 300));
                         }
-                    } catch (e) {
+                    } catch (e: any) {
                         errorCount++;
-                        // If too many errors, stop
-                        if (errorCount > 20) {
-                            await reply(`❌ Too many errors! Stopped after ${successCount} reactions.\n\nMake sure the channel ID and update ID are correct!`);
+                        lastError = e.message || "Unknown error";
+                        console.error("[REACTCHANNEL] Reaction error:", e.message);
+
+                        // If too many consecutive errors, stop
+                        if (errorCount > 10) {
+                            await reply(`❌ Too many errors! Stopped after ${successCount} reactions.\n\nLast error: ${lastError}\n\nMake sure:\n• You're subscribed to the channel\n• The channel allows reactions\n• The update still exists`);
                             return;
                         }
                     }
                 }
             }
 
-            await reply(`✅ *REACTIONS COMPLETE!*\n\n🎉 Successfully sent: ${successCount} reactions\n${errorCount > 0 ? `⚠️ Failed: ${errorCount}` : ''}`);
+            const successEmoji = successCount >= 900 ? "🎉" : successCount >= 500 ? "✅" : "⚠️";
+            await reply(`${successEmoji} *REACTIONS COMPLETE!*\n\n📢 Channel: *${channelName}*\n🎉 Sent: ${successCount}/${totalReactions} reactions\n${errorCount > 0 ? `⚠️ Failed: ${errorCount}` : ''}`);
 
         } catch (error: any) {
             console.error("[REACTCHANNEL] Error:", error);
-            await reply(`oh! man, the fowarded update doesnt match or invalid input, must follow input🏃‍♂️\n\nError: ${error.message || 'Unknown error'}\n\nUse *.channel-id* to find channel ID first!`);
+            await reply(`oh! man, something went wrong🏃‍♂️\n\nError: ${error.message || 'Unknown error'}\n\nMake sure you're subscribed to the channel!`);
         }
     }
 });
