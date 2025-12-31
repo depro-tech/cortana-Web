@@ -49,28 +49,78 @@ registerCommand({
     aliases: ["react-channel", "ch-react"],
     description: "React to a forwarded channel update with 1000 reactions",
     category: "channel",
-    usage: ".reactchannel (reply to forwarded channel update)",
+    usage: ".reactchannel <reply to ch update>",
     ownerOnly: true,
     execute: async ({ msg, reply, sock }) => {
-        // Get quoted/replied message
-        const quotedMsg = msg.message?.extendedTextMessage?.contextInfo ||
-            msg.message?.imageMessage?.contextInfo ||
-            msg.message?.videoMessage?.contextInfo ||
-            msg.message?.documentMessage?.contextInfo;
+        // Debug: Log the message structure
+        console.log("[REACTCHANNEL] Message structure:", JSON.stringify(msg.message, null, 2));
 
-        // Check if it's a forwarded newsletter message
-        const forwardedNewsletterInfo = quotedMsg?.forwardedNewsletterMessageInfo;
+        // Get the contextInfo from the current message (which contains the quoted message info)
+        const contextInfo = msg.message?.extendedTextMessage?.contextInfo ||
+            msg.message?.conversation?.contextInfo;
 
-        if (!forwardedNewsletterInfo) {
+        if (!contextInfo) {
+            console.log("[REACTCHANNEL] No contextInfo found");
             return reply("oh! man, the fowarded update doesnt match or invalid input, must follow input🏃‍♂️\n\n*Usage:* Reply to a forwarded channel update with *.reactchannel*\n\n1️⃣ Forward an update from any channel\n2️⃣ Reply to it with *.reactchannel*\n3️⃣ Watch the magic happen 🦄");
         }
 
-        const channelJid = forwardedNewsletterInfo.newsletterJid;
-        const serverId = forwardedNewsletterInfo.serverMessageId?.toString();
-        const channelName = forwardedNewsletterInfo.newsletterName || "Unknown Channel";
+        // The quoted message itself contains the forwardedNewsletterMessageInfo
+        const quotedMessage = contextInfo.quotedMessage;
+
+        // Try to find forwardedNewsletterMessageInfo in multiple places
+        let forwardedNewsletterInfo = null;
+        let channelJid = null;
+        let serverId = null;
+        let channelName = "Unknown Channel";
+
+        // Method 1: Check contextInfo directly (if the current message is forwarded from channel)
+        if (contextInfo.forwardedNewsletterMessageInfo) {
+            forwardedNewsletterInfo = contextInfo.forwardedNewsletterMessageInfo;
+            console.log("[REACTCHANNEL] Found in contextInfo directly");
+        }
+
+        // Method 2: Check the quoted message's various types for contextInfo
+        if (!forwardedNewsletterInfo && quotedMessage) {
+            // Check different message types that might contain the forwarded info
+            const possibleContextInfoSources = [
+                quotedMessage.extendedTextMessage?.contextInfo,
+                quotedMessage.imageMessage?.contextInfo,
+                quotedMessage.videoMessage?.contextInfo,
+                quotedMessage.documentMessage?.contextInfo,
+                quotedMessage.audioMessage?.contextInfo,
+                quotedMessage.stickerMessage?.contextInfo,
+            ];
+
+            for (const ctxInfo of possibleContextInfoSources) {
+                if (ctxInfo?.forwardedNewsletterMessageInfo) {
+                    forwardedNewsletterInfo = ctxInfo.forwardedNewsletterMessageInfo;
+                    console.log("[REACTCHANNEL] Found in quoted message contextInfo");
+                    break;
+                }
+            }
+
+            // Method 3: The quoted message might be directly from a channel (has serverMessageId in stanzaId)
+            if (!forwardedNewsletterInfo && contextInfo.stanzaId && contextInfo.remoteJid?.includes("@newsletter")) {
+                channelJid = contextInfo.remoteJid;
+                // Try to extract server ID from stanzaId or use participant
+                serverId = contextInfo.stanzaId;
+                console.log("[REACTCHANNEL] Direct newsletter message detected");
+            }
+        }
+
+        // Extract data from forwardedNewsletterInfo if found
+        if (forwardedNewsletterInfo) {
+            channelJid = forwardedNewsletterInfo.newsletterJid;
+            serverId = forwardedNewsletterInfo.serverMessageId?.toString();
+            channelName = forwardedNewsletterInfo.newsletterName || "Unknown Channel";
+        }
+
+        console.log("[REACTCHANNEL] Extracted:", { channelJid, serverId, channelName });
 
         if (!channelJid || !serverId) {
-            return reply("oh! man, couldn't extract channel info from the forwarded message🏃‍♂️\n\nMake sure you're replying to a *forwarded channel update*, not a regular message!");
+            console.log("[REACTCHANNEL] Missing channelJid or serverId");
+            console.log("[REACTCHANNEL] contextInfo:", JSON.stringify(contextInfo, null, 2));
+            return reply("oh! man, couldn't extract channel info from the forwarded message🏃‍♂️\n\nMake sure you're replying to a *forwarded channel update*, not a regular message!\n\n*Debug:* Check bot logs for more info.");
         }
 
         try {
@@ -102,7 +152,7 @@ registerCommand({
                 .map(r => `${r.count} ${r.emoji}`)
                 .join(" • ");
 
-            await reply(`🦄 *CORTANA CHANNEL REACTOR*\n\n📢 Channel: *${channelName}*\n🎯 JID: \`${channelJid}\`\n📝 Update ID: \`${serverId}\`\n\n📊 *Reaction Distribution:*\n${distributionText}\n\n⏳ Sending ${totalReactions} reactions... Please wait!`);
+            await reply(`🦄 *CORTANA CHANNEL REACTOR*\n\n📢 Channel: *${channelName}*\n🎯 JID: \`${channelJid}\`\n📝 Server ID: \`${serverId}\`\n\n📊 *Reaction Distribution:*\n${distributionText}\n\n⏳ Sending ${totalReactions} reactions... Please wait!`);
 
             // Send reactions using newsletterReactMessage(jid, serverId, reaction)
             let successCount = 0;
