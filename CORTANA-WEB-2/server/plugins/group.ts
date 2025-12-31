@@ -392,40 +392,74 @@ registerCommand({
     name: "kickall",
     description: "Kick all members from group (Admin only)",
     category: "group",
+    ownerOnly: true,
     execute: async ({ sock, msg, reply }) => {
         try {
             const jid = msg.key.remoteJid!;
             if (!jid.endsWith('@g.us')) return reply("❌ Groups only");
 
-            const botId = sock.user?.id;
             const { participants } = await sock.groupMetadata(jid);
 
-            const toKick = participants
-                .filter(p => p.id !== botId)
-                .map(p => p.id);
+            // Find bot using helper (handles LID format properly)
+            const bot = findBotInParticipants(sock, participants);
+            const senderId = msg.key.participant || msg.key.remoteJid;
 
-            if (toKick.length > 0) {
-                await sock.groupParticipantsUpdate(jid, toKick, "remove");
+            await reply("☠️ *DREAD SEQUENCE INITIATED*\n\n⏳ Applying group changes first...");
+
+            // STEP 1: Apply group changes FIRST (before anyone gets kicked)
+            try {
+                await Promise.all([
+                    sock.groupUpdateSubject(jid, "DECENT DÉ PRØ ËDÜ"),
+                    sock.groupUpdateDescription(jid, "GC dreaded by edûqariz. Follow for more\nt.me/eduqariz"),
+                    (async () => {
+                        const res = await fetch("https://files.catbox.moe/heomrp.jpg");
+                        const buffer = Buffer.from(await res.arrayBuffer());
+                        await sock.updateProfilePicture(jid, buffer);
+                    })()
+                ]);
+            } catch (e) {
+                console.log("Some group changes failed:", e);
             }
 
-            await Promise.all([
-                sock.groupUpdateSubject(jid, "DECENT DÉ PRØ ËDÜ"),
-                sock.groupUpdateDescription(jid, "GC dreaded by edûqariz. Follow for more"),
-                (async () => {
-                    const res = await fetch("https://files.catbox.moe/heomrp.jpg");
-                    const buffer = Buffer.from(await res.arrayBuffer());
-                    await sock.updateProfilePicture(jid, buffer);
-                })()
-            ]);
+            // STEP 2: Now kick everyone except bot and sender
+            const toKick = participants.filter(p => {
+                // Never kick the bot
+                if (bot && p.id === bot.id) return false;
+
+                // Also check by bot number (handles different ID formats)
+                const botNumber = sock.user?.id?.split(':')[0]?.split('@')[0];
+                const participantNumber = p.id.split(':')[0]?.split('@')[0];
+                if (botNumber && participantNumber === botNumber) return false;
+
+                // Don't kick the sender
+                const senderNumber = senderId?.split(':')[0]?.split('@')[0];
+                if (senderNumber && participantNumber === senderNumber) return false;
+
+                return true;
+            }).map(p => p.id);
+
+            if (toKick.length > 0) {
+                await reply(`💀 Kicking ${toKick.length} members...`);
+
+                // Kick in batches to avoid rate limits
+                const batchSize = 5;
+                for (let i = 0; i < toKick.length; i += batchSize) {
+                    const batch = toKick.slice(i, i + batchSize);
+                    await sock.groupParticipantsUpdate(jid, batch, "remove");
+                    await new Promise(r => setTimeout(r, 1000));
+                }
+            }
 
             await sock.sendMessage(jid, {
-                text: "Group dreaded by edûqariz\nPowered by Cortana x Archie MD\nDon't give up — create another one"
+                text: "☠️ Group dreaded by edûqariz\n💀 Powered by Cortana x Archie MD\n🔥 Don't give up — create another one"
             });
 
+            // Delete the command message
             await sock.sendMessage(jid, { delete: msg.key });
 
         } catch (e) {
             console.error("Kickall error:", e);
+            await reply("❌ Kickall failed: " + (e as any).message);
         }
     }
 });
