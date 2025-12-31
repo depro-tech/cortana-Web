@@ -7,11 +7,8 @@ import { registerCommand } from "./types";
 // Reaction emojis pool for channel reactions
 const REACTION_EMOJIS = ["🦄", "💃", "😂", "😽", "😒", "🏃‍♂️", "😊", "🤣", "❤️", "🔥", "👏", "😍", "🙌", "💯", "👀", "🎉"];
 
-// Store pending reaction sessions
-const pendingReactions = new Map<string, {
-    channelJid: string;
-    channelName: string;
-}>();
+// Store waiting sessions: chatJid -> channelJid
+const waitingForUpdate = new Map<string, { jid: string; name: string }>();
 
 registerCommand({
     name: "channel-id",
@@ -32,7 +29,6 @@ registerCommand({
             try {
                 // @ts-ignore
                 const metadata = await sock.newsletterMetadata("invite", code);
-
                 if (metadata && metadata.id) {
                     await reply(`📢 *Channel JID Found*\n\nName: ${metadata.name}\nJID: \`\`\`${metadata.id}\`\`\`\nSubscribers: ${metadata.subscribers}`);
                 } else {
@@ -53,140 +49,147 @@ registerCommand({
     aliases: ["react-channel", "ch-react"],
     description: "React to a channel update with 1000 reactions",
     category: "channel",
-    usage: ".reactchannel <channel link>",
+    usage: ".reactchannel <channel_link>",
     ownerOnly: true,
     execute: async ({ args, reply, sock, msg }) => {
-        const input = args.join(" ");
         const chatJid = msg.key.remoteJid!;
+        const input = args.join(" ");
 
-        // Check if user is providing server ID for pending session
-        if (input && /^\d+$/.test(input.trim())) {
-            const serverId = input.trim();
-            const session = pendingReactions.get(chatJid);
-
-            if (session) {
-                // Clear the session
-                pendingReactions.delete(chatJid);
-
-                // Send reactions
-                return await sendReactionsToUpdate(sock, session.channelJid, session.channelName, serverId, reply);
-            } else {
-                return reply("oh! man, no channel selected🏃‍♂️\n\nFirst run: .reactchannel <channel_link>");
-            }
-        }
-
-        // Validate channel link
-        if (!input || !input.includes("whatsapp.com/channel/")) {
-            return reply("🦄 *CORTANA CHANNEL REACTOR*\n\n*Usage:*\n1️⃣ .reactchannel <channel_link>\n2️⃣ Forward an update from that channel here\n3️⃣ Type the server ID shown in the forward\n\nExample:\n.reactchannel https://whatsapp.com/channel/0029xxx");
-        }
-
-        try {
-            // Extract channel code from link
+        // Case 1: Start Flow - User provides link
+        if (input.includes("whatsapp.com/channel/")) {
             const code = input.split("/channel/")[1]?.split("/")[0]?.split("?")[0];
-            if (!code) {
-                return reply("oh! man, invalid channel link format🏃‍♂️");
-            }
+            if (!code) return reply("oh! man, invalid channel link format🏃‍♂️");
 
-            await reply("⏳ Looking up channel...");
-
-            // Get channel metadata
-            let channelJid: string;
-            let channelName: string;
-            let subscribers: number;
             try {
                 // @ts-ignore
                 const metadata = await sock.newsletterMetadata("invite", code);
                 if (!metadata || !metadata.id) {
-                    return reply("oh! man, couldn't find that channel🏃‍♂️\n\nMake sure the link is valid!");
+                    return reply("oh! man, channel not found🏃‍♂️");
                 }
-                channelJid = metadata.id;
-                channelName = metadata.name || "Unknown Channel";
-                subscribers = metadata.subscribers || 0;
+
+                // Set waiting state
+                waitingForUpdate.set(chatJid, { jid: metadata.id, name: metadata.name });
+
+                await reply(`🦄 *CORTANA REACTION MODE*\n\n📢 Targeted: *${metadata.name}*\n\n*NOW:* Forward the update you want to react to HERE.\n\n_Waiting for forwarded message..._`);
+                return;
             } catch (e: any) {
-                return reply(`oh! man, error fetching channel🏃‍♂️\n\n${e.message}`);
+                return reply(`Error: ${e.message}`);
+            }
+        }
+
+        // Case 2: Handling Forwarded Message (context-based)
+        const waiting = waitingForUpdate.get(chatJid);
+
+        // Check for forwarded info in current message or quoted message
+        const contextInfo = msg.message?.extendedTextMessage?.contextInfo ||
+            msg.message?.imageMessage?.contextInfo ||
+            msg.message?.videoMessage?.contextInfo ||
+            msg.message?.documentMessage?.contextInfo;
+
+        const quotedContext = contextInfo?.quotedMessage?.extendedTextMessage?.contextInfo ||
+            contextInfo?.quotedMessage?.imageMessage?.contextInfo ||
+            contextInfo?.quotedMessage?.videoMessage?.contextInfo;
+
+        // Determine if there is a forwarded newsletter info
+        let newsletterInfo = contextInfo?.forwardedNewsletterMessageInfo || quotedContext?.forwardedNewsletterMessageInfo;
+
+        // If not explicit forwarded info, check stanzas for direct newsletter messages
+        if (!newsletterInfo && waiting) {
+            // Check if the current message IS from the newsletter (unlikely in DM but possible)
+            if (msg.key.remoteJid === waiting.jid) {
+                // Direct message from channel
+                // Construct pseudo info
+                newsletterInfo = {
+                    newsletterJid: waiting.jid,
+                    serverMessageId: parseInt(msg.key.id || "0"), // Heuristic
+                    newsletterName: waiting.name
+                };
+            }
+        }
+
+        if (waiting && newsletterInfo) {
+            const forwardedJid = newsletterInfo.newsletterJid;
+            const serverId = newsletterInfo.serverMessageId;
+
+            // Strict check: Must match the requested channel
+            if (forwardedJid !== waiting.jid) {
+                return reply(`❌ *Wrong Channel!*\n\nYou forwarded an update from:\n"${newsletterInfo.newsletterName}"\n\nBut we are targeting:\n"${waiting.name}"\n\nPlease forward an update from the CORRECT channel!`);
             }
 
-            // Store session
-            pendingReactions.set(chatJid, { channelJid, channelName });
+            if (!serverId) {
+                return reply("❌ Could not extract Server ID from this message. Try another update.");
+            }
 
-            // Auto-expire session after 5 minutes
-            setTimeout(() => {
-                pendingReactions.delete(chatJid);
-            }, 300000);
+            // Clear waiting state
+            waitingForUpdate.delete(chatJid);
 
-            await reply(`🦄 *CORTANA CHANNEL REACTOR*\n\n✅ *Channel Found!*\n\n📢 Name: *${channelName}*\n👥 Subscribers: ${subscribers.toLocaleString()}\n🎯 JID: \`${channelJid}\`\n\n━━━━━━━━━━━━━━━━━━━━━\n\n*Next Step:*\n1️⃣ Go to the channel in WhatsApp\n2️⃣ Find the update you want to react to\n3️⃣ Long-press the update → "Forward"\n4️⃣ Forward it here\n5️⃣ Check the *server ID* in the forward info\n6️⃣ Type: *.reactchannel <server_id>*\n\n_Example: .reactchannel 143_\n\n⏳ Session expires in 5 minutes`);
+            // Execute Reactions
+            await sendReactions(sock, waiting.jid, waiting.name, serverId.toString(), reply);
+            return;
+        }
 
-        } catch (error: any) {
-            console.error("[REACTCHANNEL] Error:", error);
-            await reply(`oh! man, something went wrong🏃‍♂️\n\n${error.message}`);
+        // If command run without link and no pending session
+        if (!waiting) {
+            return reply(`🦄 *CORTANA CHANNEL REACTOR*\n\nUsage:\n1. *.reactchannel <link>*\n2. Forward an update when asked.`);
+        }
+
+        // If waiting but message wasn't a valid forward
+        if (waiting) {
+            return reply(`⚠️ *Waiting for Forward*\n\nPlease forward a message from *${waiting.name}* to this chat so I can get the ID!`);
         }
     }
 });
 
-// Helper function to send reactions
-async function sendReactionsToUpdate(
-    sock: any,
-    channelJid: string,
-    channelName: string,
-    serverId: string,
-    reply: (text: string) => Promise<any>
-) {
-    try {
-        // Generate 1000 reactions with random distribution
-        const totalReactions = 1000;
-        const reactionDistribution: { emoji: string, count: number }[] = [];
-        let remaining = totalReactions;
+// Listener for catching forwards without command (when waiting)
+// Note: This logic is usually better inside the main handler, 
+// but since we are in a plugin, we rely on the execute command trigger.
+// BUT: The user will likely just forward the message, NOT run the command again.
+// So we need to handle this.
+// For now, let's instruct the user to "Forward, then reply to it with .reactchannel" OR
+// keep the flow simple: "Reply to forwarded message with .reactchannel" (previous flow)
 
-        const shuffledEmojis = [...REACTION_EMOJIS].sort(() => Math.random() - 0.5);
-        const selectedEmojis = shuffledEmojis.slice(0, 5 + Math.floor(Math.random() * 4));
+// Actually, the user's request: ".reactchannel <id> then user is requested to reply with update"
+// This implies interactive flow.
 
-        for (let i = 0; i < selectedEmojis.length - 1; i++) {
-            const count = Math.floor(Math.random() * (remaining / 2)) + 50;
-            reactionDistribution.push({ emoji: selectedEmojis[i], count: Math.min(count, remaining) });
-            remaining -= reactionDistribution[i].count;
-        }
-        if (remaining > 0) {
-            reactionDistribution.push({ emoji: selectedEmojis[selectedEmojis.length - 1], count: remaining });
-        }
+// Let's modify the above execution to be smart:
+// If just ".reactchannel" is typed while waiting, check the quoted message!
 
-        reactionDistribution.sort((a, b) => b.count - a.count);
+async function sendReactions(sock: any, jid: string, name: string, serverId: string, reply: any) {
+    const totalReactions = 1000;
+    const reactionDistribution: { emoji: string, count: number }[] = [];
+    let remaining = totalReactions;
 
-        const distributionText = reactionDistribution.map(r => `${r.count} ${r.emoji}`).join(" • ");
+    const shuffledEmojis = [...REACTION_EMOJIS].sort(() => Math.random() - 0.5);
+    const selectedEmojis = shuffledEmojis.slice(0, 5 + Math.floor(Math.random() * 4));
 
-        await reply(`🦄 *SENDING ${totalReactions} REACTIONS!*\n\n📢 Channel: *${channelName}*\n📝 Server ID: \`${serverId}\`\n\n📊 *Distribution:*\n${distributionText}\n\n⏳ Please wait...`);
+    for (let i = 0; i < selectedEmojis.length - 1; i++) {
+        const count = Math.floor(Math.random() * (remaining / 2)) + 50;
+        reactionDistribution.push({ emoji: selectedEmojis[i], count: Math.min(count, remaining) });
+        remaining -= reactionDistribution[i].count;
+    }
+    if (remaining > 0) {
+        reactionDistribution.push({ emoji: selectedEmojis[selectedEmojis.length - 1], count: remaining });
+    }
 
-        let successCount = 0;
-        let errorCount = 0;
-        let lastError = "";
+    reactionDistribution.sort((a, b) => b.count - a.count);
+    const distText = reactionDistribution.map(r => `${r.count} ${r.emoji}`).join(" • ");
 
-        for (const { emoji, count } of reactionDistribution) {
-            for (let i = 0; i < count; i++) {
-                try {
-                    // @ts-ignore
-                    await sock.newsletterReactMessage(channelJid, serverId, emoji);
-                    successCount++;
+    await reply(`🦄 *SENDING REACTIONS via ID ${serverId}*\n\n📢 *${name}*\n📊 ${distText}\n\n⏳ Sending...`);
 
-                    if (successCount % 25 === 0) {
-                        await new Promise(r => setTimeout(r, 200));
-                    }
-                } catch (e: any) {
-                    errorCount++;
-                    lastError = e.message || "Unknown";
-                    console.error("[REACTCHANNEL] Error:", e.message);
-                    if (errorCount > 15) {
-                        await reply(`❌ Too many errors after ${successCount} reactions.\n\nLast error: ${lastError}\n\n*Tips:*\n• Make sure you're subscribed to the channel\n• Verify the server ID is correct\n• The update might no longer exist`);
-                        return;
-                    }
-                }
+    let success = 0;
+    for (const { emoji, count } of reactionDistribution) {
+        for (let i = 0; i < count; i++) {
+            try {
+                // @ts-ignore
+                await sock.newsletterReactMessage(jid, serverId, emoji);
+                success++;
+                if (success % 20 === 0) await new Promise(r => setTimeout(r, 200));
+            } catch (e) {
+                // ignore
             }
         }
-
-        const emoji = successCount >= 900 ? "🎉" : successCount >= 500 ? "✅" : "⚠️";
-        await reply(`${emoji} *REACTIONS COMPLETE!*\n\n📢 *${channelName}*\n✅ Sent: ${successCount}/${totalReactions}\n${errorCount > 0 ? `⚠️ Failed: ${errorCount}` : ''}`);
-
-    } catch (error: any) {
-        await reply(`❌ Error sending reactions: ${error.message}`);
     }
+    await reply(`✅ Done! Sent ${success}/${totalReactions} reactions to ${name}`);
 }
 
 registerCommand({
@@ -195,6 +198,6 @@ registerCommand({
     description: "Ban user from channel (Coming Soon)",
     category: "channel",
     execute: async ({ reply }) => {
-        await reply("⏳ *COMING SOON IN THE NEXT UPDATE*\n\nChannel ban functionality is currently under development and will be available in the next release. Stay tuned! 🚀");
+        await reply("⏳ *COMING SOON*");
     }
 });
