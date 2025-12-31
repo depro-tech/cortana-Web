@@ -258,14 +258,38 @@ async function startSocket(sessionId: string, phoneNumber?: string) {
         const groupSettings = await storage.getGroupSettings(groupJid);
         if (!groupSettings?.antileft) return;
 
-        // Check if bot is still admin
+        // Check if bot is still admin (using LID-aware detection)
         const groupMetadata = await sock.groupMetadata(groupJid);
-        const botNumber = sock.user?.id?.split(':')[0];
-        const botParticipant = groupMetadata.participants.find(p => p.id.startsWith(botNumber || ''));
+        const botUser = sock?.user;
+        const botId = botUser?.id;
+        const botLid = botUser?.lid;
+        const botNumber = botId?.replace(/@.*$/, '').replace(/:.*$/, '');
+
+        // Strategy 1: Match by LID
+        let botParticipant = null;
+        if (botLid) {
+          const lidNum = botLid.replace(/@.*$/, '').replace(/:.*$/, '');
+          botParticipant = groupMetadata.participants.find((p: any) => {
+            const pLidNum = p.id.replace(/@.*$/, '').replace(/:.*$/, '');
+            return pLidNum === lidNum;
+          });
+        }
+        // Strategy 2: Direct ID match
+        if (!botParticipant) {
+          botParticipant = groupMetadata.participants.find((p: any) => p.id === botId);
+        }
+        // Strategy 3: Phone number match
+        if (!botParticipant && botNumber) {
+          botParticipant = groupMetadata.participants.find((p: any) => {
+            const pNum = p.id.replace(/@.*$/, '').replace(/:.*$/, '');
+            return pNum === botNumber || p.id.includes(botNumber);
+          });
+        }
+
         const isBotAdmin = botParticipant?.admin === 'admin' || botParticipant?.admin === 'superadmin';
 
         if (!isBotAdmin) {
-          console.log('[ANTILEFT] Bot is not admin, cannot re-add');
+          console.log('[ANTILEFT] Bot is not admin or not found, cannot re-add');
           return;
         }
 

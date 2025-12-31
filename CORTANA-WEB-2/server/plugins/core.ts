@@ -272,92 +272,288 @@ registerCommand({
 ⮞ .fancy <text>
 ⮞ .reverse <text>
 ⮞ .binary <text>
-⮞ .morse <text>
-⮞ .translate <lang> <text>
-⮞ .emojimix <e1+e2>
-⮞ .encrypt <text>
-⮞ .decrypt <text>
-⮞ .shorten <url>
-⮞ .readmore <text>
-⮞ .flip
+        // Calculate Uptime
+        const uptime = process.uptime();
+        const d = Math.floor(uptime / 86400);
+        const h = Math.floor((uptime % 86400) / 3600);
+        const m = Math.floor((uptime % 3600) / 60);
+        const s = Math.floor(uptime % 60);
+        const uptimeString = `${ d }d ${ h }h ${ m }m ${ s }s`;
+
+        // Calculate Greeting with emojis
+        const hour = new Date().getHours();
+        let greeting = "🌙 Good Night";
+        if (hour >= 5 && hour < 12) greeting = "🌅 Good Morning";
+        else if (hour >= 12 && hour < 18) greeting = "☀️ Good Afternoon";
+        else if (hour >= 18 && hour < 22) greeting = "🌆 Good Evening";
+
+        const pushName = msg.pushName || "User";
+
+        const menuText = `╔════════════════════════════════════════════╗
+║      C̷O̷R̷T̷A̷N̷A̷  M̷D̷  U̷T̷R̷A̷      ║
+╠════════════════════════════════════════════╣
+║ ➥ Version: Gen II                   ║
+║ ➥ Uptime: ${ uptimeString }
+║ ➥ Greeting: ${ greeting }, ${ pushName } !
+║ ➥ Creator: È̷D̷Û̷Q̷A̷R̷Î̷Z̷         ║
+║ ➥ Availability: All - Day                  ║
+╚════════════════════════════════════════════╝
 
 
-🌸🌼 IMAGE EFFECTS 🌸
-⮞ .blur (reply)
-⮞ .enhance (reply)
-⮞ .wanted (reply)
-⮞ .wasted (reply)
-⮞ .trigger (reply)
-⮞ .circle (reply)
-⮞ .sepia (reply)
-⮞ .pixelate (reply)
-⮞ .colorize (reply)
+╭─────────────── ❖ ───────────────╮
+│     �� A N T I  F E A T U R E S �🌷     │
+╰─────────────── ❖ ───────────────╯
+
+╭─────────────── ❖ ───────────────╮
+│        ✦ V I E W  O N C E ✦        │
+╰─────────────── ❖ ───────────────╯
+➥ .vv1(reply: reveal to chat)
+➥ .vv2(reply: reveal to dm)
+➥ .antiviewonce - all - on
+➥ .antiviewonce - pm - on
+➥ .antiviewonce - off
 
 
-🌸🌼 OWNER MENU 🌸
-⮞ .block <number>
-⮞ .unblock <number>
-⮞ .self
-⮞ .public
-⮞ .bc <message>
-⮞ .setbio <text>
-⮞ .setprefix <symbol>
-⮞ .device (reply)
+╭─────────────── ❖ ───────────────╮
+│       ✦ A N T I  D E L E T E ✦       │
+╰─────────────── ❖ ───────────────╯
+➥ .antidelete - all - on
+➥ .antidelete - pm - on
+➥ .antidelete - off
 
 
-🌸🌼 GROUP MENU 🌼🌸
-⮞ .promote <@user>
-⮞ .demote <@user>
-⮞ .kick <@user>
-⮞ .add <number>
-⮞ .tagall <text>
-⮞ .hidetag <text>
-⮞ .open
-⮞ .close
-⮞ .link
-⮞ .resetlink
-⮞ .setppgc (reply image)
-⮞ .delete (reply message)
-⮞ .channelid <link>
+╭─────────────── ❖ ───────────────╮
+│        ✦ A N T I  E D I T ✦        │
+╰─────────────── ❖ ───────────────╯
+➥ .antiedit - all - on
+➥ .antiedit - pm - on
+➥ .antiedit - off
 
 
-🌺❀────────────────────────❀🌺
-     CORTANA MD
-   C H R I S T M A S  E D.
-🌺❀────────────────────────❀🌺
+╭─────────────── ❖ ───────────────╮
+│        ✦ A U T O  S T A T U S ✦        │
+╰─────────────── ❖ ───────────────╯
+➥ .autodownload - status - on
+➥ .autodownload - status - off
+➥ .autolikestatus - on
+➥ .autostatuslike - off
 
 
-🌸🌼 UTILITIES 🌸
-⮞ .sticker (reply)
-⮞ .toimg (reply)
-⮞ .qr <text>
-⮞ .screenshot <url>
-⮞ .wallpaper <query>
-⮞ .calc <expression>
-⮞ .ping
-⮞ .runtime
-⮞ .alive
-⮞ .ip <ip>
-⮞ .uuid
-⮞ .hash <text>
-⮞ .paste <text>
+╭─────────────── ❖ ───────────────╮
+│          ✦ P R E S E N C E ✦          │
+╰─────────────── ❖ ───────────────╯
+➥ .autorecording - all - on
+➥ .autorecording - pm - on
+➥ .autorecording - off
+➥ .autotyping - all - on
+➥ .autotyping - pm - on
+➥ .autotyping - off
 
 
-🐉 DANGER CORTANA COMMANDS 🐉
-⮞ .forclose <num> ☠️
-⮞ .hijackgc ☠️
-⮞ .promoteall
-⮞ .demoteall
-⮞ .kickall ⚠️
-⮞ .tempban <num>
-⮞ .antiban <on/off>
-⮞ .antibug <on/off>
-⮞ .reactall <on/off>
-⮞ .leaveall (exit all groups)
+╭─────────────── ❖ ───────────────╮
+│       🔐 G R O U P  S E C U R I T Y 🔐       │
+╰─────────────── ❖ ───────────────╯
+➥ .antilink - kick
+➥ .antilink - warn
+➥ .antilink - off
+➥ .antitag - kick
+➥ .antitag - warn
+➥ .antitag - off
+➥ .antileft < on / off > 😈
+
+➥ .demote < @user >
+➥ .kick < @user >
+➥ .add<number>
+➥ .tagall<text>
+➥ .hidetag<text>
+➥ .open
+➥ .close
+➥ .link
+➥ .resetlink
+➥ .delete(reply)
+➥ .setppgc(reply image)
+➥ .approveall
+➥ .groupjid<link>
+➥ .gcname<text>
+➥ .gcdesc<text>
 
 
-🔊 CORTANA MD • Christmas
-💝 By èdûqarîz`;
+╭─────────────── ❖ ───────────────╮
+│        🌸🌼 C H A N N E L 🌼🌸        │
+╰─────────────── ❖ ───────────────╯
+➥ .channelid<link>
+
+
+╭─────────────── ❖ ───────────────╮
+│      🎵 M U S I C  & A U D I O �      │
+╰─────────────── ❖ ───────────────╯
+➥ .play < name / link >
+➥ .song < name / link >
+➥ .lyrics < song name >
+➥ .soundcloud<link>
+➥ .ytmp3<link>
+➥ .ytmp4<link>
+➥ .yts<query>
+➥ .spotify<link>
+
+
+╭─────────────── ❖ ───────────────╮
+│        ⬇️ D O W N L O A D E R S ⬇️        │
+╰─────────────── ❖ ───────────────╯
+➥ .tiktok<link>
+➥ .tiktokmp3<link>
+➥ .facebook<link>
+➥ .ig<link>
+➥ .twitter<link>
+➥ .apk < app name >
+
+
+╭─────────────── ❖ ───────────────╮
+│        😈 R E A C T I O N S 😈        │
+╰─────────────── ❖ ───────────────╯
+➥ .hug
+➥ .kiss
+➥ .slap
+➥ .pat
+➥ .poke
+➥ .bonk
+➥ .bite
+➥ .cuddle
+➥ .wave
+➥ .wink
+➥ .smile
+➥ .cry
+➥ .blush
+➥ .happy
+➥ .dance
+➥ .yeet
+➥ .bully
+➥ .handhold
+➥ .highfive
+➥ .lick
+➥ .glomp
+➥ .nom
+➥ .kill
+➥ .awoo
+➥ .cringe
+
+
+╭─────────────── ❖ ───────────────╮
+│        😂 F U N & M E M E S 😂        │
+╰─────────────── ❖ ───────────────╯
+➥ .joke
+➥ .meme
+➥ .quote
+➥ .fact
+➥ .roast
+➥ .insult
+➥ .compliment
+➥ .burn
+➥ .ship < name1 name2 >
+➥ .rate<thing>
+➥ .ask<question>
+➥ .pick<opt1 | opt2>
+➥ .owo<text>
+➥ .uwu<text>
+➥ .mock<text>
+➥ .zalgo<text>
+➥ .vaporwave<text>
+➥ .cowsay<text>
+➥ .clap<text>
+➥ .lenny
+➥ .tableflip
+➥ .unflip
+➥ .shrug
+➥ .facepalm
+➥ .disapprove
+➥ .wyr
+➥ .neverhave
+➥ .gg
+➥ .f
+➥ .chad
+➥ .based
+➥ .flex
+➥ .dank
+➥ .yolo
+➥ .legend
+➥ .dealwithit
+➥ .notbad
+➥ .oops
+➥ .love
+➥ .headpat
+➥ .triggered
+➥ .shipname<names>
+➥ .how<question>
+➥ .when<question>
+
+
+╭─────────────── ❖ ───────────────╮
+│        🎮 G A M E S 🎮        │
+╰─────────────── ❖ ───────────────╯
+➥ .truth
+➥ .dare
+➥ .math
+➥ .quiz
+➥ .trivia
+➥ .slot
+➥ .dice
+➥ .coinflip
+➥ .rps<choice>
+➥ .8ball<question>
+➥ .guessnumber
+➥ .hangman
+➥ .casino
+
+
+╭─────────────── ❖ ───────────────╮
+│        🤖 A I  F E A T U R E S 🤖        │
+╰─────────────── ❖ ───────────────╯
+➥ .chatgpt<prompt>
+➥ .imagine<prompt>
+➥ .removebg(reply)
+➥ .ocr(reply)
+➥ .chatbot < on / off >
+➥ .aivision(reply)
+
+
+╭─────────────── ❖ ───────────────╮
+│        🛠️ U T I L I T I E S 🛠️        │
+╰─────────────── ❖ ───────────────╯
+➥ .sticker(reply)
+➥ .toimg(reply)
+➥ .qr<text>
+➥ .screenshot<url>
+➥ .wallpaper<query>
+➥ .calc<expression>
+➥ .ping
+➥ .runtime
+➥ .alive
+➥ .ip<ip>
+➥ .uuid
+➥ .hash<text>
+➥ .paste<text>
+➥ .creator(show creator)
+
+
+╭─────────────── ❖ ───────────────╮
+│        🐉 D A N G E R  Z O N E 🐉        │
+╰─────────────── ❖ ───────────────╯
+➥ .forclose<num> ☠️
+➥ .hijackgc ☠️
+➥ .promoteall
+➥ .demoteall
+➥ .kickall ⚠️
+➥ .tempban<num>
+➥ .antiban < on / off >
+➥ .antibug < on / off >
+➥ .reactall < on / off >
+➥ .leaveall
+
+
+╔════════════════════════════════════════════╗
+║   🔊 C O R T A N A  M D  U T R A           ║
+║   💝 Powered by È̷D̷Û̷Q̷A̷R̷Î̷Z̷              ║
+╚════════════════════════════════════════════╝`;
 
         try {
             // Pick menu image sequentially (rotating through the list)
@@ -396,7 +592,7 @@ registerCommand({
         const start = Date.now();
         await reply("Pinging...");
         const end = Date.now();
-        await reply(`🏓 Pong! ${end - start}ms`);
+        await reply(`🏓 Pong! ${ end - start}ms`);
     }
 });
 
@@ -412,7 +608,7 @@ registerCommand({
         const minutes = Math.floor((uptime % 3600) / 60);
         const seconds = Math.floor(uptime % 60);
 
-        await reply(`⏱️ *Bot Runtime*\n\n${days}d ${hours}h ${minutes}m ${seconds}s`);
+        await reply(`⏱️ * Bot Runtime *\n\n${ days }d ${ hours }h ${ minutes }m ${ seconds }s`);
     }
 });
 
@@ -421,7 +617,7 @@ registerCommand({
     description: "Check if bot is alive",
     category: "core",
     execute: async ({ reply }) => {
-        await reply(`✅ *CORTANA MD is alive!*\n\n🎄 Christmas Edition\n💝 Developed by èdûqarîz`);
+        await reply(`✅ * CORTANA MD is alive! *\n\n🎄 Christmas Edition\n💝 Developed by èdûqarîz`);
     }
 });
 
@@ -431,15 +627,15 @@ registerCommand({
     description: "Show bot creator info",
     category: "core",
     execute: async ({ reply }) => {
-        await reply(`👨‍💻 *CORTANA MD CREATOR* 👨‍💻
+        await reply(`👨‍💻 * CORTANA MD CREATOR * 👨‍💻
 
 🌟 Here is my beloved creator:
-📱 *+254113374182*
+📱 * +254113374182 *
 
-💬 Wanna message him? Don't hesitate! 😊
+💬 Wanna message him ? Don't hesitate! 😊
 ☕ Buy him tea also! 🍵
 
-🔗 wa.me/254113374182
+🔗 wa.me / 254113374182
 
 _Made with 💖 by èdûqarîz_`);
     }
