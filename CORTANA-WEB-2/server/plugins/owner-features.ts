@@ -49,7 +49,7 @@ registerCommand({
         await storage.updateBotSettings(settings.id, { antiban: enabled });
 
         if (enabled) {
-            await reply("ANTIBAN MODE ACTIVATED 🛡️😎\nCooldown: 1 minute per user + random delays.");
+            await reply("😈 *ANTIBAN MODE ACTIVATED* 🛡️\n\n🚫 ALL commands are now BLOCKED!\n🙅 Only `.antiban off` will work\n\n_You coward, you feared ban?_ 🤣");
         } else {
             await reply("Antiban mode deactivated. Unlimited chaos speed restored 🌪️💥");
         }

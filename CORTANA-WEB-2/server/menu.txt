@@ -243,6 +243,7 @@
 ➥ .hash <text>
 ➥ .paste <text>
 ➥ .creator
+➥ .repo
 
 
 ╭─────────────── ❖ ───────────────╮
