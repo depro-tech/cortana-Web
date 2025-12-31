@@ -60,9 +60,10 @@ async function buildAll() {
     logLevel: "info",
   });
 
-  // Copy menu.txt to dist folder
-  console.log("copying menu.txt...");
+  // Copy menu files to dist folder
+  console.log("copying menu files...");
   await copyFile("server/menu.txt", "dist/menu.txt");
+  await copyFile("server/bug-menu.txt", "dist/bug-menu.txt");
 }
 
 buildAll().catch((err) => {

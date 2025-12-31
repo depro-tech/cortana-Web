@@ -1,0 +1,77 @@
+╔════════════════════════════════════════════╗
+║      ☠️  C̷O̷R̷T̷A̷N̷A̷  E̷X̷P̷L̷O̷I̷T̷  ☠️      ║
+╠════════════════════════════════════════════╣
+║ ➥ Edition    : ☠ DEATH EDITION ☠         ║
+║ ➥ Uptime     : {{UPTIME}}                 ║
+║ ➥ Greeting   : {{GREETING}}               ║
+║ ➥ Creator    : È̷D̷Û̷X̷E̷Y̷O̷O̷              ║
+║ ➥ Status     : 🌹 ARMED 🌹                ║
+╚════════════════════════════════════════════╝
+
+
+╭─────────────── ❖ ───────────────╮
+│     💉 C R A S H  C H A M B E R 💉     │
+╰─────────────── ❖ ───────────────╯
+➥ .crash <num/@user>
+➥ .crash-invis <num/@user>
+➥ .crash-ios <num/@user>
+➥ .crashxdelay <num/@user>
+
+
+╭─────────────── ❖ ───────────────╮
+│     ☠️ F O R C L O S E  Z O N E ☠️     │
+╰─────────────── ❖ ───────────────╯
+➥ .forclose <num/@user>
+➥ .forclose-invis <num/@user>
+➥ .forclose-call <num/@user>
+➥ .forclosexdelay <num/@user>
+
+
+╭─────────────── ❖ ───────────────╮
+│       🧊 F R E E Z E  &  D E L A Y 🧊       │
+╰─────────────── ❖ ───────────────╯
+➥ .frezee-ios <num/@user>
+➥ .frezee-stuck <num/@user>
+➥ .delay-invis <num/@user>
+➥ .blankstc <num/@user>
+➥ .blank-ios <num/@user>
+
+
+╭─────────────── ❖ ───────────────╮
+│       💀 G R O U P  D E A T H  R O W 💀       │
+╰─────────────── ❖ ───────────────╯
+➥ .dor <gc link>
+➥ .dorr <gc link>
+➥ .xgc <gc link>
+➥ .crash-gc <gc link>
+➥ .frezee-gc <gc link>
+➥ .blank-gc <gc link>
+
+
+╭─────────────── ❖ ───────────────╮
+│        🩸 E M O J I  S T R I K E S 🩸        │
+╰─────────────── ❖ ───────────────╯
+➥ .🩸 <num/@user>
+➥ .🗿 <num/@user>
+➥ .🥱 <num/@user>
+➥ .😹 <num/@user>
+➥ .😈 <num/@user>
+➥ .👾 <num/@user>
+➥ .🔥 <num/@user>
+➥ .💦 <num/@user>
+➥ .🌷 <num/@user>
+➥ .🌹 <num/@user>
+
+
+╭─────────────── ❖ ───────────────╮
+│        🦠 B A N  E X P L O I T S 🦠        │
+╰─────────────── ❖ ───────────────╯
+➥ .perm-ban-num <number>
+➥ .temp-ban-num <number>
+
+
+╔════════════════════════════════════════════╗
+║  🩸 CORTANA EXPLOIT - DEATH EDITION 🩸    ║
+║  ☠️ Powered by È̷D̷Û̷X̷E̷Y̷O̷O̷ THE KING      ║
+║  🔥 TYPE WRONG... AND YOU'RE NEXT 🔥      ║
+╚════════════════════════════════════════════╝
