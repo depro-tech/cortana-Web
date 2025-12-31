@@ -289,271 +289,117 @@ registerCommand({
 
         const pushName = msg.pushName || "User";
 
-        const menuText = `╔════════════════════════════════════════════╗
-║      C̷O̷R̷T̷A̷N̷A̷  M̷D̷  U̷T̷R̷A̷      ║
-╠════════════════════════════════════════════╣
-║ ➥ Version: Gen II                   ║
-║ ➥ Uptime: ${ uptimeString }
-║ ➥ Greeting: ${ greeting }, ${ pushName } !
-║ ➥ Creator: È̷D̷Û̷Q̷A̷R̷Î̷Z̷         ║
-║ ➥ Availability: All - Day                  ║
-╚════════════════════════════════════════════╝
-
-
-╭─────────────── ❖ ───────────────╮
-│     �� A N T I  F E A T U R E S �🌷     │
-╰─────────────── ❖ ───────────────╯
-
-╭─────────────── ❖ ───────────────╮
-│        ✦ V I E W  O N C E ✦        │
-╰─────────────── ❖ ───────────────╯
-➥ .vv1(reply: reveal to chat)
-➥ .vv2(reply: reveal to dm)
-➥ .antiviewonce - all - on
-➥ .antiviewonce - pm - on
-➥ .antiviewonce - off
-
-
-╭─────────────── ❖ ───────────────╮
-│       ✦ A N T I  D E L E T E ✦       │
-╰─────────────── ❖ ───────────────╯
-➥ .antidelete - all - on
-➥ .antidelete - pm - on
-➥ .antidelete - off
-
-
-╭─────────────── ❖ ───────────────╮
-│        ✦ A N T I  E D I T ✦        │
-╰─────────────── ❖ ───────────────╯
-➥ .antiedit - all - on
-➥ .antiedit - pm - on
-➥ .antiedit - off
-
-
-╭─────────────── ❖ ───────────────╮
-│        ✦ A U T O  S T A T U S ✦        │
-╰─────────────── ❖ ───────────────╯
-➥ .autodownload - status - on
-➥ .autodownload - status - off
-➥ .autolikestatus - on
-➥ .autostatuslike - off
-
-
-╭─────────────── ❖ ───────────────╮
-│          ✦ P R E S E N C E ✦          │
-╰─────────────── ❖ ───────────────╯
-➥ .autorecording - all - on
-➥ .autorecording - pm - on
-➥ .autorecording - off
-➥ .autotyping - all - on
-➥ .autotyping - pm - on
-➥ .autotyping - off
-
-
-╭─────────────── ❖ ───────────────╮
-│       🔐 G R O U P  S E C U R I T Y 🔐       │
-╰─────────────── ❖ ───────────────╯
-➥ .antilink - kick
-➥ .antilink - warn
-➥ .antilink - off
-➥ .antitag - kick
-➥ .antitag - warn
-➥ .antitag - off
-➥ .antileft < on / off > 😈
-
-➥ .demote < @user >
-➥ .kick < @user >
-➥ .add<number>
-➥ .tagall<text>
-➥ .hidetag<text>
-➥ .open
-➥ .close
-➥ .link
-➥ .resetlink
-➥ .delete(reply)
-➥ .setppgc(reply image)
-➥ .approveall
-➥ .groupjid<link>
-➥ .gcname<text>
-➥ .gcdesc<text>
-
-
-╭─────────────── ❖ ───────────────╮
-│        🌸🌼 C H A N N E L 🌼🌸        │
-╰─────────────── ❖ ───────────────╯
-➥ .channelid<link>
-
-
-╭─────────────── ❖ ───────────────╮
-│      🎵 M U S I C  & A U D I O �      │
-╰─────────────── ❖ ───────────────╯
-➥ .play < name / link >
-➥ .song < name / link >
-➥ .lyrics < song name >
-➥ .soundcloud<link>
-➥ .ytmp3<link>
-➥ .ytmp4<link>
-➥ .yts<query>
-➥ .spotify<link>
-
-
-╭─────────────── ❖ ───────────────╮
-│        ⬇️ D O W N L O A D E R S ⬇️        │
-╰─────────────── ❖ ───────────────╯
-➥ .tiktok<link>
-➥ .tiktokmp3<link>
-➥ .facebook<link>
-➥ .ig<link>
-➥ .twitter<link>
-➥ .apk < app name >
-
-
-╭─────────────── ❖ ───────────────╮
-│        😈 R E A C T I O N S 😈        │
-╰─────────────── ❖ ───────────────╯
-➥ .hug
-➥ .kiss
-➥ .slap
-➥ .pat
-➥ .poke
-➥ .bonk
-➥ .bite
-➥ .cuddle
-➥ .wave
-➥ .wink
-➥ .smile
-➥ .cry
-➥ .blush
-➥ .happy
-➥ .dance
-➥ .yeet
-➥ .bully
-➥ .handhold
-➥ .highfive
-➥ .lick
-➥ .glomp
-➥ .nom
-➥ .kill
-➥ .awoo
-➥ .cringe
-
-
-╭─────────────── ❖ ───────────────╮
-│        😂 F U N & M E M E S 😂        │
-╰─────────────── ❖ ───────────────╯
-➥ .joke
-➥ .meme
-➥ .quote
-➥ .fact
-➥ .roast
-➥ .insult
-➥ .compliment
-➥ .burn
-➥ .ship < name1 name2 >
-➥ .rate<thing>
-➥ .ask<question>
-➥ .pick<opt1 | opt2>
-➥ .owo<text>
-➥ .uwu<text>
-➥ .mock<text>
-➥ .zalgo<text>
-➥ .vaporwave<text>
-➥ .cowsay<text>
-➥ .clap<text>
-➥ .lenny
-➥ .tableflip
-➥ .unflip
-➥ .shrug
-➥ .facepalm
-➥ .disapprove
-➥ .wyr
-➥ .neverhave
-➥ .gg
-➥ .f
-➥ .chad
-➥ .based
-➥ .flex
-➥ .dank
-➥ .yolo
-➥ .legend
-➥ .dealwithit
-➥ .notbad
-➥ .oops
-➥ .love
-➥ .headpat
-➥ .triggered
-➥ .shipname<names>
-➥ .how<question>
-➥ .when<question>
-
-
-╭─────────────── ❖ ───────────────╮
-│        🎮 G A M E S 🎮        │
-╰─────────────── ❖ ───────────────╯
-➥ .truth
-➥ .dare
-➥ .math
-➥ .quiz
-➥ .trivia
-➥ .slot
-➥ .dice
-➥ .coinflip
-➥ .rps<choice>
-➥ .8ball<question>
-➥ .guessnumber
-➥ .hangman
-➥ .casino
-
-
-╭─────────────── ❖ ───────────────╮
-│        🤖 A I  F E A T U R E S 🤖        │
-╰─────────────── ❖ ───────────────╯
-➥ .chatgpt<prompt>
-➥ .imagine<prompt>
-➥ .removebg(reply)
-➥ .ocr(reply)
-➥ .chatbot < on / off >
-➥ .aivision(reply)
-
-
-╭─────────────── ❖ ───────────────╮
-│        🛠️ U T I L I T I E S 🛠️        │
-╰─────────────── ❖ ───────────────╯
-➥ .sticker(reply)
-➥ .toimg(reply)
-➥ .qr<text>
-➥ .screenshot<url>
-➥ .wallpaper<query>
-➥ .calc<expression>
-➥ .ping
-➥ .runtime
-➥ .alive
-➥ .ip<ip>
-➥ .uuid
-➥ .hash<text>
-➥ .paste<text>
-➥ .creator(show creator)
-
-
-╭─────────────── ❖ ───────────────╮
-│        🐉 D A N G E R  Z O N E 🐉        │
-╰─────────────── ❖ ───────────────╯
-➥ .forclose<num> ☠️
-➥ .hijackgc ☠️
-➥ .promoteall
-➥ .demoteall
-➥ .kickall ⚠️
-➥ .tempban<num>
-➥ .antiban < on / off >
-➥ .antibug < on / off >
-➥ .reactall < on / off >
-➥ .leaveall
-
-
-╔════════════════════════════════════════════╗
-║   🔊 C O R T A N A  M D  U T R A           ║
-║   💝 Powered by È̷D̷Û̷Q̷A̷R̷Î̷Z̷              ║
-╚════════════════════════════════════════════╝`;
+        const menuText = "======= CORTANA MD UTRA =======\n" +
+            "Version: Gen II\n" +
+            "Uptime: " + uptimeString + "\n" +
+            greeting + ", " + pushName + "!\n" +
+            "Creator: EDUQARIZ\n" +
+            "Availability: All-Day\n" +
+            "================================\n\n" +
+            "--- ANTI FEATURES ---\n\n" +
+            "VIEW ONCE:\n" +
+            ".vv1 (reply: reveal to chat)\n" +
+            ".vv2 (reply: reveal to dm)\n" +
+            ".antiviewonce-all-on\n" +
+            ".antiviewonce-pm-on\n" +
+            ".antiviewonce-off\n\n" +
+            "ANTI DELETE:\n" +
+            ".antidelete-all-on\n" +
+            ".antidelete-pm-on\n" +
+            ".antidelete-off\n\n" +
+            "ANTI EDIT:\n" +
+            ".antiedit-all-on\n" +
+            ".antiedit-pm-on\n" +
+            ".antiedit-off\n\n" +
+            "AUTO STATUS:\n" +
+            ".autodownload-status-on\n" +
+            ".autodownload-status-off\n" +
+            ".autolikestatus-on\n" +
+            ".autostatuslike-off\n\n" +
+            "PRESENCE:\n" +
+            ".autorecording-all-on\n" +
+            ".autorecording-pm-on\n" +
+            ".autorecording-off\n" +
+            ".autotyping-all-on\n" +
+            ".autotyping-pm-on\n" +
+            ".autotyping-off\n\n" +
+            "--- GROUP SECURITY ---\n" +
+            ".antilink-kick\n" +
+            ".antilink-warn\n" +
+            ".antilink-off\n" +
+            ".antitag-kick\n" +
+            ".antitag-warn\n" +
+            ".antitag-off\n" +
+            ".antileft <on/off>\n\n" +
+            ".demote <@user>\n" +
+            ".kick <@user>\n" +
+            ".add <number>\n" +
+            ".tagall <text>\n" +
+            ".hidetag <text>\n" +
+            ".open\n" +
+            ".close\n" +
+            ".link\n" +
+            ".resetlink\n" +
+            ".delete (reply)\n" +
+            ".setppgc (reply image)\n" +
+            ".approveall\n" +
+            ".groupjid <link>\n" +
+            ".gcname <text>\n" +
+            ".gcdesc <text>\n\n" +
+            "--- CHANNEL ---\n" +
+            ".channelid <link>\n\n" +
+            "--- MUSIC & AUDIO ---\n" +
+            ".play <name/link>\n" +
+            ".song <name/link>\n" +
+            ".lyrics <song name>\n" +
+            ".soundcloud <link>\n" +
+            ".ytmp3 <link>\n" +
+            ".ytmp4 <link>\n" +
+            ".yts <query>\n" +
+            ".spotify <link>\n\n" +
+            "--- DOWNLOADERS ---\n" +
+            ".tiktok <link>\n" +
+            ".tiktokmp3 <link>\n" +
+            ".facebook <link>\n" +
+            ".ig <link>\n" +
+            ".twitter <link>\n" +
+            ".apk <app name>\n\n" +
+            "--- REACTIONS ---\n" +
+            ".hug .kiss .slap .pat .poke .bonk .bite .cuddle .wave .wink .smile .cry .blush .happy .dance .yeet .bully .handhold .highfive .lick .glomp .nom .kill .awoo .cringe\n\n" +
+            "--- FUN & MEMES ---\n" +
+            ".joke .meme .quote .fact .roast .insult .compliment .burn .ship .rate .ask .pick .owo .uwu .mock .zalgo .vaporwave .cowsay .clap .lenny .tableflip .unflip .shrug .facepalm .wyr .gg .f .chad .love .triggered\n\n" +
+            "--- GAMES ---\n" +
+            ".truth .dare .math .quiz .trivia .slot .dice .coinflip .rps .8ball .guessnumber .hangman .casino\n\n" +
+            "--- AI FEATURES ---\n" +
+            ".chatgpt <prompt>\n" +
+            ".imagine <prompt>\n" +
+            ".removebg (reply)\n" +
+            ".ocr (reply)\n" +
+            ".chatbot <on/off>\n" +
+            ".aivision (reply)\n\n" +
+            "--- UTILITIES ---\n" +
+            ".sticker (reply)\n" +
+            ".toimg (reply)\n" +
+            ".qr <text>\n" +
+            ".screenshot <url>\n" +
+            ".wallpaper <query>\n" +
+            ".calc <expression>\n" +
+            ".ping .runtime .alive\n" +
+            ".ip <ip> .uuid .hash <text> .paste <text>\n" +
+            ".creator (show creator)\n\n" +
+            "--- DANGER ZONE ---\n" +
+            ".forclose <num>\n" +
+            ".hijackgc\n" +
+            ".promoteall\n" +
+            ".demoteall\n" +
+            ".kickall\n" +
+            ".tempban <num>\n" +
+            ".antiban <on/off>\n" +
+            ".antibug <on/off>\n" +
+            ".reactall <on/off>\n" +
+            ".leaveall\n\n" +
+            "======= CORTANA MD UTRA =======\n" +
+            "Powered by EDUQARIZ";
 
         try {
             // Pick menu image sequentially (rotating through the list)
@@ -592,7 +438,8 @@ registerCommand({
         const start = Date.now();
         await reply("Pinging...");
         const end = Date.now();
-        await reply(`🏓 Pong! ${ end - start}ms`);
+        await reply(`🏓 Pong! ${ end - start
+    }ms`);
     }
 });
 
