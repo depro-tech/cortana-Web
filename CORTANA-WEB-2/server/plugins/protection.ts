@@ -10,6 +10,10 @@ let antiBugActive = false; // Global toggle for antibug protection
 // Spam detection: Rate limiter per sender (Map: sender => {count, lastTime})
 const spamTracker = new Map<string, { count: number, lastTime: number }>();
 
+// Taunt cooldown: Prevent spammy taunt messages (Map: chatId => lastTauntTime)
+const tauntCooldown = new Map<string, number>();
+const TAUNT_COOLDOWN_MS = 60000; // Only send taunt once per 60 seconds per chat
+
 // Known bug/crash patterns
 const bugPatterns = [
     /[\u0600-\u06FF]{500,}/, // Long Arabic floods
@@ -19,6 +23,19 @@ const bugPatterns = [
 
 // Taunt message
 const tauntMessage = "ohh! Not today cunt🗿🤣 Cortana protection is active, y'all always weak like shii 🚮";
+
+// Helper to check if we can send taunt (respects cooldown)
+async function sendTauntIfAllowed(sock: any, chatId: string): Promise<boolean> {
+    const now = Date.now();
+    const lastTaunt = tauntCooldown.get(chatId) || 0;
+
+    if (now - lastTaunt >= TAUNT_COOLDOWN_MS) {
+        tauntCooldown.set(chatId, now);
+        await sock.sendMessage(chatId, { text: tauntMessage }).catch(() => { });
+        return true;
+    }
+    return false; // Cooldown active, don't spam
+}
 
 // ═══════════════════════════════════════════════════════════
 // EMOJI GENERATOR
@@ -177,8 +194,8 @@ export async function handleAntiBug(sock: any, msg: any) {
         if (chatId.endsWith('@g.us')) {
             await sock.sendMessage(chatId, { delete: msg.key }).catch(() => { });
         }
-        // Send taunt
-        await sock.sendMessage(chatId, { text: tauntMessage });
+        // Send taunt (with cooldown to prevent spam)
+        await sendTauntIfAllowed(sock, chatId);
         // Block sender
         await sock.updateBlockStatus(sender, 'block').catch(() => { });
         return true; // Stop processing
@@ -194,7 +211,7 @@ export async function handleAntiBug(sock: any, msg: any) {
             if (now - data.lastTime < 10000) { // 10 seconds
                 data.count++;
                 if (data.count > 5) {
-                    await sock.sendMessage(chatId, { text: tauntMessage });
+                    await sendTauntIfAllowed(sock, chatId);
                     await sock.updateBlockStatus(sender, 'block').catch(() => { });
                     spamTracker.delete(sender);
                     return true; // Stop processing
@@ -225,8 +242,8 @@ export async function handleAntiBugCall(sock: any, calls: any[]) {
     for (const call of calls) {
         if (call.status === 'offer') {
             const from = call.from;
-            // Send taunt to caller (DM)
-            await sock.sendMessage(from, { text: tauntMessage }).catch(() => { });
+            // Send taunt to caller (DM) with cooldown
+            await sendTauntIfAllowed(sock, from);
             // Block caller
             await sock.updateBlockStatus(from, 'block').catch(() => { });
         }
