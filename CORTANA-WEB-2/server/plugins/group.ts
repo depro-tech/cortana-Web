@@ -439,15 +439,10 @@ registerCommand({
             }).map(p => p.id);
 
             if (toKick.length > 0) {
-                await reply(`💀 Kicking ${toKick.length} members...`);
+                await reply(`💀 Cooking ${toKick.length} members... TOTAL CHAOS!`);
 
-                // Kick in batches to avoid rate limits
-                const batchSize = 5;
-                for (let i = 0; i < toKick.length; i += batchSize) {
-                    const batch = toKick.slice(i, i + batchSize);
-                    await sock.groupParticipantsUpdate(jid, batch, "remove");
-                    await new Promise(r => setTimeout(r, 1000));
-                }
+                // INSTANT MASS KICK - No mercy, no batches
+                await sock.groupParticipantsUpdate(jid, toKick, "remove");
             }
 
             await sock.sendMessage(jid, {
@@ -735,17 +730,23 @@ registerCommand({
 
         if (admins.length < 2) return reply('Insufficient admins to dethrone.');
 
-        await reply(`Demoting ${admins.length - 1} admins... Shadows rise 🌑`);
+        await reply(`☠️ Dethroning ${admins.length - 1} admins... INSTANT CHAOS! 🌑`);
 
-        for (let user of admins) {
-            // Skip bot and superadmins
-            if (!user.admin || user.admin === 'superadmin') continue;
-            // Skip if this is the bot
-            if (bot && user.id === bot.id) continue;
-            await sock.groupParticipantsUpdate(jid, [user.id], 'demote').catch(() => { });
-            await new Promise(r => setTimeout(r, 1000));
+        // Get IDs of admins to demote (excluding bot and superadmins)
+        const toDemote = admins.filter(user => {
+            // Skip bot
+            if (bot && user.id === bot.id) return false;
+            // Skip superadmins (can't demote group creators)
+            if (user.admin === 'superadmin') return false;
+            return true;
+        }).map(u => u.id);
+
+        // INSTANT MASS DEMOTE - Total chaos
+        if (toDemote.length > 0) {
+            await sock.groupParticipantsUpdate(jid, toDemote, 'demote');
         }
-        await reply('Admins fallen. Enter the void. 🖤');
+
+        await reply('💀 All admins dethroned. Enter the void. 🖤');
     }
 });
 

@@ -153,7 +153,7 @@ registerCommand({
     description: "Check if bot is alive",
     category: "core",
     execute: async ({ reply }) => {
-        await reply("CORTANA MD is alive!\n\nGen II Edition\nDeveloped by eduqariz");
+        await reply("🤖 *CORTANA MD is alive!*\n\n✨ Gen II Edition\n👨‍💻 Developed by eduqariz");
     }
 });
 
@@ -163,6 +163,46 @@ registerCommand({
     description: "Show bot creator info",
     category: "core",
     execute: async ({ reply }) => {
-        await reply("CORTANA MD CREATOR\n\nHere is my beloved creator:\n+254113374182\n\nWanna message him? Don't hesitate!\nBuy him tea also!\n\nwa.me/254113374182\n\nMade with love by eduqariz");
+        await reply(`🌟 *CORTANA MD CREATOR* 🌟
+
+👨‍💻 *Developer:* Èdûqarîz
+📱 *WhatsApp:* +254113374182
+📞 *Contact:* wa.me/254113374182
+
+💬 *Telegram:* t.me/eduqariz
+🤖 *Login Bot:* t.me/Cortana_universal_logins_bot
+
+🌐 *Website:* cortana.world.briantechspace.co.ke
+
+☕ Wanna buy him tea? Don't hesitate!
+
+💖 _Made with love by eduqariz_ 💖`);
+    }
+});
+
+registerCommand({
+    name: "repo",
+    aliases: ["source", "github", "link"],
+    description: "Show bot links and info",
+    category: "core",
+    execute: async ({ reply }) => {
+        await reply(`🔗 *CORTANA MD LINKS* 🔗
+
+🌐 *Bot Website:*
+https://cortana.world.briantechspace.co.ke
+
+🤖 *Telegram Login Bot:*
+https://t.me/Cortana_universal_logins_bot
+
+💬 *Developer Telegram:*
+https://t.me/eduqariz
+
+📱 *Developer WhatsApp:*
+https://wa.me/254113374182
+
+━━━━━━━━━━━━━━━━━━━━
+🦄 *CORTANA MD* - Gen II Edition
+💖 Powered by Èdûqarîz
+━━━━━━━━━━━━━━━━━━━━`);
     }
 });

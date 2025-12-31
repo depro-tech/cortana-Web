@@ -900,16 +900,25 @@ async function handleMessage(sock: ReturnType<typeof makeWASocket>, msg: any, se
     return;
   }
 
-  // ═══════ ANTIBAN CHECK ═══════
-  if (await checkAntiBan(senderJid, isOwner, settings)) {
-    await sock.sendMessage(jid, { text: '⚠️hold on a moment bro, antiban is on 😘⚠️🤏😎' }, { quoted: msg });
-    return;
+  // ═══════ ANTIBAN MODE - BLOCKS ALL COMMANDS ═══════
+  // When antiban is ON, NO commands work except ".antiban off"
+  if (settings?.antiban && !isOwner) {
+    // Only allow ".antiban off" command to pass through
+    if (commandName === 'antiban' && args[0]?.toLowerCase() === 'off') {
+      // Allow this command to proceed
+    } else {
+      // Block ALL other commands with a funny message
+      await sock.sendMessage(jid, {
+        text: `😈 *You coward, you feared ban?* 🤣\n\n🚫 okay, NO commands will work 🤧\n\n_Unless you turn it off with_ \`.antiban off\` 🙅\n\n☠️ _Cortana is protecting you from yourself_`
+      }, { quoted: msg });
+      return;
+    }
   }
 
-  if (settings?.antiban && !isOwner) {
-    // Random delay for stealth
-    const delay = Math.floor(Math.random() * (globalDelayMax - globalDelayMin + 1)) + globalDelayMin;
-    await new Promise(r => setTimeout(r, delay));
+  if (await checkAntiBan(senderJid, isOwner, settings)) {
+    // This is for rate limiting, not command blocking
+    await sock.sendMessage(jid, { text: '⚠️ Slow down bro, antiban rate limit active 😘' }, { quoted: msg });
+    return;
   }
   // ═════════════════════════════
 
