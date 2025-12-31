@@ -278,7 +278,7 @@ registerCommand({
         const h = Math.floor((uptime % 86400) / 3600);
         const m = Math.floor((uptime % 3600) / 60);
         const s = Math.floor(uptime % 60);
-        const uptimeString = `${ d }d ${ h }h ${ m }m ${ s }s`;
+        const uptimeString = d + "d " + h + "h " + m + "m " + s + "s";
 
         // Calculate Greeting with emojis
         const hour = new Date().getHours();
