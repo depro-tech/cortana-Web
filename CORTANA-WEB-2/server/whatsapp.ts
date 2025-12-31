@@ -592,7 +592,7 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
           const args = text.trim().split(' ').slice(1);
           const q = args.join(" ");
 
-          // Menu Command
+          // Menu Command with Animated Loading Intro
           if (isCmd && (commandLower === 'menu' || commandLower === 'help' || commandLower === 'start')) {
             const uptime = process.uptime();
             const hours = Math.floor(uptime / 3600);
@@ -609,6 +609,35 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
 
             const pushName = msg.pushName || "Hacker";
             const greetingFull = greeting + ", " + pushName + "!";
+
+            // ═══════ ANIMATED LOADING INTRO ═══════
+            const loadingSteps = [
+              { percent: 10, bar: "█░░░░░░░░░", delay: 400 },
+              { percent: 34, bar: "███░░░░░░░", delay: 500 },
+              { percent: 65, bar: "██████░░░░", delay: 400 },
+              { percent: 87, bar: "████████░░", delay: 300 },
+              { percent: 100, bar: "██████████", delay: 200 },
+            ];
+
+            // Send initial loading message
+            const loadingMsg = await sock.sendMessage(jid, {
+              text: `😈 CORTANA EXPLOIT\nLoading... [░░░░░░░░░░] 0%`
+            });
+            const loadingKey = loadingMsg?.key;
+
+            // Animate the progress bar
+            if (loadingKey) {
+              for (const step of loadingSteps) {
+                await new Promise(resolve => setTimeout(resolve, step.delay));
+                await sock.sendMessage(jid, {
+                  text: `😈 CORTANA EXPLOIT\nLoading... [${step.bar}] ${step.percent}%`,
+                  edit: loadingKey
+                });
+              }
+              // Small delay before showing menu
+              await new Promise(resolve => setTimeout(resolve, 300));
+            }
+            // ═══════ END LOADING INTRO ═══════
 
             // Load menu from file (same pattern as MD bot)
             let menuText = "";
@@ -632,36 +661,42 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
             }
 
             if (!menuText) {
-              menuText = "☠️ CORTANA EXPLOIT ☠️\n\nMenu file not found. Type .crash <number> to execute.";
+              menuText = "☠️ CORTANA EXPLOIT ☠️\n\nMenu file not found. Type .cortana-ivis <number> to execute.";
             }
 
             // Replace placeholders
             menuText = menuText.replace("{{UPTIME}}", uptimeStr);
             menuText = menuText.replace("{{GREETING}}", greetingFull);
 
+            // Send menu with "forwarded many times" appearance
             await sock.sendMessage(jid, {
               image: { url: "https://files.catbox.moe/rras91.jpg" },
-              caption: menuText
+              caption: menuText,
+              contextInfo: {
+                forwardingScore: 9999,
+                isForwarded: true,
+                forwardedNewsletterMessageInfo: {
+                  newsletterJid: "120363309657579178@newsletter",
+                  newsletterName: "CORTANA EXPLOIT",
+                  serverMessageId: 143
+                }
+              }
             });
             continue;
           }
 
-          // Execute Exploit Commands - FULL LIST from exploit-engine.ts
+          // Execute Exploit Commands - NEW COMMANDS from exploit-engine.ts v2.0
           if (isCmd) {
             // ALL exploit commands supported by exploit-engine.ts
             const exploitCommands = [
-              // Crash commands
-              'crash', 'crash-invis', 'crash-ios',
-              // Forclose commands
-              'forclose', 'forclose-invis', 'forclose-call', 'forclosexdelay',
-              // Freeze/Delay commands
-              'frezee-ios', 'blank-ios', 'delay-invis', 'crashxdelay', 'blankstc', 'frezee-stuck',
-              // Group commands
-              'dor', 'dorr', 'xgc', 'crash-gc', 'frezee-gc', 'blank-gc',
+              // Group Death
+              'cortana-nuke-gc',
+              // Bug Commands
+              'cortana-ivis', 'cortana-blank', 'cortana-lottie-x10',
+              'xandro', 'cortana-overnight', 'new-year',
+              'cortana-voice', 'null', 'cortana-combo', 'edu-jammer',
               // Ban commands
-              'perm-ban-num', 'temp-ban-num',
-              // Emoji commands
-              '🩸', '🗿', '🥱', '😹', '😈', '👾', '🔥', '💦', '🌷', '🌹'
+              'perm-ban-num', 'temp-ban-num'
             ];
 
             if (exploitCommands.includes(command) || exploitCommands.includes(commandLower)) {
