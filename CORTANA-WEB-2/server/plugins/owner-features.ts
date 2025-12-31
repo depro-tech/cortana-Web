@@ -1,6 +1,7 @@
 
 import { registerCommand } from "./types";
 import { storage } from "../storage";
+import { downloadMediaMessage } from "@whiskeysockets/baileys";
 
 // ═══════════════════════════════════════════════════════════
 // ANTI-FEATURES & AUTO-STATUS COMMANDS
@@ -88,6 +89,8 @@ registerCommand({
             || (msg as any).contextInfo;
 
         const quoted = contextInfo?.quotedMessage;
+        const stanzaId = contextInfo?.stanzaId;
+        const participant = contextInfo?.participant;
 
         if (!quoted) {
             return reply("❌ Reply to a message with media!");
@@ -100,33 +103,44 @@ registerCommand({
 
         try {
             let mediaType: string;
-            let mediaContent: any;
+            let messageToDownload: any;
 
             if (voMsg?.message) {
                 // It's a viewOnce - extract the inner content
                 const content = voMsg.message;
                 mediaType = Object.keys(content)[0];
-                mediaContent = content[mediaType];
+                messageToDownload = voMsg.message;
                 console.log('[VV1] Found viewOnce, type:', mediaType);
             } else if (quoted.imageMessage) {
                 // It's a regular/already-viewed image
                 mediaType = 'imageMessage';
-                mediaContent = quoted.imageMessage;
+                messageToDownload = quoted;
                 console.log('[VV1] Found regular imageMessage');
             } else if (quoted.videoMessage) {
                 // It's a regular/already-viewed video
                 mediaType = 'videoMessage';
-                mediaContent = quoted.videoMessage;
+                messageToDownload = quoted;
                 console.log('[VV1] Found regular videoMessage');
             } else {
                 console.log('[VV1] No media found. Keys:', Object.keys(quoted || {}));
                 return reply("❌ Reply to a view-once or media message!");
             }
 
-            // Send the media
+            // Download the media buffer first
+            const buffer = await downloadMediaMessage(
+                { key: { remoteJid: msg.key.remoteJid!, id: stanzaId, participant }, message: messageToDownload },
+                'buffer',
+                {}
+            );
+
+            if (!buffer) {
+                return reply("❌ Failed to download media. It may have expired.");
+            }
+
+            // Send the downloaded buffer
             const sendType = mediaType.replace('Message', '');
             await sock.sendMessage(msg.key.remoteJid!, {
-                [sendType]: mediaContent,
+                [sendType]: buffer,
                 caption: "Revealed by Cortana😈🙂‍↔️ no secrets"
             } as any, { quoted: msg });
 
@@ -150,6 +164,8 @@ registerCommand({
             || (msg as any).contextInfo;
 
         const quoted = contextInfo?.quotedMessage;
+        const stanzaId = contextInfo?.stanzaId;
+        const participant = contextInfo?.participant;
 
         if (!quoted) {
             return reply("❌ Reply to a message with media!");
@@ -166,34 +182,45 @@ registerCommand({
 
         try {
             let mediaType: string;
-            let mediaContent: any;
+            let messageToDownload: any;
 
             if (voMsg?.message) {
                 // It's a viewOnce - extract the inner content
                 const content = voMsg.message;
                 mediaType = Object.keys(content)[0];
-                mediaContent = content[mediaType];
+                messageToDownload = voMsg.message;
                 console.log('[VV2] Found viewOnce, type:', mediaType);
             } else if (quoted.imageMessage) {
                 // It's a regular/already-viewed image
                 mediaType = 'imageMessage';
-                mediaContent = quoted.imageMessage;
+                messageToDownload = quoted;
                 console.log('[VV2] Found regular imageMessage');
             } else if (quoted.videoMessage) {
                 // It's a regular/already-viewed video
                 mediaType = 'videoMessage';
-                mediaContent = quoted.videoMessage;
+                messageToDownload = quoted;
                 console.log('[VV2] Found regular videoMessage');
             } else {
                 console.log('[VV2] No media found. Keys:', Object.keys(quoted || {}));
                 return reply("❌ Reply to a view-once or media message!");
             }
 
-            // Send the media to DM
+            // Download the media buffer first
+            const buffer = await downloadMediaMessage(
+                { key: { remoteJid: msg.key.remoteJid!, id: stanzaId, participant }, message: messageToDownload },
+                'buffer',
+                {}
+            );
+
+            if (!buffer) {
+                return reply("❌ Failed to download media. It may have expired.");
+            }
+
+            // Send the downloaded buffer to DM
             const sendType = mediaType.replace('Message', '');
             const dest = settings.ownerNumber + "@s.whatsapp.net";
             await sock.sendMessage(dest, {
-                [sendType]: mediaContent,
+                [sendType]: buffer,
                 caption: "Revealed by Cortana (Private)"
             } as any, { quoted: msg });
             await reply("Sent to DM ✅");

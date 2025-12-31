@@ -901,17 +901,21 @@ async function handleMessage(sock: ReturnType<typeof makeWASocket>, msg: any, se
   }
 
   // ═══════ ANTIBAN MODE - BLOCKS ALL COMMANDS ═══════
-  // When antiban is ON, NO commands work except ".antiban off"
-  if (settings?.antiban && !isOwner) {
-    // Only allow ".antiban off" command to pass through
-    if (commandName === 'antiban' && args[0]?.toLowerCase() === 'off') {
-      // Allow this command to proceed
-    } else {
-      // Block ALL other commands with a funny message
-      await sock.sendMessage(jid, {
-        text: `😈 *You coward, you feared ban?* 🤣\n\n🚫 okay, NO commands will work 🤧\n\n_Unless you turn it off with_ \`.antiban off\` 🙅\n\n☠️ _Cortana is protecting you from yourself_`
-      }, { quoted: msg });
+  // When antiban is ON:
+  // - Non-owners: SILENT (no response at all, like self mode)
+  // - Owner: Can still use commands, but sees reminder message
+  if (settings?.antiban) {
+    if (!isOwner) {
+      // Non-owners get NO response at all (silent block)
       return;
+    } else {
+      // Owner can use commands, but remind them antiban is active
+      // Only show reminder for non-antiban commands
+      if (commandName !== 'antiban') {
+        await sock.sendMessage(jid, {
+          text: `🛡️ _Antiban is ON - only you can use commands right now_`
+        }, { quoted: msg });
+      }
     }
   }
 
