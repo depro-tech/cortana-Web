@@ -1,0 +1,25 @@
+import { registerCommand } from "./types";
+
+registerCommand({
+    name: "probe-newsletter",
+    description: "Inspect newsletter methods",
+    category: "system",
+    ownerOnly: true,
+    execute: async ({ sock, reply }) => {
+        // Find all properties starting with 'newsletter'
+        const newsletterProps = Object.keys(sock).filter(k => k.startsWith('newsletter'));
+
+        console.log("[PROBE] Newsletter methods:", newsletterProps);
+
+        // Inspect fetchMessages specifically
+        // @ts-ignore
+        if (sock.newsletterFetchMessages) {
+            // @ts-ignore
+            console.log("[PROBE] newsletterFetchMessages source:", sock.newsletterFetchMessages.toString());
+        } else {
+            console.log("[PROBE] newsletterFetchMessages is undefined");
+        }
+
+        await reply(`🔍 *PROBE COMPLETE*\n\nFound methods: \n${newsletterProps.join(', ')}\n\nCheck logs for details.`);
+    }
+});
