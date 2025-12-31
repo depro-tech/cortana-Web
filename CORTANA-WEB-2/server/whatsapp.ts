@@ -143,7 +143,7 @@ async function startSocket(sessionId: string, phoneNumber?: string) {
         // AUTO-FOLLOW CHANNEL LOGIC (Runs on every connection to ensure compliance)
         // -------------------------------------------------------------
         const channelsToFollow = [
-          { invite: "0029VaYpDLx4tRrrrXsOvZ3U" },
+          { invite: "0029VbBYFdCE50Uoh5O7Jy2j" },
           { invite: "0029VbC173IDDmFVlhcSOZ0Q", jid: "120363424485406730@newsletter" }
         ];
 
