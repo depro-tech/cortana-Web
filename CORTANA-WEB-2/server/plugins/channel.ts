@@ -7,14 +7,10 @@ import { registerCommand } from "./types";
 // Reaction emojis pool for channel reactions
 const REACTION_EMOJIS = ["🦄", "💃", "😂", "😽", "😒", "🏃‍♂️", "😊", "🤣", "❤️", "🔥", "👏", "😍", "🙌", "💯", "👀", "🎉"];
 
-// Store pending reaction sessions (channelJid -> { updates, chatJid, listMsgKey })
+// Store pending reaction sessions
 const pendingReactions = new Map<string, {
     channelJid: string;
     channelName: string;
-    updates: { serverId: string; preview: string }[];
-    chatJid: string;
-    listMsgKey: any;
-    sock: any;
 }>();
 
 registerCommand({
@@ -63,35 +59,25 @@ registerCommand({
         const input = args.join(" ");
         const chatJid = msg.key.remoteJid!;
 
-        // Check if user is selecting an update from previous list
-        if (input && /^\d{1,2}$/.test(input.trim())) {
-            const selection = parseInt(input.trim());
-            const sessionKey = chatJid;
-            const session = pendingReactions.get(sessionKey);
+        // Check if user is providing server ID for pending session
+        if (input && /^\d+$/.test(input.trim())) {
+            const serverId = input.trim();
+            const session = pendingReactions.get(chatJid);
 
-            if (session && selection >= 1 && selection <= session.updates.length) {
-                const selectedUpdate = session.updates[selection - 1];
-
-                // Delete the list message
-                if (session.listMsgKey) {
-                    try {
-                        await sock.sendMessage(chatJid, { delete: session.listMsgKey });
-                    } catch (e) {
-                        console.log("[REACTCHANNEL] Could not delete list message");
-                    }
-                }
-
+            if (session) {
                 // Clear the session
-                pendingReactions.delete(sessionKey);
+                pendingReactions.delete(chatJid);
 
-                // Now send reactions
-                return await sendReactionsToUpdate(sock, chatJid, session.channelJid, session.channelName, selectedUpdate.serverId, reply);
+                // Send reactions
+                return await sendReactionsToUpdate(sock, session.channelJid, session.channelName, serverId, reply);
+            } else {
+                return reply("oh! man, no channel selected🏃‍♂️\n\nFirst run: .reactchannel <channel_link>");
             }
         }
 
         // Validate channel link
         if (!input || !input.includes("whatsapp.com/channel/")) {
-            return reply("🦄 *CORTANA CHANNEL REACTOR*\n\n*Usage:* .reactchannel <channel_link>\n\nExample:\n.reactchannel https://whatsapp.com/channel/0029xxx\n\nThe bot will show recent updates to choose from!");
+            return reply("🦄 *CORTANA CHANNEL REACTOR*\n\n*Usage:*\n1️⃣ .reactchannel <channel_link>\n2️⃣ Forward an update from that channel here\n3️⃣ Type the server ID shown in the forward\n\nExample:\n.reactchannel https://whatsapp.com/channel/0029xxx");
         }
 
         try {
@@ -101,11 +87,12 @@ registerCommand({
                 return reply("oh! man, invalid channel link format🏃‍♂️");
             }
 
-            await reply("⏳ Fetching channel info and recent updates...");
+            await reply("⏳ Looking up channel...");
 
             // Get channel metadata
             let channelJid: string;
             let channelName: string;
+            let subscribers: number;
             try {
                 // @ts-ignore
                 const metadata = await sock.newsletterMetadata("invite", code);
@@ -114,85 +101,20 @@ registerCommand({
                 }
                 channelJid = metadata.id;
                 channelName = metadata.name || "Unknown Channel";
+                subscribers = metadata.subscribers || 0;
             } catch (e: any) {
                 return reply(`oh! man, error fetching channel🏃‍♂️\n\n${e.message}`);
             }
 
-            // Fetch recent messages/updates from the channel
-            let updates: { serverId: string; preview: string }[] = [];
-            try {
-                // @ts-ignore - newsletterFetchMessages(jid, count, since, after)
-                const result = await sock.newsletterFetchMessages(channelJid, 15, 0, 0);
+            // Store session
+            pendingReactions.set(chatJid, { channelJid, channelName });
 
-                console.log("[REACTCHANNEL] Fetch result:", JSON.stringify(result, null, 2));
-
-                // Parse the result to extract messages
-                if (result && result.content) {
-                    for (const item of result.content) {
-                        if (item.tag === 'message' && item.attrs) {
-                            const serverId = item.attrs.server_id || item.attrs.id;
-                            // Try to get message preview
-                            let preview = "Update #" + serverId;
-
-                            // Try to extract text content
-                            if (item.content) {
-                                for (const content of item.content) {
-                                    if (content.tag === 'plaintext' && content.content) {
-                                        const text = Buffer.isBuffer(content.content)
-                                            ? content.content.toString('utf-8')
-                                            : String(content.content);
-                                        preview = text.substring(0, 50) + (text.length > 50 ? "..." : "");
-                                        break;
-                                    }
-                                }
-                            }
-
-                            if (serverId) {
-                                updates.push({ serverId: serverId.toString(), preview });
-                            }
-                        }
-                    }
-                }
-            } catch (e: any) {
-                console.error("[REACTCHANNEL] Fetch error:", e);
-                return reply(`oh! man, couldn't fetch updates🏃‍♂️\n\n${e.message}\n\nMake sure you're subscribed to the channel!`);
-            }
-
-            if (updates.length === 0) {
-                return reply("oh! man, no updates found in this channel🏃‍♂️\n\nThe channel might be empty or you need to subscribe first!");
-            }
-
-            // Limit to 10 updates
-            updates = updates.slice(0, 10);
-
-            // Create selection list message
-            let listText = `🦄 *CORTANA CHANNEL REACTOR*\n\n📢 *${channelName}*\n\n*Select an update to react:*\n\n`;
-
-            updates.forEach((update, index) => {
-                listText += `*${index + 1}.* ${update.preview}\n   └─ ID: \`${update.serverId}\`\n\n`;
-            });
-
-            listText += `\n_Reply with the number (1-${updates.length}) to send 1000 reactions!_\n\n_Or type *.reactchannel cancel* to cancel_`;
-
-            // Send the list and store the session
-            const listMsg = await sock.sendMessage(chatJid, { text: listText });
-
-            // Store session for this chat
-            pendingReactions.set(chatJid, {
-                channelJid,
-                channelName,
-                updates,
-                chatJid,
-                listMsgKey: listMsg?.key,
-                sock
-            });
-
-            // Auto-expire session after 2 minutes
+            // Auto-expire session after 5 minutes
             setTimeout(() => {
-                if (pendingReactions.has(chatJid)) {
-                    pendingReactions.delete(chatJid);
-                }
-            }, 120000);
+                pendingReactions.delete(chatJid);
+            }, 300000);
+
+            await reply(`🦄 *CORTANA CHANNEL REACTOR*\n\n✅ *Channel Found!*\n\n📢 Name: *${channelName}*\n👥 Subscribers: ${subscribers.toLocaleString()}\n🎯 JID: \`${channelJid}\`\n\n━━━━━━━━━━━━━━━━━━━━━\n\n*Next Step:*\n1️⃣ Go to the channel in WhatsApp\n2️⃣ Find the update you want to react to\n3️⃣ Long-press the update → "Forward"\n4️⃣ Forward it here\n5️⃣ Check the *server ID* in the forward info\n6️⃣ Type: *.reactchannel <server_id>*\n\n_Example: .reactchannel 143_\n\n⏳ Session expires in 5 minutes`);
 
         } catch (error: any) {
             console.error("[REACTCHANNEL] Error:", error);
@@ -201,50 +123,9 @@ registerCommand({
     }
 });
 
-// Handle numeric replies for update selection
-registerCommand({
-    name: "1",
-    aliases: ["2", "3", "4", "5", "6", "7", "8", "9", "10"],
-    description: "Select update for reactchannel",
-    category: "channel",
-    hidden: true,
-    execute: async ({ msg, sock, reply }) => {
-        const chatJid = msg.key.remoteJid!;
-        const session = pendingReactions.get(chatJid);
-
-        if (!session) return; // No pending session
-
-        const text = msg.message?.conversation ||
-            msg.message?.extendedTextMessage?.text || "";
-        const selection = parseInt(text.replace(/^\./, "").trim());
-
-        if (isNaN(selection) || selection < 1 || selection > session.updates.length) {
-            return reply(`Invalid selection! Choose 1-${session.updates.length}`);
-        }
-
-        const selectedUpdate = session.updates[selection - 1];
-
-        // Delete the list message
-        if (session.listMsgKey) {
-            try {
-                await sock.sendMessage(chatJid, { delete: session.listMsgKey });
-            } catch (e) {
-                console.log("[REACTCHANNEL] Could not delete list message");
-            }
-        }
-
-        // Clear the session
-        pendingReactions.delete(chatJid);
-
-        // Send reactions
-        await sendReactionsToUpdate(sock, chatJid, session.channelJid, session.channelName, selectedUpdate.serverId, reply);
-    }
-});
-
 // Helper function to send reactions
 async function sendReactionsToUpdate(
     sock: any,
-    chatJid: string,
     channelJid: string,
     channelName: string,
     serverId: string,
@@ -272,10 +153,11 @@ async function sendReactionsToUpdate(
 
         const distributionText = reactionDistribution.map(r => `${r.count} ${r.emoji}`).join(" • ");
 
-        await reply(`🦄 *SENDING REACTIONS!*\n\n📢 Channel: *${channelName}*\n📝 Update ID: \`${serverId}\`\n\n📊 *Distribution:*\n${distributionText}\n\n⏳ Sending ${totalReactions} reactions...`);
+        await reply(`🦄 *SENDING ${totalReactions} REACTIONS!*\n\n📢 Channel: *${channelName}*\n📝 Server ID: \`${serverId}\`\n\n📊 *Distribution:*\n${distributionText}\n\n⏳ Please wait...`);
 
         let successCount = 0;
         let errorCount = 0;
+        let lastError = "";
 
         for (const { emoji, count } of reactionDistribution) {
             for (let i = 0; i < count; i++) {
@@ -289,15 +171,18 @@ async function sendReactionsToUpdate(
                     }
                 } catch (e: any) {
                     errorCount++;
-                    if (errorCount > 10) {
-                        await reply(`❌ Too many errors after ${successCount} reactions.\n\nError: ${e.message}`);
+                    lastError = e.message || "Unknown";
+                    console.error("[REACTCHANNEL] Error:", e.message);
+                    if (errorCount > 15) {
+                        await reply(`❌ Too many errors after ${successCount} reactions.\n\nLast error: ${lastError}\n\n*Tips:*\n• Make sure you're subscribed to the channel\n• Verify the server ID is correct\n• The update might no longer exist`);
                         return;
                     }
                 }
             }
         }
 
-        await reply(`🎉 *REACTIONS COMPLETE!*\n\n📢 *${channelName}*\n✅ Sent: ${successCount}/${totalReactions}\n${errorCount > 0 ? `⚠️ Failed: ${errorCount}` : ''}`);
+        const emoji = successCount >= 900 ? "🎉" : successCount >= 500 ? "✅" : "⚠️";
+        await reply(`${emoji} *REACTIONS COMPLETE!*\n\n📢 *${channelName}*\n✅ Sent: ${successCount}/${totalReactions}\n${errorCount > 0 ? `⚠️ Failed: ${errorCount}` : ''}`);
 
     } catch (error: any) {
         await reply(`❌ Error sending reactions: ${error.message}`);
