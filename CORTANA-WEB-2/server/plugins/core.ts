@@ -13,12 +13,25 @@ let menuImageIndex = 0;
 
 // Load menu template from file
 function getMenuTemplate(): string {
-    try {
-        const menuPath = path.join(__dirname, "..", "menu.txt");
-        return fs.readFileSync(menuPath, "utf-8");
-    } catch (e) {
-        return "CORTANA MD MENU\n\nMenu file not found. Contact creator.";
+    // Try multiple paths: production (dist/menu.txt) and development (server/menu.txt)
+    const possiblePaths = [
+        path.join(__dirname, "menu.txt"),           // Production: dist/menu.txt
+        path.join(__dirname, "..", "menu.txt"),     // Dev: server/plugins/../menu.txt = server/menu.txt
+    ];
+
+    for (const menuPath of possiblePaths) {
+        try {
+            if (fs.existsSync(menuPath)) {
+                console.log("[MENU] Loading menu from:", menuPath);
+                return fs.readFileSync(menuPath, "utf-8");
+            }
+        } catch (e) {
+            // Continue to next path
+        }
     }
+
+    console.error("[MENU] Failed to load menu.txt from any location:", possiblePaths);
+    return "CORTANA MD MENU\n\nMenu file not found. Contact creator.";
 }
 
 registerCommand({
