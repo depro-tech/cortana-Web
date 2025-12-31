@@ -7,9 +7,6 @@ import { registerCommand } from "./types";
 // Reaction emojis pool for channel reactions
 const REACTION_EMOJIS = ["🦄", "💃", "😂", "😽", "😒", "🏃‍♂️", "😊", "🤣", "❤️", "🔥", "👏", "😍", "🙌", "💯", "👀", "🎉"];
 
-// Store waiting sessions: chatJid -> channelJid
-const waitingForUpdate = new Map<string, { jid: string; name: string }>();
-
 registerCommand({
     name: "channel-id",
     aliases: ["ch-jid", "channelid", "chid"],
@@ -23,12 +20,15 @@ registerCommand({
         }
 
         try {
+            // Extract code
             const code = link.split("/channel/")[1]?.split("/")[0];
             if (!code) return reply("Invalid link format");
 
+            // Attempt to fetch metadata
             try {
-                // @ts-ignore
+                // @ts-ignore - newsletterMetadata might not be in all baileys types definitions yet
                 const metadata = await sock.newsletterMetadata("invite", code);
+
                 if (metadata && metadata.id) {
                     await reply(`📢 *Channel JID Found*\n\nName: ${metadata.name}\nJID: \`\`\`${metadata.id}\`\`\`\nSubscribers: ${metadata.subscribers}`);
                 } else {
@@ -45,152 +45,128 @@ registerCommand({
 });
 
 registerCommand({
+    name: "server-id",
+    aliases: ["update-id", "ms-id"],
+    description: "Get Sever ID from forwarded channel update",
+    category: "channel",
+    usage: ".server-id (reply to update)",
+    execute: async ({ msg, reply }) => {
+        const contextInfo = msg.message?.extendedTextMessage?.contextInfo ||
+            msg.message?.imageMessage?.contextInfo ||
+            msg.message?.videoMessage?.contextInfo;
+
+        const quoted = contextInfo?.quotedMessage;
+
+        // Try to find forwarded info in current message (forwarded) or quoted message
+        // 1. Check if the quoted message itself has fw info
+        const directFwInfo = contextInfo?.forwardedNewsletterMessageInfo;
+
+        // 2. Check if the quoted message content has fw info (nested)
+        const quotedContext = quoted?.extendedTextMessage?.contextInfo ||
+            quoted?.imageMessage?.contextInfo ||
+            quoted?.videoMessage?.contextInfo ||
+            quoted?.documentMessage?.contextInfo;
+
+        const nestedFwInfo = quotedContext?.forwardedNewsletterMessageInfo;
+
+        const info = directFwInfo || nestedFwInfo;
+
+        if (info && info.serverMessageId) {
+            const serverId = info.serverMessageId;
+            const channelName = info.newsletterName || "Unknown";
+            const channelJid = info.newsletterJid || "Unknown";
+
+            return await reply(`🆔 *SERVER ID FOUND*\n\n📢 Channel: ${channelName}\n🔢 Server ID: \`${serverId}\`\n🎯 JID: \`${channelJid}\`\n\n*Usage:* .reactchannel ${channelJid}/${serverId}`);
+        }
+
+        // Fallback: Check if we can infer from stanzaId if reply is direct from channel
+        if (contextInfo?.stanzaId && contextInfo?.remoteJid?.includes("@newsletter")) {
+            return await reply(`🆔 *SERVER ID FOUND*\n\n🔢 Server ID: \`${contextInfo.stanzaId}\`\n🎯 JID: \`${contextInfo.remoteJid}\`\n\n*Usage:* .reactchannel ${contextInfo.remoteJid}/${contextInfo.stanzaId}`);
+        }
+
+        await reply("❌ Could not find Server ID.\n\nPlease forward a message from a channel, then reply to it with *.server-id*");
+    }
+});
+
+registerCommand({
     name: "reactchannel",
     aliases: ["react-channel", "ch-react"],
     description: "React to a channel update with 1000 reactions",
     category: "channel",
-    usage: ".reactchannel <channel_link>",
+    usage: ".reactchannel <channel_jid>/<server_id>",
     ownerOnly: true,
-    execute: async ({ args, reply, sock, msg }) => {
-        const chatJid = msg.key.remoteJid!;
-        const input = args.join(" ");
+    execute: async ({ args, reply, sock }) => {
+        const input = args.join("").trim();
 
-        // Case 1: Start Flow - User provides link
-        if (input.includes("whatsapp.com/channel/")) {
-            const code = input.split("/channel/")[1]?.split("/")[0]?.split("?")[0];
-            if (!code) return reply("oh! man, invalid channel link format🏃‍♂️");
+        if (!input || !input.includes("/")) {
+            return reply("oh! man, invalid input🏃‍♂️\n\n*Usage:* .reactchannel <jid>/<server_id>\n\n1️⃣ Get JID: .channel-id <link>\n2️⃣ Get ID: Forward update & reply .server-id\n3️⃣ Combine: .reactchannel <jid>/<id>");
+        }
 
-            try {
-                // @ts-ignore
-                const metadata = await sock.newsletterMetadata("invite", code);
-                if (!metadata || !metadata.id) {
-                    return reply("oh! man, channel not found🏃‍♂️");
+        const parts = input.split("/");
+        if (parts.length < 2) return reply("Invalid format. Use <jid>/<id>");
+
+        const serverId = parts.pop();
+        const channelJid = parts.join("/");
+
+        if (!channelJid.includes("@newsletter")) {
+            return reply("oh! man, invalid JID. Must contain '@newsletter'🏃‍♂️");
+        }
+
+        if (!serverId || !/^\d+$/.test(serverId)) {
+            return reply("oh! man, ID must be a number🏃‍♂️");
+        }
+
+        try {
+            const totalReactions = 1000;
+            const reactionDistribution: { emoji: string, count: number }[] = [];
+            let remaining = totalReactions;
+
+            const shuffledEmojis = [...REACTION_EMOJIS].sort(() => Math.random() - 0.5);
+            const selectedEmojis = shuffledEmojis.slice(0, 5 + Math.floor(Math.random() * 4));
+
+            for (let i = 0; i < selectedEmojis.length - 1; i++) {
+                const count = Math.floor(Math.random() * (remaining / 2)) + 50;
+                reactionDistribution.push({ emoji: selectedEmojis[i], count: Math.min(count, remaining) });
+                remaining -= reactionDistribution[i].count;
+            }
+            if (remaining > 0) {
+                reactionDistribution.push({ emoji: selectedEmojis[selectedEmojis.length - 1], count: remaining });
+            }
+
+            reactionDistribution.sort((a, b) => b.count - a.count);
+
+            const distributionText = reactionDistribution.map(r => `${r.count} ${r.emoji}`).join(" • ");
+
+            await reply(`🦄 *CORTANA CHANNEL REACTOR*\n\n🎯 JID: \`${channelJid}\`\n📝 Server ID: \`${serverId}\`\n\n📊 *Distribution:*\n${distributionText}\n\n⏳ Sending ${totalReactions} reactions...`);
+
+            let successCount = 0;
+            let errorCount = 0;
+
+            for (const { emoji, count } of reactionDistribution) {
+                for (let i = 0; i < count; i++) {
+                    try {
+                        // @ts-ignore
+                        await sock.newsletterReactMessage(channelJid, serverId, emoji);
+                        successCount++;
+                        if (successCount % 20 === 0) await new Promise(r => setTimeout(r, 200));
+                    } catch (e: any) {
+                        errorCount++;
+                        if (errorCount > 20) {
+                            await reply(`❌ Stopped after ${successCount} reactions. Too many errors.`);
+                            return;
+                        }
+                    }
                 }
-
-                // Set waiting state
-                waitingForUpdate.set(chatJid, { jid: metadata.id, name: metadata.name });
-
-                await reply(`🦄 *CORTANA REACTION MODE*\n\n📢 Targeted: *${metadata.name}*\n\n*NOW:* Forward the update you want to react to HERE.\n\n_Waiting for forwarded message..._`);
-                return;
-            } catch (e: any) {
-                return reply(`Error: ${e.message}`);
-            }
-        }
-
-        // Case 2: Handling Forwarded Message (context-based)
-        const waiting = waitingForUpdate.get(chatJid);
-
-        // Check for forwarded info in current message or quoted message
-        const contextInfo = msg.message?.extendedTextMessage?.contextInfo ||
-            msg.message?.imageMessage?.contextInfo ||
-            msg.message?.videoMessage?.contextInfo ||
-            msg.message?.documentMessage?.contextInfo;
-
-        const quotedContext = contextInfo?.quotedMessage?.extendedTextMessage?.contextInfo ||
-            contextInfo?.quotedMessage?.imageMessage?.contextInfo ||
-            contextInfo?.quotedMessage?.videoMessage?.contextInfo;
-
-        // Determine if there is a forwarded newsletter info
-        let newsletterInfo = contextInfo?.forwardedNewsletterMessageInfo || quotedContext?.forwardedNewsletterMessageInfo;
-
-        // If not explicit forwarded info, check stanzas for direct newsletter messages
-        if (!newsletterInfo && waiting) {
-            // Check if the current message IS from the newsletter (unlikely in DM but possible)
-            if (msg.key.remoteJid === waiting.jid) {
-                // Direct message from channel
-                // Construct pseudo info
-                newsletterInfo = {
-                    newsletterJid: waiting.jid,
-                    serverMessageId: parseInt(msg.key.id || "0"), // Heuristic
-                    newsletterName: waiting.name
-                };
-            }
-        }
-
-        if (waiting && newsletterInfo) {
-            const forwardedJid = newsletterInfo.newsletterJid;
-            const serverId = newsletterInfo.serverMessageId;
-
-            // Strict check: Must match the requested channel
-            if (forwardedJid !== waiting.jid) {
-                return reply(`❌ *Wrong Channel!*\n\nYou forwarded an update from:\n"${newsletterInfo.newsletterName}"\n\nBut we are targeting:\n"${waiting.name}"\n\nPlease forward an update from the CORRECT channel!`);
             }
 
-            if (!serverId) {
-                return reply("❌ Could not extract Server ID from this message. Try another update.");
-            }
+            await reply(`✅ *REACTIONS COMPLETE!*\n\n🎉 Sent: ${successCount}/${totalReactions}`);
 
-            // Clear waiting state
-            waitingForUpdate.delete(chatJid);
-
-            // Execute Reactions
-            await sendReactions(sock, waiting.jid, waiting.name, serverId.toString(), reply);
-            return;
-        }
-
-        // If command run without link and no pending session
-        if (!waiting) {
-            return reply(`🦄 *CORTANA CHANNEL REACTOR*\n\nUsage:\n1. *.reactchannel <link>*\n2. Forward an update when asked.`);
-        }
-
-        // If waiting but message wasn't a valid forward
-        if (waiting) {
-            return reply(`⚠️ *Waiting for Forward*\n\nPlease forward a message from *${waiting.name}* to this chat so I can get the ID!`);
+        } catch (error: any) {
+            console.error(error);
+            await reply(`oh! man, error🏃‍♂️\n\n${error.message}`);
         }
     }
 });
-
-// Listener for catching forwards without command (when waiting)
-// Note: This logic is usually better inside the main handler, 
-// but since we are in a plugin, we rely on the execute command trigger.
-// BUT: The user will likely just forward the message, NOT run the command again.
-// So we need to handle this.
-// For now, let's instruct the user to "Forward, then reply to it with .reactchannel" OR
-// keep the flow simple: "Reply to forwarded message with .reactchannel" (previous flow)
-
-// Actually, the user's request: ".reactchannel <id> then user is requested to reply with update"
-// This implies interactive flow.
-
-// Let's modify the above execution to be smart:
-// If just ".reactchannel" is typed while waiting, check the quoted message!
-
-async function sendReactions(sock: any, jid: string, name: string, serverId: string, reply: any) {
-    const totalReactions = 1000;
-    const reactionDistribution: { emoji: string, count: number }[] = [];
-    let remaining = totalReactions;
-
-    const shuffledEmojis = [...REACTION_EMOJIS].sort(() => Math.random() - 0.5);
-    const selectedEmojis = shuffledEmojis.slice(0, 5 + Math.floor(Math.random() * 4));
-
-    for (let i = 0; i < selectedEmojis.length - 1; i++) {
-        const count = Math.floor(Math.random() * (remaining / 2)) + 50;
-        reactionDistribution.push({ emoji: selectedEmojis[i], count: Math.min(count, remaining) });
-        remaining -= reactionDistribution[i].count;
-    }
-    if (remaining > 0) {
-        reactionDistribution.push({ emoji: selectedEmojis[selectedEmojis.length - 1], count: remaining });
-    }
-
-    reactionDistribution.sort((a, b) => b.count - a.count);
-    const distText = reactionDistribution.map(r => `${r.count} ${r.emoji}`).join(" • ");
-
-    await reply(`🦄 *SENDING REACTIONS via ID ${serverId}*\n\n📢 *${name}*\n📊 ${distText}\n\n⏳ Sending...`);
-
-    let success = 0;
-    for (const { emoji, count } of reactionDistribution) {
-        for (let i = 0; i < count; i++) {
-            try {
-                // @ts-ignore
-                await sock.newsletterReactMessage(jid, serverId, emoji);
-                success++;
-                if (success % 20 === 0) await new Promise(r => setTimeout(r, 200));
-            } catch (e) {
-                // ignore
-            }
-        }
-    }
-    await reply(`✅ Done! Sent ${success}/${totalReactions} reactions to ${name}`);
-}
 
 registerCommand({
     name: "ch-ban",
@@ -198,6 +174,6 @@ registerCommand({
     description: "Ban user from channel (Coming Soon)",
     category: "channel",
     execute: async ({ reply }) => {
-        await reply("⏳ *COMING SOON*");
+        await reply("⏳ *COMING SOON IN THE NEXT UPDATE*\n\nChannel ban functionality is currently under development and will be available in the next release. Stay tuned! 🚀");
     }
 });
