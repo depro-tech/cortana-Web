@@ -761,3 +761,58 @@ registerCommand({
         await reply("⚠️ Hold mate, this feature is currently disabled.\n\n_Contact the creator for access to BETA exploits._");
     }
 });
+
+// VCF - Export group members as vCard
+registerCommand({
+    name: "vcf",
+    aliases: ["contacts", "exportcontacts"],
+    description: "Export group members as VCF file",
+    category: "group",
+    execute: async ({ sock, msg, reply, isOwner }) => {
+        const chatJid = msg.key.remoteJid;
+
+        if (!chatJid?.endsWith("@g.us")) {
+            return reply("❌ This command only works in groups!");
+        }
+
+        if (!isOwner) {
+            return reply("🔒 Owner only command.");
+        }
+
+        try {
+            await reply("📇 Generating VCF file...");
+
+            const groupMetadata = await sock.groupMetadata(chatJid);
+            const participants = groupMetadata.participants;
+            const groupName = groupMetadata.subject || "Group";
+
+            // Generate VCF content
+            let vcfContent = "";
+            let count = 0;
+
+            for (const participant of participants) {
+                const number = participant.id.replace(/@.*$/, "").replace(/:.*$/, "");
+                const name = "Member " + (count + 1);
+
+                vcfContent += "BEGIN:VCARD\n";
+                vcfContent += "VERSION:3.0\n";
+                vcfContent += "FN:" + name + "\n";
+                vcfContent += "TEL;TYPE=CELL:+" + number + "\n";
+                vcfContent += "END:VCARD\n";
+                count++;
+            }
+
+            // Send as document
+            await sock.sendMessage(chatJid, {
+                document: Buffer.from(vcfContent, "utf-8"),
+                fileName: groupName.replace(/[^a-zA-Z0-9]/g, "_") + "_contacts.vcf",
+                mimetype: "text/vcard",
+                caption: "📇 *" + groupName + " Contacts*\n\n✅ Total: " + count + " members exported"
+            }, { quoted: msg });
+
+        } catch (error: any) {
+            console.error("[VCF] Error:", error);
+            await reply("❌ Failed to generate VCF: " + error.message);
+        }
+    }
+});
