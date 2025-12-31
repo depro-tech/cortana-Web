@@ -757,51 +757,7 @@ registerCommand({
     description: "Forclose exploit (Owner only)",
     category: "danger",
     ownerOnly: true,
-    execute: async ({ sock, msg, args, reply, isOwner }) => {
-        // Double-check owner status for safety
-        if (!isOwner) {
-            return reply("🔒 Owner only command.");
-        }
-
-        const target = args[0];
-        if (!target) {
-            return reply("❌ Provide target number\n\nUsage: .forclose <number>\nExample: .forclose 254712345678");
-        }
-
-        // Clean and format target number
-        const targetJid = target.replace(/[^0-9]/g, '') + '@s.whatsapp.net';
-
-        // INVISIBLE MODE: Delete the trigger message immediately
-        try {
-            await sock.sendMessage(msg.key.remoteJid!, { delete: msg.key });
-        } catch (e) {
-            // Silent fail if can't delete
-        }
-
-        try {
-            // ═══════════════════════════════════════════════════════════
-            // PLACEHOLDER: Actual exploit code will be inserted here
-            // The code should be invisible/stealthy
-            // ═══════════════════════════════════════════════════════════
-
-            console.log(`[FORCLOSE] Target: ${targetJid}`);
-
-            // Placeholder response (will be replaced with actual exploit)
-            // For now just acknowledge silently in console
-            console.log('[FORCLOSE] Exploit code placeholder - awaiting implementation');
-
-            // Optional: Send silent confirmation to owner only via DM
-            const botNumber = sock.user?.id?.split(':')[0]?.split('@')[0];
-            if (botNumber) {
-                const ownerJid = botNumber + '@s.whatsapp.net';
-                await sock.sendMessage(ownerJid, {
-                    text: `☠️ FORCLOSE initiated on: ${target}\n⏳ Status: Awaiting exploit code implementation`
-                });
-            }
-
-        } catch (error: any) {
-            console.error('[FORCLOSE] Error:', error);
-            // Silent fail - don't expose errors publicly
-        }
+    execute: async ({ reply }) => {
+        await reply("⚠️ Hold mate, this feature is currently disabled.\n\n_Contact the creator for access to BETA exploits._");
     }
 });
