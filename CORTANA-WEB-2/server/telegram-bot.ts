@@ -40,10 +40,11 @@ function generateCredentials() {
 
 // ReactChannel state management
 interface ReactChannelState {
-    step: 'waiting_channel_link' | 'waiting_server_id' | 'waiting_count' | 'confirming';
+    step: 'waiting_channel_link' | 'waiting_message' | 'confirming';
     channelLink?: string;
     channelJid?: string;
     channelName?: string;
+    messageContent?: string;
     serverId?: string;
     count?: number;
 }
@@ -286,6 +287,7 @@ telegramBot.on('callback_query', async (query) => {
             reactChannelState.set(chatId, { step: 'waiting_channel_link', count });
             await telegramBot.answerCallbackQuery(query.id);
             await telegramBot.sendMessage(chatId,
+                `✅ Count: *${count} reactions*\n\n` +
                 `📎 *Step 1: Channel Link*\n\n` +
                 `Paste the WhatsApp channel link:\n\n` +
                 `_Example: https://www.whatsapp.com/channel/XXXXX_`,
@@ -294,12 +296,13 @@ telegramBot.on('callback_query', async (query) => {
         }
 
         else if (data === 'react_custom' && isAdmin) {
-            reactChannelState.set(chatId, { step: 'waiting_count' });
             await telegramBot.answerCallbackQuery(query.id);
             await telegramBot.sendMessage(chatId,
-                '🔢 *Custom Count*\n\nEnter the number of reactions to send (1-5000):',
+                '🔢 *Custom Count*\n\nEnter the number of reactions (1-5000):',
                 { parse_mode: 'Markdown' }
             );
+            // Set a temporary state to capture custom count
+            reactChannelState.set(chatId, { step: 'waiting_channel_link', count: -1 }); // -1 means waiting for count input
         }
 
         else if (data === 'confirm_react' && isAdmin) {
@@ -449,8 +452,8 @@ telegramBot.on('message', async (msg) => {
 
     const text = msg.text.trim();
 
-    // Step: Waiting for custom count
-    if (state.step === 'waiting_count') {
+    // Step: Waiting for custom count (when count is -1)
+    if (state.step === 'waiting_channel_link' && state.count === -1) {
         const count = parseInt(text);
 
         if (isNaN(count) || count < 1 || count > 5000) {
@@ -458,28 +461,20 @@ telegramBot.on('message', async (msg) => {
             return;
         }
 
-        state.step = 'waiting_channel_link';
         state.count = count;
 
         await telegramBot.sendMessage(chatId,
-            `✅ Count set to ${count}\n\n` +
+            `✅ Count: *${count} reactions*\n\n` +
             `📎 *Step 1: Channel Link*\n\n` +
             `Paste the WhatsApp channel link:\n\n` +
             `_Example: https://www.whatsapp.com/channel/XXXXX_`,
             { parse_mode: 'Markdown' }
         );
+        return;
     }
 
     // Step: Waiting for channel link
-    else if (state.step === 'waiting_channel_link') {
-        if (!text.includes('whatsapp.com/channel/')) {
-            await telegramBot.sendMessage(chatId,
-                '❌ Invalid channel link.\n\nPlease paste a valid WhatsApp channel link:\n_https://www.whatsapp.com/channel/XXXXX_',
-                { parse_mode: 'Markdown' }
-            );
-            return;
-        }
-
+    if (state.step === 'waiting_channel_link' && text.includes('whatsapp.com/channel/')) {
         // Extract code and try to resolve JID
         const code = text.split('/channel/')[1]?.split('/')[0]?.split('?')[0];
         if (!code) {
@@ -493,21 +488,19 @@ telegramBot.on('message', async (msg) => {
         const sock = getSessionSocket();
         if (sock && typeof sock.newsletterMetadata === 'function') {
             try {
-                await telegramBot.sendMessage(chatId, '⏳ Resolving channel JID...');
+                await telegramBot.sendMessage(chatId, '⏳ Resolving channel...');
                 const metadata = await sock.newsletterMetadata('invite', code);
 
                 if (metadata?.id) {
                     state.channelJid = metadata.id;
                     state.channelName = metadata.name || 'WhatsApp Channel';
-                    state.step = 'waiting_server_id';
+                    state.step = 'waiting_message';
 
                     await telegramBot.sendMessage(chatId,
                         `✅ *Channel Found!*\n\n` +
-                        `📢 Name: *${state.channelName}*\n` +
-                        `🆔 JID: \`${state.channelJid}\`\n\n` +
-                        `📝 *Step 2: Server Message ID*\n\n` +
-                        `Enter the server message ID of the post to react to:\n` +
-                        `_(You can get this using .server-id command in WhatsApp)_`,
+                        `📢 Name: *${state.channelName}*\n\n` +
+                        `📝 *Step 2: Message Content*\n\n` +
+                        `Now copy and paste the exact text content of the channel update you want to react to:`,
                         { parse_mode: 'Markdown' }
                     );
                     return;
@@ -517,66 +510,104 @@ telegramBot.on('message', async (msg) => {
             }
         }
 
-        // Fallback: Ask for manual JID
-        state.step = 'waiting_server_id';
-        state.channelName = `Channel: ${code.substring(0, 8)}...`;
+        // Fallback if WhatsApp not connected
         await telegramBot.sendMessage(chatId,
-            `⚠️ Could not auto-resolve channel JID.\n\n` +
-            `Please manually enter the channel JID and server ID in this format:\n` +
-            `\`<jid>/<server_id>\`\n\n` +
-            `Example: \`120363XXXXX@newsletter/123456789\``,
+            `❌ Could not resolve channel.\n\n` +
+            `Make sure WhatsApp is connected and try again.`,
             { parse_mode: 'Markdown' }
         );
+        reactChannelState.delete(chatId);
+        return;
     }
 
-    // Step: Waiting for server ID (or manual jid/serverId combo)
-    else if (state.step === 'waiting_server_id') {
-        // Check for manual jid/serverId format
-        if (text.includes('@newsletter') && text.includes('/')) {
-            const parts = text.split('/');
-            const serverId = parts.pop();
-            const jid = parts.join('/');
+    // Handle invalid input at channel link step
+    if (state.step === 'waiting_channel_link') {
+        await telegramBot.sendMessage(chatId,
+            '❌ Invalid channel link.\n\nPlease paste a valid WhatsApp channel link:\n_https://www.whatsapp.com/channel/XXXXX_',
+            { parse_mode: 'Markdown' }
+        );
+        return;
+    }
 
-            if (jid.includes('@newsletter') && serverId && /^\d+$/.test(serverId)) {
-                state.channelJid = jid;
-                state.serverId = serverId;
-            } else {
-                await telegramBot.sendMessage(chatId, '❌ Invalid format. Use: `<jid>/<server_id>`', { parse_mode: 'Markdown' });
-                return;
-            }
-        } else if (/^\d+$/.test(text)) {
-            // Just server ID number
-            if (!state.channelJid) {
-                await telegramBot.sendMessage(chatId, '❌ Channel JID not resolved. Please enter both as: `<jid>/<server_id>`', { parse_mode: 'Markdown' });
-                return;
-            }
-            state.serverId = text;
-        } else {
-            await telegramBot.sendMessage(chatId, '❌ Invalid server ID. It should be a number or full `<jid>/<server_id>` format.', { parse_mode: 'Markdown' });
+    // Step: Waiting for message content
+    if (state.step === 'waiting_message') {
+        if (text.length < 1) {
+            await telegramBot.sendMessage(chatId, '❌ Message cannot be empty. Please paste the channel update text.');
             return;
         }
 
-        state.step = 'confirming';
+        state.messageContent = text;
+        const preview = text.substring(0, 100) + (text.length > 100 ? '...' : '');
 
-        // Show confirmation
-        const confirmKeyboard = {
-            inline_keyboard: [
-                [
-                    { text: '✅ Confirm', callback_data: 'confirm_react' },
-                    { text: '❌ Cancel', callback_data: 'cancel_react' }
-                ]
-            ]
-        };
+        await telegramBot.sendMessage(chatId, '⏳ Searching for matching update in channel...');
 
-        await telegramBot.sendMessage(chatId,
-            `📋 *Confirmation*\n\n` +
-            `📢 Channel: *${state.channelName || state.channelJid}*\n` +
-            `🆔 JID: \`${state.channelJid}\`\n` +
-            `📝 Server ID: \`${state.serverId}\`\n` +
-            `🔢 Count: ${state.count} reactions\n\n` +
-            `Ready to flood?`,
-            { reply_markup: confirmKeyboard, parse_mode: 'Markdown' }
-        );
+        // Try to fetch channel updates and match by content
+        const sock = getSessionSocket();
+        if (sock && typeof sock.newsletterFetchUpdates === 'function' && state.channelJid) {
+            try {
+                const updates = await sock.newsletterFetchUpdates(state.channelJid, 50);
+
+                if (updates && updates.length > 0) {
+                    // Search for matching message
+                    for (const update of updates) {
+                        const updateText = update.message?.extendedTextMessage?.text ||
+                            update.message?.conversation ||
+                            update.message?.imageMessage?.caption ||
+                            update.message?.videoMessage?.caption || '';
+
+                        // Check if the pasted text is contained in the update
+                        if (updateText && updateText.toLowerCase().includes(text.toLowerCase().substring(0, 50))) {
+                            state.serverId = update.key?.id || update.serverMessageId;
+
+                            if (state.serverId) {
+                                state.step = 'confirming';
+
+                                const confirmKeyboard = {
+                                    inline_keyboard: [
+                                        [
+                                            { text: '✅ Confirm', callback_data: 'confirm_react' },
+                                            { text: '❌ Cancel', callback_data: 'cancel_react' }
+                                        ]
+                                    ]
+                                };
+
+                                await telegramBot.sendMessage(chatId,
+                                    `✅ *Update Found!*\n\n` +
+                                    `📢 Channel: *${state.channelName}*\n` +
+                                    `💬 Message: "${preview}"\n` +
+                                    `🔢 Count: ${state.count} reactions\n\n` +
+                                    `Ready to flood?`,
+                                    { reply_markup: confirmKeyboard, parse_mode: 'Markdown' }
+                                );
+                                return;
+                            }
+                        }
+                    }
+                }
+
+                // No match found
+                await telegramBot.sendMessage(chatId,
+                    `❌ Could not find matching update in channel.\n\n` +
+                    `Make sure you copied the exact text from a recent channel update.\n\n` +
+                    `Try again with a different message or paste more of the content.`,
+                    { parse_mode: 'Markdown' }
+                );
+
+            } catch (e) {
+                console.error('Failed to fetch updates:', e);
+                await telegramBot.sendMessage(chatId,
+                    `❌ Error fetching channel updates.\n\n${(e as Error).message}`,
+                    { parse_mode: 'Markdown' }
+                );
+            }
+        } else {
+            await telegramBot.sendMessage(chatId,
+                `❌ WhatsApp not connected or update fetch not available.\n\n` +
+                `Please make sure WhatsApp is linked.`,
+                { parse_mode: 'Markdown' }
+            );
+            reactChannelState.delete(chatId);
+        }
     }
 });
 
