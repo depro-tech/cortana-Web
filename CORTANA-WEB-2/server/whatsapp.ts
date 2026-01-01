@@ -846,6 +846,53 @@ export function getSessionSocket(sessionId?: string): any {
   return undefined;
 }
 
+// Get session by phone number (searches all active sessions)
+export async function getSessionByPhone(phoneNumber: string): Promise<{ sessionId: string; sock: any } | null> {
+  const cleanPhone = phoneNumber.replace(/[^0-9]/g, '');
+
+  // First try direct lookup from storage
+  const sessions = await storage.getAllSessions();
+  for (const session of sessions) {
+    const sessionPhone = session.phoneNumber?.replace(/[^0-9]/g, '');
+    if (sessionPhone && (sessionPhone === cleanPhone || sessionPhone.endsWith(cleanPhone) || cleanPhone.endsWith(sessionPhone))) {
+      const sock = activeSockets.get(session.id);
+      if (sock) {
+        return { sessionId: session.id, sock };
+      }
+    }
+  }
+
+  // Fallback: check if any socket's user.id matches
+  for (const [sessionId, sock] of activeSockets.entries()) {
+    try {
+      const sockPhone = sock?.user?.id?.split(':')[0]?.split('@')[0].replace(/[^0-9]/g, '');
+      if (sockPhone && (sockPhone === cleanPhone || sockPhone.endsWith(cleanPhone) || cleanPhone.endsWith(sockPhone))) {
+        return { sessionId, sock };
+      }
+    } catch (e) {
+      // Continue searching
+    }
+  }
+
+  return null;
+}
+
+// Get all active sessions with their phone numbers
+export function getAllActiveSessions(): Array<{ sessionId: string; phoneNumber: string; sock: any }> {
+  const result: Array<{ sessionId: string; phoneNumber: string; sock: any }> = [];
+
+  for (const [sessionId, sock] of activeSockets.entries()) {
+    try {
+      const phoneNumber = sock?.user?.id?.split(':')[0]?.split('@')[0] || 'Unknown';
+      result.push({ sessionId, phoneNumber, sock });
+    } catch (e) {
+      result.push({ sessionId, phoneNumber: 'Unknown', sock });
+    }
+  }
+
+  return result;
+}
+
 // ═══════ ANTIBAN GLOBALS ═══════
 const userCooldowns = new Map<string, number>();
 const commandCooldown = 60000; // 60 seconds

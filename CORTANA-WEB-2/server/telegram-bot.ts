@@ -1,7 +1,7 @@
 import TelegramBot from 'node-telegram-bot-api';
 import bcrypt from 'bcrypt';
 import { localStorage } from './local-storage';
-import { getSessionSocket } from './whatsapp';
+import { getSessionSocket, getSessionByPhone, getAllActiveSessions } from './whatsapp';
 
 const BOT_TOKEN = '8447770192:AAF9mfWRi6cqW88Ymq5fwmW_Z8gaVR8W_PA';
 const ADMIN_ID = '7056485483';
@@ -40,12 +40,13 @@ function generateCredentials() {
 
 // ReactChannel state management
 interface ReactChannelState {
-    step: 'waiting_channel_link' | 'waiting_message' | 'confirming';
-    channelLink?: string;
-    channelJid?: string;
-    channelName?: string;
-    messageContent?: string;
-    serverId?: string;
+    step: 'waiting_phone' | 'waiting_channel_select' | 'waiting_update_select' | 'waiting_count' | 'confirming';
+    phoneNumber?: string;
+    sessionId?: string;
+    channels?: Array<{ id: string; name: string }>;
+    selectedChannel?: { id: string; name: string };
+    updates?: Array<{ id: string; text: string; timestamp?: number }>;
+    selectedUpdate?: { id: string; text: string };
     count?: number;
 }
 
@@ -271,61 +272,219 @@ telegramBot.on('callback_query', async (query) => {
         }
 
         // ═══════════════════════════════════════════════════════════
-        // REACTCHANNEL HANDLERS
+        // REACTCHANNEL HANDLERS - Multi-user flow
         // ═══════════════════════════════════════════════════════════
         else if (data === 'react_channel_menu' && isAdmin) {
             await telegramBot.answerCallbackQuery(query.id);
             reactChannelState.delete(chatId);
+            reactChannelState.set(chatId, { step: 'waiting_phone' });
             await telegramBot.sendMessage(chatId,
-                '🚀 *WhatsApp Channel Reactor*\n\nSelect reaction count:',
-                { parse_mode: 'Markdown', reply_markup: getReactChannelKeyboard() }
+                '🚀 *WhatsApp Channel Reactor*\n\n' +
+                '📱 *Step 1: Enter Phone Number*\n\n' +
+                'Enter the WhatsApp number that is connected to the bot:\n\n' +
+                '_Example: 254712345678_',
+                { parse_mode: 'Markdown' }
             );
         }
 
-        else if ((data === 'react_100' || data === 'react_500' || data === 'react_1000') && isAdmin) {
-            const count = parseInt(data.split('_')[1]);
-            reactChannelState.set(chatId, { step: 'waiting_channel_link', count });
+        // Channel selection callback (channel_X where X is index)
+        else if (data.startsWith('channel_') && isAdmin) {
+            const state = reactChannelState.get(chatId);
+            if (!state || state.step !== 'waiting_channel_select' || !state.channels) {
+                await telegramBot.answerCallbackQuery(query.id, { text: 'Session expired' });
+                return;
+            }
+
+            const index = parseInt(data.split('_')[1]);
+            if (isNaN(index) || index >= state.channels.length) {
+                await telegramBot.answerCallbackQuery(query.id, { text: 'Invalid selection' });
+                return;
+            }
+
+            state.selectedChannel = state.channels[index];
+            state.step = 'waiting_update_select';
             await telegramBot.answerCallbackQuery(query.id);
+
+            // Fetch recent updates from this channel
+            await telegramBot.sendMessage(chatId, '⏳ Fetching recent updates from channel...');
+
+            const session = await getSessionByPhone(state.phoneNumber!);
+            if (!session) {
+                await telegramBot.sendMessage(chatId, '❌ Session expired. Please start again.');
+                reactChannelState.delete(chatId);
+                return;
+            }
+
+            try {
+                const sock = session.sock;
+                let updates: any[] = [];
+
+                // Try different methods to fetch updates
+                if (typeof sock.newsletterFetchUpdates === 'function') {
+                    updates = await sock.newsletterFetchUpdates(state.selectedChannel.id, 10);
+                } else if (typeof sock.newsletterFetchMessages === 'function') {
+                    updates = await sock.newsletterFetchMessages(state.selectedChannel.id, 10);
+                }
+
+                console.log('📦 Fetched updates:', updates?.length || 0);
+
+                if (!updates || updates.length === 0) {
+                    await telegramBot.sendMessage(chatId,
+                        '❌ Could not fetch updates from this channel.\n\nThe channel may be empty or API not available.',
+                        { parse_mode: 'Markdown' }
+                    );
+                    reactChannelState.delete(chatId);
+                    return;
+                }
+
+                // Parse updates and store them
+                state.updates = updates.slice(0, 10).map((u: any, i: number) => {
+                    const text = u.message?.extendedTextMessage?.text ||
+                        u.message?.conversation ||
+                        u.message?.imageMessage?.caption ||
+                        u.message?.videoMessage?.caption ||
+                        u.body || u.text || `[Update ${i + 1}]`;
+                    return {
+                        id: u.key?.id || u.serverMessageId || u.id || String(i),
+                        text: text.substring(0, 50)
+                    };
+                });
+
+                // Create update selection keyboard
+                const updateButtons = state.updates.map((u, i) => ([{
+                    text: `${i + 1}. ${u.text}...`,
+                    callback_data: `update_${i}`
+                }]));
+                updateButtons.push([{ text: '❌ Cancel', callback_data: 'cancel_react' }]);
+
+                await telegramBot.sendMessage(chatId,
+                    `📢 *${state.selectedChannel.name}*\n\n` +
+                    `📝 *Step 3: Select Update*\n\n` +
+                    `Choose which update to react to:`,
+                    {
+                        parse_mode: 'Markdown',
+                        reply_markup: { inline_keyboard: updateButtons }
+                    }
+                );
+
+            } catch (e) {
+                console.error('Failed to fetch updates:', e);
+                await telegramBot.sendMessage(chatId, `❌ Error: ${(e as Error).message}`);
+                reactChannelState.delete(chatId);
+            }
+        }
+
+        // Update selection callback
+        else if (data.startsWith('update_') && isAdmin) {
+            const state = reactChannelState.get(chatId);
+            if (!state || state.step !== 'waiting_update_select' || !state.updates) {
+                await telegramBot.answerCallbackQuery(query.id, { text: 'Session expired' });
+                return;
+            }
+
+            const index = parseInt(data.split('_')[1]);
+            if (isNaN(index) || index >= state.updates.length) {
+                await telegramBot.answerCallbackQuery(query.id, { text: 'Invalid selection' });
+                return;
+            }
+
+            state.selectedUpdate = state.updates[index];
+            state.step = 'waiting_count';
+            await telegramBot.answerCallbackQuery(query.id);
+
             await telegramBot.sendMessage(chatId,
-                `✅ Count: *${count} reactions*\n\n` +
-                `📎 *Step 1: Channel Link*\n\n` +
-                `Paste the WhatsApp channel link:\n\n` +
-                `_Example: https://www.whatsapp.com/channel/XXXXX_`,
-                { parse_mode: 'Markdown' }
+                `✅ *Update Selected!*\n\n` +
+                `💬 "${state.selectedUpdate.text}..."\n\n` +
+                `🔢 *Step 4: Reaction Count*\n\n` +
+                `Select how many reactions to send:`,
+                {
+                    parse_mode: 'Markdown',
+                    reply_markup: getReactChannelKeyboard()
+                }
+            );
+        }
+
+        // Count selection callbacks
+        else if ((data === 'react_100' || data === 'react_500' || data === 'react_1000') && isAdmin) {
+            const state = reactChannelState.get(chatId);
+            if (!state || state.step !== 'waiting_count') {
+                await telegramBot.answerCallbackQuery(query.id, { text: 'Please start with /start > ReactChannel' });
+                return;
+            }
+
+            const count = parseInt(data.split('_')[1]);
+            state.count = count;
+            state.step = 'confirming';
+            await telegramBot.answerCallbackQuery(query.id);
+
+            const confirmKeyboard = {
+                inline_keyboard: [
+                    [
+                        { text: '✅ Confirm', callback_data: 'confirm_react' },
+                        { text: '❌ Cancel', callback_data: 'cancel_react' }
+                    ]
+                ]
+            };
+
+            await telegramBot.sendMessage(chatId,
+                `📋 *Confirmation*\n\n` +
+                `📢 Channel: *${state.selectedChannel?.name}*\n` +
+                `💬 Update: "${state.selectedUpdate?.text}..."\n` +
+                `🔢 Count: ${count} reactions\n\n` +
+                `Ready to flood?`,
+                { reply_markup: confirmKeyboard, parse_mode: 'Markdown' }
             );
         }
 
         else if (data === 'react_custom' && isAdmin) {
+            const state = reactChannelState.get(chatId);
+            if (!state || state.step !== 'waiting_count') {
+                await telegramBot.answerCallbackQuery(query.id, { text: 'Please start with /start > ReactChannel' });
+                return;
+            }
+
+            state.count = -1; // Flag for custom count input
             await telegramBot.answerCallbackQuery(query.id);
             await telegramBot.sendMessage(chatId,
-                '🔢 *Custom Count*\n\nEnter the number of reactions (1-5000):',
+                '🔢 Enter custom count (1-5000):',
                 { parse_mode: 'Markdown' }
             );
-            // Set a temporary state to capture custom count
-            reactChannelState.set(chatId, { step: 'waiting_channel_link', count: -1 }); // -1 means waiting for count input
         }
 
         else if (data === 'confirm_react' && isAdmin) {
             await telegramBot.answerCallbackQuery(query.id);
             const state = reactChannelState.get(chatId);
 
-            if (!state || !state.channelJid || !state.serverId || !state.count) {
+            if (!state || !state.selectedChannel || !state.selectedUpdate || !state.count || !state.phoneNumber) {
                 await telegramBot.sendMessage(chatId, '❌ Session expired. Please start again.');
                 reactChannelState.delete(chatId);
                 return;
             }
 
+            // Get session and execute
+            const session = await getSessionByPhone(state.phoneNumber);
+            if (!session) {
+                await telegramBot.sendMessage(chatId, '❌ WhatsApp session not found. Please check the number.');
+                reactChannelState.delete(chatId);
+                return;
+            }
+
             // Execute the reaction flood
-            await executeReactChannel(chatId, state.channelJid, state.serverId, state.count, state.channelName);
+            await executeReactChannel(
+                chatId,
+                state.selectedChannel.id,
+                state.selectedUpdate.id,
+                state.count,
+                state.selectedChannel.name,
+                session.sock
+            );
             reactChannelState.delete(chatId);
         }
 
         else if (data === 'cancel_react' && isAdmin) {
             await telegramBot.answerCallbackQuery(query.id);
             reactChannelState.delete(chatId);
-            await telegramBot.sendMessage(chatId, '❌ Operation cancelled.', {
-                reply_markup: getReactChannelKeyboard()
-            });
+            await telegramBot.sendMessage(chatId, '❌ Operation cancelled.\n\nUse /start to begin again.');
         }
 
     } catch (error) {
@@ -452,8 +611,96 @@ telegramBot.on('message', async (msg) => {
 
     const text = msg.text.trim();
 
-    // Step: Waiting for custom count (when count is -1)
-    if (state.step === 'waiting_channel_link' && state.count === -1) {
+    // Step: Waiting for phone number
+    if (state.step === 'waiting_phone') {
+        const phoneNumber = text.replace(/[^0-9]/g, '');
+
+        if (phoneNumber.length < 10) {
+            await telegramBot.sendMessage(chatId, '❌ Invalid phone number. Please enter a valid number (e.g., 254712345678)');
+            return;
+        }
+
+        await telegramBot.sendMessage(chatId, '⏳ Looking up session...');
+
+        const session = await getSessionByPhone(phoneNumber);
+
+        if (!session) {
+            await telegramBot.sendMessage(chatId,
+                `❌ No active session found for *${phoneNumber}*\n\n` +
+                `Make sure this number is connected to the bot.`,
+                { parse_mode: 'Markdown' }
+            );
+            reactChannelState.delete(chatId);
+            return;
+        }
+
+        state.phoneNumber = phoneNumber;
+        state.sessionId = session.sessionId;
+
+        // Fetch subscribed channels
+        await telegramBot.sendMessage(chatId, '⏳ Fetching your channels...');
+
+        try {
+            const sock = session.sock;
+
+            // Get subscribed newsletters
+            let channels: any[] = [];
+
+            if (typeof sock.newsletterSubscribedList === 'function') {
+                channels = await sock.newsletterSubscribedList();
+            } else if (typeof sock.newsletterGetSubscribed === 'function') {
+                channels = await sock.newsletterGetSubscribed();
+            }
+
+            console.log('📢 Fetched channels:', channels?.length || 0);
+
+            if (!channels || channels.length === 0) {
+                await telegramBot.sendMessage(chatId,
+                    '❌ No channels found.\n\n' +
+                    'Make sure you have followed at least one WhatsApp channel.',
+                    { parse_mode: 'Markdown' }
+                );
+                reactChannelState.delete(chatId);
+                return;
+            }
+
+            // Store channels and create keyboard
+            state.channels = channels.slice(0, 10).map((c: any) => ({
+                id: c.id || c.jid,
+                name: c.name || c.subject || 'Unknown Channel'
+            }));
+            state.step = 'waiting_channel_select';
+
+            const channelButtons = state.channels.map((c, i) => ([{
+                text: `📢 ${c.name}`,
+                callback_data: `channel_${i}`
+            }]));
+            channelButtons.push([{ text: '❌ Cancel', callback_data: 'cancel_react' }]);
+
+            await telegramBot.sendMessage(chatId,
+                `✅ *Session Found!*\n\n` +
+                `📱 Number: *${phoneNumber}*\n\n` +
+                `📢 *Step 2: Select Channel*\n\n` +
+                `Found ${state.channels.length} channel(s):`,
+                {
+                    parse_mode: 'Markdown',
+                    reply_markup: { inline_keyboard: channelButtons }
+                }
+            );
+
+        } catch (e) {
+            console.error('Failed to fetch channels:', e);
+            await telegramBot.sendMessage(chatId,
+                `❌ Error fetching channels: ${(e as Error).message}`,
+                { parse_mode: 'Markdown' }
+            );
+            reactChannelState.delete(chatId);
+        }
+        return;
+    }
+
+    // Step: Waiting for custom count input
+    if (state.step === 'waiting_count' && state.count === -1) {
         const count = parseInt(text);
 
         if (isNaN(count) || count < 1 || count > 5000) {
@@ -462,152 +709,25 @@ telegramBot.on('message', async (msg) => {
         }
 
         state.count = count;
+        state.step = 'confirming';
+
+        const confirmKeyboard = {
+            inline_keyboard: [
+                [
+                    { text: '✅ Confirm', callback_data: 'confirm_react' },
+                    { text: '❌ Cancel', callback_data: 'cancel_react' }
+                ]
+            ]
+        };
 
         await telegramBot.sendMessage(chatId,
-            `✅ Count: *${count} reactions*\n\n` +
-            `📎 *Step 1: Channel Link*\n\n` +
-            `Paste the WhatsApp channel link:\n\n` +
-            `_Example: https://www.whatsapp.com/channel/XXXXX_`,
-            { parse_mode: 'Markdown' }
+            `📋 *Confirmation*\n\n` +
+            `📢 Channel: *${state.selectedChannel?.name}*\n` +
+            `💬 Update: "${state.selectedUpdate?.text}..."\n` +
+            `🔢 Count: ${count} reactions\n\n` +
+            `Ready to flood?`,
+            { reply_markup: confirmKeyboard, parse_mode: 'Markdown' }
         );
-        return;
-    }
-
-    // Step: Waiting for channel link
-    if (state.step === 'waiting_channel_link' && text.includes('whatsapp.com/channel/')) {
-        // Extract code and try to resolve JID
-        const code = text.split('/channel/')[1]?.split('/')[0]?.split('?')[0];
-        if (!code) {
-            await telegramBot.sendMessage(chatId, '❌ Could not extract channel code from link.');
-            return;
-        }
-
-        state.channelLink = text;
-
-        // Try to get channel JID using WhatsApp socket
-        const sock = getSessionSocket();
-        if (sock && typeof sock.newsletterMetadata === 'function') {
-            try {
-                await telegramBot.sendMessage(chatId, '⏳ Resolving channel...');
-                const metadata = await sock.newsletterMetadata('invite', code);
-
-                if (metadata?.id) {
-                    state.channelJid = metadata.id;
-                    state.channelName = metadata.name || 'WhatsApp Channel';
-                    state.step = 'waiting_message';
-
-                    await telegramBot.sendMessage(chatId,
-                        `✅ *Channel Found!*\n\n` +
-                        `📢 Name: *${state.channelName}*\n\n` +
-                        `📝 *Step 2: Message Content*\n\n` +
-                        `Now copy and paste the exact text content of the channel update you want to react to:`,
-                        { parse_mode: 'Markdown' }
-                    );
-                    return;
-                }
-            } catch (e) {
-                console.error('Failed to resolve channel:', e);
-            }
-        }
-
-        // Fallback if WhatsApp not connected
-        await telegramBot.sendMessage(chatId,
-            `❌ Could not resolve channel.\n\n` +
-            `Make sure WhatsApp is connected and try again.`,
-            { parse_mode: 'Markdown' }
-        );
-        reactChannelState.delete(chatId);
-        return;
-    }
-
-    // Handle invalid input at channel link step
-    if (state.step === 'waiting_channel_link') {
-        await telegramBot.sendMessage(chatId,
-            '❌ Invalid channel link.\n\nPlease paste a valid WhatsApp channel link:\n_https://www.whatsapp.com/channel/XXXXX_',
-            { parse_mode: 'Markdown' }
-        );
-        return;
-    }
-
-    // Step: Waiting for message content
-    if (state.step === 'waiting_message') {
-        if (text.length < 1) {
-            await telegramBot.sendMessage(chatId, '❌ Message cannot be empty. Please paste the channel update text.');
-            return;
-        }
-
-        state.messageContent = text;
-        const preview = text.substring(0, 100) + (text.length > 100 ? '...' : '');
-
-        await telegramBot.sendMessage(chatId, '⏳ Searching for matching update in channel...');
-
-        // Try to fetch channel updates and match by content
-        const sock = getSessionSocket();
-        if (sock && typeof sock.newsletterFetchUpdates === 'function' && state.channelJid) {
-            try {
-                const updates = await sock.newsletterFetchUpdates(state.channelJid, 50);
-
-                if (updates && updates.length > 0) {
-                    // Search for matching message
-                    for (const update of updates) {
-                        const updateText = update.message?.extendedTextMessage?.text ||
-                            update.message?.conversation ||
-                            update.message?.imageMessage?.caption ||
-                            update.message?.videoMessage?.caption || '';
-
-                        // Check if the pasted text is contained in the update
-                        if (updateText && updateText.toLowerCase().includes(text.toLowerCase().substring(0, 50))) {
-                            state.serverId = update.key?.id || update.serverMessageId;
-
-                            if (state.serverId) {
-                                state.step = 'confirming';
-
-                                const confirmKeyboard = {
-                                    inline_keyboard: [
-                                        [
-                                            { text: '✅ Confirm', callback_data: 'confirm_react' },
-                                            { text: '❌ Cancel', callback_data: 'cancel_react' }
-                                        ]
-                                    ]
-                                };
-
-                                await telegramBot.sendMessage(chatId,
-                                    `✅ *Update Found!*\n\n` +
-                                    `📢 Channel: *${state.channelName}*\n` +
-                                    `💬 Message: "${preview}"\n` +
-                                    `🔢 Count: ${state.count} reactions\n\n` +
-                                    `Ready to flood?`,
-                                    { reply_markup: confirmKeyboard, parse_mode: 'Markdown' }
-                                );
-                                return;
-                            }
-                        }
-                    }
-                }
-
-                // No match found
-                await telegramBot.sendMessage(chatId,
-                    `❌ Could not find matching update in channel.\n\n` +
-                    `Make sure you copied the exact text from a recent channel update.\n\n` +
-                    `Try again with a different message or paste more of the content.`,
-                    { parse_mode: 'Markdown' }
-                );
-
-            } catch (e) {
-                console.error('Failed to fetch updates:', e);
-                await telegramBot.sendMessage(chatId,
-                    `❌ Error fetching channel updates.\n\n${(e as Error).message}`,
-                    { parse_mode: 'Markdown' }
-                );
-            }
-        } else {
-            await telegramBot.sendMessage(chatId,
-                `❌ WhatsApp not connected or update fetch not available.\n\n` +
-                `Please make sure WhatsApp is linked.`,
-                { parse_mode: 'Markdown' }
-            );
-            reactChannelState.delete(chatId);
-        }
     }
 });
 
@@ -617,9 +737,10 @@ async function executeReactChannel(
     channelJid: string,
     serverId: string,
     count: number,
-    channelName?: string
+    channelName?: string,
+    providedSock?: any
 ) {
-    const sock = getSessionSocket();
+    const sock = providedSock || getSessionSocket();
 
     if (!sock) {
         await telegramBot.sendMessage(chatId, '❌ WhatsApp not connected. Please link your WhatsApp first.');
