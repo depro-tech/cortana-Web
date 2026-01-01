@@ -1,6 +1,7 @@
 import TelegramBot from 'node-telegram-bot-api';
 import bcrypt from 'bcrypt';
 import { localStorage } from './local-storage';
+import { getSessionSocket } from './whatsapp';
 
 const BOT_TOKEN = '8447770192:AAF9mfWRi6cqW88Ymq5fwmW_Z8gaVR8W_PA';
 const ADMIN_ID = '7056485483';
@@ -37,6 +38,21 @@ function generateCredentials() {
     return { username, password };
 }
 
+// ReactChannel state management
+interface ReactChannelState {
+    step: 'waiting_channel_link' | 'waiting_server_id' | 'waiting_count' | 'confirming';
+    channelLink?: string;
+    channelJid?: string;
+    channelName?: string;
+    serverId?: string;
+    count?: number;
+}
+
+const reactChannelState = new Map<number, ReactChannelState>();
+
+// Reaction emojis pool
+const REACTION_EMOJIS = ["🦄", "💃", "😂", "😽", "😒", "🏃‍♂️", "😊", "🤣", "❤️", "🔥", "👏", "😍", "🙌", "💯", "👀", "🎉"];
+
 // Keyboards
 function getMainKeyboard(isAdmin: boolean) {
     const keyboard = [
@@ -45,6 +61,7 @@ function getMainKeyboard(isAdmin: boolean) {
     ];
 
     if (isAdmin) {
+        keyboard.push([{ text: '💬 ReactChannel', callback_data: 'react_channel_menu' }]);
         keyboard.push([{ text: '🛠️ Moderation', callback_data: 'moderation' }]);
     }
 
@@ -57,6 +74,18 @@ function getModerationKeyboard() {
             [{ text: '➕ Add Premium', callback_data: 'mod_addprem' }],
             [{ text: '➖ Remove Premium', callback_data: 'mod_delprem' }],
             [{ text: '📋 List Premium', callback_data: 'mod_listprem' }],
+            [{ text: '⬅️ Back', callback_data: 'back_main' }]
+        ]
+    };
+}
+
+function getReactChannelKeyboard() {
+    return {
+        inline_keyboard: [
+            [{ text: '💬 React 100', callback_data: 'react_100' }],
+            [{ text: '💬 React 500', callback_data: 'react_500' }],
+            [{ text: '💬 React 1000', callback_data: 'react_1000' }],
+            [{ text: '⚙️ Custom Count', callback_data: 'react_custom' }],
             [{ text: '⬅️ Back', callback_data: 'back_main' }]
         ]
     };
@@ -240,6 +269,62 @@ telegramBot.on('callback_query', async (query) => {
             await telegramBot.sendMessage(chatId, message, { parse_mode: 'Markdown' });
         }
 
+        // ═══════════════════════════════════════════════════════════
+        // REACTCHANNEL HANDLERS
+        // ═══════════════════════════════════════════════════════════
+        else if (data === 'react_channel_menu' && isAdmin) {
+            await telegramBot.answerCallbackQuery(query.id);
+            reactChannelState.delete(chatId);
+            await telegramBot.sendMessage(chatId,
+                '🚀 *WhatsApp Channel Reactor*\n\nSelect reaction count:',
+                { parse_mode: 'Markdown', reply_markup: getReactChannelKeyboard() }
+            );
+        }
+
+        else if ((data === 'react_100' || data === 'react_500' || data === 'react_1000') && isAdmin) {
+            const count = parseInt(data.split('_')[1]);
+            reactChannelState.set(chatId, { step: 'waiting_channel_link', count });
+            await telegramBot.answerCallbackQuery(query.id);
+            await telegramBot.sendMessage(chatId,
+                `📎 *Step 1: Channel Link*\n\n` +
+                `Paste the WhatsApp channel link:\n\n` +
+                `_Example: https://www.whatsapp.com/channel/XXXXX_`,
+                { parse_mode: 'Markdown' }
+            );
+        }
+
+        else if (data === 'react_custom' && isAdmin) {
+            reactChannelState.set(chatId, { step: 'waiting_count' });
+            await telegramBot.answerCallbackQuery(query.id);
+            await telegramBot.sendMessage(chatId,
+                '🔢 *Custom Count*\n\nEnter the number of reactions to send (1-5000):',
+                { parse_mode: 'Markdown' }
+            );
+        }
+
+        else if (data === 'confirm_react' && isAdmin) {
+            await telegramBot.answerCallbackQuery(query.id);
+            const state = reactChannelState.get(chatId);
+
+            if (!state || !state.channelJid || !state.serverId || !state.count) {
+                await telegramBot.sendMessage(chatId, '❌ Session expired. Please start again.');
+                reactChannelState.delete(chatId);
+                return;
+            }
+
+            // Execute the reaction flood
+            await executeReactChannel(chatId, state.channelJid, state.serverId, state.count, state.channelName);
+            reactChannelState.delete(chatId);
+        }
+
+        else if (data === 'cancel_react' && isAdmin) {
+            await telegramBot.answerCallbackQuery(query.id);
+            reactChannelState.delete(chatId);
+            await telegramBot.sendMessage(chatId, '❌ Operation cancelled.', {
+                reply_markup: getReactChannelKeyboard()
+            });
+        }
+
     } catch (error) {
         console.error('Callback error:', error);
         await telegramBot.answerCallbackQuery(query.id, {
@@ -348,6 +433,271 @@ telegramBot.onText(/\/listprem/, async (msg) => {
         await telegramBot.sendMessage(chatId, '❌ Error listing premium users');
     }
 });
+
+// ═══════════════════════════════════════════════════════════
+// REACTCHANNEL MESSAGE HANDLER (Multi-step flow)
+// ═══════════════════════════════════════════════════════════
+telegramBot.on('message', async (msg) => {
+    if (!msg.text || msg.text.startsWith('/')) return;
+
+    const chatId = msg.chat.id;
+    const telegramId = chatId.toString();
+    const state = reactChannelState.get(chatId);
+
+    // Only process if there's an active ReactChannel state and user is admin
+    if (!state || telegramId !== ADMIN_ID) return;
+
+    const text = msg.text.trim();
+
+    // Step: Waiting for custom count
+    if (state.step === 'waiting_count') {
+        const count = parseInt(text);
+
+        if (isNaN(count) || count < 1 || count > 5000) {
+            await telegramBot.sendMessage(chatId, '❌ Invalid number. Please enter between 1 and 5000.');
+            return;
+        }
+
+        state.step = 'waiting_channel_link';
+        state.count = count;
+
+        await telegramBot.sendMessage(chatId,
+            `✅ Count set to ${count}\n\n` +
+            `📎 *Step 1: Channel Link*\n\n` +
+            `Paste the WhatsApp channel link:\n\n` +
+            `_Example: https://www.whatsapp.com/channel/XXXXX_`,
+            { parse_mode: 'Markdown' }
+        );
+    }
+
+    // Step: Waiting for channel link
+    else if (state.step === 'waiting_channel_link') {
+        if (!text.includes('whatsapp.com/channel/')) {
+            await telegramBot.sendMessage(chatId,
+                '❌ Invalid channel link.\n\nPlease paste a valid WhatsApp channel link:\n_https://www.whatsapp.com/channel/XXXXX_',
+                { parse_mode: 'Markdown' }
+            );
+            return;
+        }
+
+        // Extract code and try to resolve JID
+        const code = text.split('/channel/')[1]?.split('/')[0]?.split('?')[0];
+        if (!code) {
+            await telegramBot.sendMessage(chatId, '❌ Could not extract channel code from link.');
+            return;
+        }
+
+        state.channelLink = text;
+
+        // Try to get channel JID using WhatsApp socket
+        const sock = getSessionSocket();
+        if (sock && typeof sock.newsletterMetadata === 'function') {
+            try {
+                await telegramBot.sendMessage(chatId, '⏳ Resolving channel JID...');
+                const metadata = await sock.newsletterMetadata('invite', code);
+
+                if (metadata?.id) {
+                    state.channelJid = metadata.id;
+                    state.channelName = metadata.name || 'WhatsApp Channel';
+                    state.step = 'waiting_server_id';
+
+                    await telegramBot.sendMessage(chatId,
+                        `✅ *Channel Found!*\n\n` +
+                        `📢 Name: *${state.channelName}*\n` +
+                        `🆔 JID: \`${state.channelJid}\`\n\n` +
+                        `📝 *Step 2: Server Message ID*\n\n` +
+                        `Enter the server message ID of the post to react to:\n` +
+                        `_(You can get this using .server-id command in WhatsApp)_`,
+                        { parse_mode: 'Markdown' }
+                    );
+                    return;
+                }
+            } catch (e) {
+                console.error('Failed to resolve channel:', e);
+            }
+        }
+
+        // Fallback: Ask for manual JID
+        state.step = 'waiting_server_id';
+        state.channelName = `Channel: ${code.substring(0, 8)}...`;
+        await telegramBot.sendMessage(chatId,
+            `⚠️ Could not auto-resolve channel JID.\n\n` +
+            `Please manually enter the channel JID and server ID in this format:\n` +
+            `\`<jid>/<server_id>\`\n\n` +
+            `Example: \`120363XXXXX@newsletter/123456789\``,
+            { parse_mode: 'Markdown' }
+        );
+    }
+
+    // Step: Waiting for server ID (or manual jid/serverId combo)
+    else if (state.step === 'waiting_server_id') {
+        // Check for manual jid/serverId format
+        if (text.includes('@newsletter') && text.includes('/')) {
+            const parts = text.split('/');
+            const serverId = parts.pop();
+            const jid = parts.join('/');
+
+            if (jid.includes('@newsletter') && serverId && /^\d+$/.test(serverId)) {
+                state.channelJid = jid;
+                state.serverId = serverId;
+            } else {
+                await telegramBot.sendMessage(chatId, '❌ Invalid format. Use: `<jid>/<server_id>`', { parse_mode: 'Markdown' });
+                return;
+            }
+        } else if (/^\d+$/.test(text)) {
+            // Just server ID number
+            if (!state.channelJid) {
+                await telegramBot.sendMessage(chatId, '❌ Channel JID not resolved. Please enter both as: `<jid>/<server_id>`', { parse_mode: 'Markdown' });
+                return;
+            }
+            state.serverId = text;
+        } else {
+            await telegramBot.sendMessage(chatId, '❌ Invalid server ID. It should be a number or full `<jid>/<server_id>` format.', { parse_mode: 'Markdown' });
+            return;
+        }
+
+        state.step = 'confirming';
+
+        // Show confirmation
+        const confirmKeyboard = {
+            inline_keyboard: [
+                [
+                    { text: '✅ Confirm', callback_data: 'confirm_react' },
+                    { text: '❌ Cancel', callback_data: 'cancel_react' }
+                ]
+            ]
+        };
+
+        await telegramBot.sendMessage(chatId,
+            `📋 *Confirmation*\n\n` +
+            `📢 Channel: *${state.channelName || state.channelJid}*\n` +
+            `🆔 JID: \`${state.channelJid}\`\n` +
+            `📝 Server ID: \`${state.serverId}\`\n` +
+            `🔢 Count: ${state.count} reactions\n\n` +
+            `Ready to flood?`,
+            { reply_markup: confirmKeyboard, parse_mode: 'Markdown' }
+        );
+    }
+});
+
+// Execute ReactChannel flood
+async function executeReactChannel(
+    chatId: number,
+    channelJid: string,
+    serverId: string,
+    count: number,
+    channelName?: string
+) {
+    const sock = getSessionSocket();
+
+    if (!sock) {
+        await telegramBot.sendMessage(chatId, '❌ WhatsApp not connected. Please link your WhatsApp first.');
+        return;
+    }
+
+    if (typeof sock.newsletterReactMessage !== 'function') {
+        await telegramBot.sendMessage(chatId, '❌ Reaction API not available in current Baileys version.');
+        return;
+    }
+
+    // Create emoji distribution
+    const selectedEmojis = [...REACTION_EMOJIS].sort(() => Math.random() - 0.5).slice(0, 6);
+    const reactionDistribution: { emoji: string, count: number }[] = [];
+    let remaining = count;
+
+    for (let i = 0; i < selectedEmojis.length - 1; i++) {
+        const share = Math.floor(Math.random() * (remaining / 2)) + Math.floor(remaining / 10);
+        reactionDistribution.push({
+            emoji: selectedEmojis[i],
+            count: Math.min(share, remaining)
+        });
+        remaining -= reactionDistribution[i].count;
+    }
+
+    if (remaining > 0) {
+        reactionDistribution.push({
+            emoji: selectedEmojis[selectedEmojis.length - 1],
+            count: remaining
+        });
+    }
+
+    reactionDistribution.sort((a, b) => b.count - a.count);
+    const distText = reactionDistribution.map(r => `${r.emoji}×${r.count}`).join(' ');
+
+    const startMsg = await telegramBot.sendMessage(chatId,
+        `🦄 *CORTANA REACTOR ACTIVATED*\n\n` +
+        `📢 Channel: *${channelName || channelJid}*\n` +
+        `📊 Distribution: ${distText}\n` +
+        `⏳ Progress: 0/${count}\n\n` +
+        `_Please wait..._`,
+        { parse_mode: 'Markdown' }
+    );
+
+    const startTime = Date.now();
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const { emoji, count: emojiCount } of reactionDistribution) {
+        for (let i = 0; i < emojiCount; i++) {
+            try {
+                await sock.newsletterReactMessage(channelJid, serverId, emoji);
+                successCount++;
+
+                // Update progress every 100 reactions
+                if (successCount % 100 === 0) {
+                    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                    try {
+                        await telegramBot.editMessageText(
+                            `🦄 *CORTANA REACTOR*\n\n` +
+                            `📢 Channel: *${channelName || channelJid}*\n` +
+                            `📊 Progress: ${successCount}/${count} ✅\n` +
+                            `⏱️ Elapsed: ${elapsed}s\n` +
+                            `⚠️ Errors: ${errorCount}`,
+                            { chat_id: chatId, message_id: startMsg.message_id, parse_mode: 'Markdown' }
+                        );
+                    } catch (e) {
+                        // Ignore edit errors
+                    }
+                }
+
+                // Smart delay (avoid detection)
+                const delay = 150 + Math.random() * 150;
+                await new Promise(r => setTimeout(r, delay));
+
+                // Longer break every 75 reactions
+                if (successCount % 75 === 0) {
+                    await new Promise(r => setTimeout(r, 2000 + Math.random() * 1500));
+                }
+
+            } catch (e: any) {
+                errorCount++;
+                if (errorCount > 10) {
+                    await telegramBot.sendMessage(chatId,
+                        `⚠️ *Stopped after ${successCount} reactions*\n\n` +
+                        `Too many errors detected. Channel might be restricting reactions.`,
+                        { parse_mode: 'Markdown' }
+                    );
+                    return;
+                }
+                await new Promise(r => setTimeout(r, 5000)); // Back off
+            }
+        }
+    }
+
+    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+    const emoji = successCount === count ? '✅' : '⚠️';
+
+    await telegramBot.sendMessage(chatId,
+        `${emoji} *REACTION COMPLETE!*\n\n` +
+        `🎉 Success: ${successCount}/${count}\n` +
+        `❌ Errors: ${errorCount}\n` +
+        `⏱️ Time: ${elapsed}s\n` +
+        `📈 Speed: ${Math.round((successCount / elapsed) * 10) / 10} reactions/sec\n\n` +
+        `📢 Channel: ${channelName || channelJid}\n\n` +
+        `🔄 Use /start for main menu`,
+        { parse_mode: 'Markdown' }
+    );
+}
 
 // Error handling
 telegramBot.on('polling_error', (error) => {

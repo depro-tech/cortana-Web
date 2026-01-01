@@ -90,79 +90,176 @@ registerCommand({
 registerCommand({
     name: "reactchannel",
     aliases: ["react-channel", "ch-react"],
-    description: "React to a channel update with 1000 reactions",
+    description: "React to a channel update with reactions (reply to update)",
     category: "channel",
-    usage: ".reactchannel <channel_jid>/<server_id>",
+    usage: ".reactchannel [count]",
     ownerOnly: true,
-    execute: async ({ args, reply, sock }) => {
-        const input = args.join("").trim();
+    execute: async ({ args, msg, reply, sock }) => {
+        // Get the replied message context
+        const quotedMsg = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage ||
+            msg.message?.imageMessage?.contextInfo?.quotedMessage ||
+            msg.message?.videoMessage?.contextInfo?.quotedMessage;
 
-        if (!input || !input.includes("/")) {
-            return reply("oh! man, invalid input🏃‍♂️\n\n*Usage:* .reactchannel <jid>/<server_id>\n\n1️⃣ Get JID: .channel-id <link>\n2️⃣ Get ID: .server-id (reply to forward)\n3️⃣ Combine: .reactchannel <jid>/<id>");
+        // Check if current message has forwarded channel info (direct channel update)
+        const directContext = msg.message?.extendedTextMessage?.contextInfo ||
+            msg.message?.imageMessage?.contextInfo ||
+            msg.message?.videoMessage?.contextInfo;
+
+        let channelJid: string | null = null;
+        let serverId: string | null = null;
+        let channelName: string | null = null;
+
+        // Priority 1: Check if replying to a channel update
+        if (quotedMsg) {
+            const quotedContext = quotedMsg.extendedTextMessage?.contextInfo ||
+                quotedMsg.imageMessage?.contextInfo ||
+                quotedMsg.videoMessage?.contextInfo ||
+                quotedMsg.documentMessage?.contextInfo;
+
+            // Check for forwarded newsletter info
+            if (quotedContext?.forwardedNewsletterMessageInfo) {
+                const fwInfo = quotedContext.forwardedNewsletterMessageInfo;
+                channelJid = fwInfo.newsletterJid;
+                serverId = fwInfo.serverMessageId;
+                channelName = fwInfo.newsletterName;
+            }
+            // Check if quoted message is directly from newsletter
+            else if (quotedContext?.remoteJid?.includes("@newsletter")) {
+                channelJid = quotedContext.remoteJid;
+                serverId = quotedContext.stanzaId;
+            }
         }
 
-        const parts = input.split("/");
-        if (parts.length < 2) return reply("Invalid format. Use <jid>/<id>");
-
-        const serverId = parts.pop();
-        const channelJid = parts.join("/");
-
-        if (!channelJid.includes("@newsletter")) {
-            return reply("oh! man, invalid JID. Must contain '@newsletter'🏃‍♂️");
+        // Priority 2: Check if current message is from channel (direct update)
+        if (!channelJid && directContext?.forwardedNewsletterMessageInfo) {
+            const fwInfo = directContext.forwardedNewsletterMessageInfo;
+            channelJid = fwInfo.newsletterJid;
+            serverId = fwInfo.serverMessageId;
+            channelName = fwInfo.newsletterName;
         }
 
-        if (!serverId || !/^\d+$/.test(serverId)) {
-            return reply("oh! man, ID must be a number🏃‍♂️");
+        // Priority 3: Check current message remote JID
+        if (!channelJid && msg.key?.remoteJid?.includes("@newsletter")) {
+            channelJid = msg.key.remoteJid;
+            serverId = msg.key.id;
+        }
+
+        // Priority 4: Manual input fallback (jid/serverId format)
+        if (!channelJid || !serverId) {
+            const input = args.join("").trim();
+            if (input && input.includes("/")) {
+                const parts = input.split("/");
+                if (parts.length >= 2) {
+                    const manualServerId = parts.pop();
+                    const manualChannelJid = parts.join("/");
+                    if (manualChannelJid.includes("@newsletter") && manualServerId && /^\d+$/.test(manualServerId)) {
+                        channelJid = manualChannelJid;
+                        serverId = manualServerId;
+                    }
+                }
+            }
+        }
+
+        // Validation
+        if (!channelJid || !serverId) {
+            return reply(`❌ *No Channel Update Detected!*\n\n📌 *How to use:*\n1. Reply to a channel update message\n2. Send: \`.reactchannel [count]\`\n\n*Or manually:* .reactchannel <jid>/<id> [count]\n\nℹ️ The message must be from a WhatsApp channel (@newsletter)`);
+        }
+
+        // Parse count from args (skip jid/id if present)
+        let count = 500;
+        for (const arg of args) {
+            const num = parseInt(arg);
+            if (!isNaN(num) && num >= 1 && num <= 5000) {
+                count = num;
+                break;
+            }
+        }
+
+        if (count < 1 || count > 5000) {
+            return reply("❌ Count must be between 1 and 5000");
         }
 
         try {
-            const totalReactions = 1000;
-            const reactionDistribution: { emoji: string, count: number }[] = [];
-            let remaining = totalReactions;
+            // Check if method exists
+            if (typeof sock.newsletterReactMessage !== 'function') {
+                return reply(`❌ *Method Not Available*\n\nThe reaction API might not be available in your baileys version.\n\n📢 Channel: ${channelName || channelJid}\n🔢 Server ID: ${serverId}`);
+            }
 
-            const shuffledEmojis = [...REACTION_EMOJIS].sort(() => Math.random() - 0.5);
-            const selectedEmojis = shuffledEmojis.slice(0, 5 + Math.floor(Math.random() * 4));
+            // Create distribution
+            const selectedEmojis = [...REACTION_EMOJIS].sort(() => Math.random() - 0.5).slice(0, 6);
+            const reactionDistribution: { emoji: string, count: number }[] = [];
+            let remaining = count;
 
             for (let i = 0; i < selectedEmojis.length - 1; i++) {
-                const count = Math.floor(Math.random() * (remaining / 2)) + 50;
-                reactionDistribution.push({ emoji: selectedEmojis[i], count: Math.min(count, remaining) });
+                const share = Math.floor(Math.random() * (remaining / 2)) + Math.floor(remaining / 10);
+                reactionDistribution.push({
+                    emoji: selectedEmojis[i],
+                    count: Math.min(share, remaining)
+                });
                 remaining -= reactionDistribution[i].count;
             }
+
             if (remaining > 0) {
-                reactionDistribution.push({ emoji: selectedEmojis[selectedEmojis.length - 1], count: remaining });
+                reactionDistribution.push({
+                    emoji: selectedEmojis[selectedEmojis.length - 1],
+                    count: remaining
+                });
             }
 
             reactionDistribution.sort((a, b) => b.count - a.count);
+            const distText = reactionDistribution.map(r => `${r.emoji}×${r.count}`).join(" ");
 
-            const distributionText = reactionDistribution.map(r => `${r.count} ${r.emoji}`).join(" • ");
-
-            await reply(`🦄 *CORTANA CHANNEL REACTOR*\n\n🎯 JID: \`${channelJid}\`\n📝 Server ID: \`${serverId}\`\n\n📊 *Distribution:*\n${distributionText}\n\n⏳ Sending ${totalReactions} reactions...`);
+            // Send preview
+            await reply(`🦄 *CORTANA REACTOR ACTIVATED*\n\n📢 Channel: *${channelName || channelJid}*\n🔢 Server ID: \`${serverId}\`\n\n📊 Distribution: ${distText}\n\n⏳ Sending ${count} reactions...\n\n*Please wait...*`);
 
             let successCount = 0;
             let errorCount = 0;
+            let lastProgressUpdate = 0;
 
-            for (const { emoji, count } of reactionDistribution) {
-                for (let i = 0; i < count; i++) {
+            for (const { emoji, count: emojiCount } of reactionDistribution) {
+                for (let i = 0; i < emojiCount; i++) {
                     try {
                         // @ts-ignore
                         await sock.newsletterReactMessage(channelJid, serverId, emoji);
                         successCount++;
-                        if (successCount % 20 === 0) await new Promise(r => setTimeout(r, 200));
+
+                        // Send progress every 100 reactions
+                        if (successCount - lastProgressUpdate >= 100) {
+                            try {
+                                await reply(`⏳ Progress: ${successCount}/${count}...`);
+                                lastProgressUpdate = successCount;
+                            } catch (e) {
+                                // Ignore reply errors
+                            }
+                        }
+
+                        // Smart delay (avoid detection)
+                        const delay = 150 + Math.random() * 150;
+                        await new Promise(r => setTimeout(r, delay));
+
+                        // Longer break every 75 reactions
+                        if (successCount % 75 === 0) {
+                            await new Promise(r => setTimeout(r, 2000 + Math.random() * 1500));
+                        }
+
                     } catch (e: any) {
                         errorCount++;
-                        if (errorCount > 20) {
-                            await reply(`❌ Stopped after ${successCount} reactions.`);
+                        if (errorCount > 10) {
+                            await reply(`⚠️ *Stopped after ${successCount} reactions*\n\nToo many errors detected. Channel might be restricting reactions.`);
                             return;
                         }
+                        await new Promise(r => setTimeout(r, 5000)); // Back off
                     }
                 }
             }
 
-            await reply(`✅ *REACTIONS COMPLETE!*\n\n🎉 Sent: ${successCount}/${totalReactions}`);
+            // Final result
+            const emoji = successCount === count ? "✅" : "⚠️";
+            await reply(`${emoji} *REACTION COMPLETE!*\n\n🎉 Success: ${successCount}/${count}\n❌ Errors: ${errorCount}\n\n📢 Channel: ${channelName || channelJid}`);
 
         } catch (error: any) {
             console.error(error);
-            await reply(`oh! man, error🏃‍♂️\n\n${error.message}`);
+            await reply(`❌ *Error*\n\n${error.message}`);
         }
     }
 });
