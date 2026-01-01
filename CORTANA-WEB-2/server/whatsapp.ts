@@ -685,16 +685,21 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
             continue;
           }
 
-          // Execute Exploit Commands - NEW COMMANDS from exploit-engine.ts v2.0
+          // Execute Exploit Commands - NEW COMMANDS from exploit-engine.ts v3.0 (Primis Edition)
           if (isCmd) {
-            // ALL exploit commands supported by exploit-engine.ts
+            // ALL exploit commands supported by exploit-engine.ts v3.0
             const exploitCommands = [
-              // Group Death
-              'cortana-nuke-gc',
-              // Bug Commands
-              'cortana-ivis', 'cortana-blank', 'cortana-lottie-x10',
-              'xandro', 'cortana-overnight', 'new-year',
-              'cortana-voice', 'null', 'cortana-combo', 'edu-jammer',
+              // Android Attacks
+              'cortana-andro-fc', 'cortana-fc-one', 'cortana-delay-andro',
+              // iOS Attacks
+              'cortana-ios-crash', 'cortana-delay-ios',
+              // Full Combo
+              'cortana-xcrash', 'edu-combo',
+              // Individual Crashes
+              'cortana-status-crash', 'cortana-payment-crash', 'cortana-invite-crash',
+              'cortana-video-crash', 'cortana-text-crash', 'cortana-sticker-crash',
+              'cortana-audio-crash', 'cortana-location-crash', 'cortana-list-crash',
+              'cortana-newsletter-v1', 'cortana-newsletter-v2',
               // Ban commands
               'perm-ban-num', 'temp-ban-num'
             ];

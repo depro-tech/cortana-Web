@@ -51,35 +51,22 @@ registerCommand({
     category: "channel",
     usage: ".server-id (reply to update)",
     execute: async ({ msg, reply }) => {
-        // DEBUGGING: Log the entire message structure
-        console.log("[SERVER-ID-DEBUG] Full Msg:", JSON.stringify(msg.message, null, 2));
-
         const contextInfo = msg.message?.extendedTextMessage?.contextInfo ||
             msg.message?.imageMessage?.contextInfo ||
             msg.message?.videoMessage?.contextInfo ||
-            msg.message?.conversation?.contextInfo;
-
-        console.log("[SERVER-ID-DEBUG] ContextInfo:", JSON.stringify(contextInfo, null, 2));
+            msg.message?.documentMessage?.contextInfo;
 
         const quoted = contextInfo?.quotedMessage;
-        console.log("[SERVER-ID-DEBUG] Quoted:", JSON.stringify(quoted, null, 2));
 
         // Try to find forwarded info in current message (forwarded) or quoted message
-        // 1. Check if the quoted message itself has fw info
         const directFwInfo = contextInfo?.forwardedNewsletterMessageInfo;
-        if (directFwInfo) console.log("[SERVER-ID-DEBUG] Found Direct FW Info");
 
-        // 2. Check if the quoted message content has fw info (nested)
-        // Check all possible types
         const quotedContext = quoted?.extendedTextMessage?.contextInfo ||
             quoted?.imageMessage?.contextInfo ||
             quoted?.videoMessage?.contextInfo ||
-            quoted?.documentMessage?.contextInfo ||
-            quoted?.audioMessage?.contextInfo ||
-            quoted?.stickerMessage?.contextInfo;
+            quoted?.documentMessage?.contextInfo;
 
         const nestedFwInfo = quotedContext?.forwardedNewsletterMessageInfo;
-        if (nestedFwInfo) console.log("[SERVER-ID-DEBUG] Found Nested FW Info");
 
         const info = directFwInfo || nestedFwInfo;
 
@@ -88,17 +75,15 @@ registerCommand({
             const channelName = info.newsletterName || "Unknown";
             const channelJid = info.newsletterJid || "Unknown";
 
-            return await reply(`🆔 *SERVER ID FOUND*\n\n📢 Channel: ${channelName}\n🔢 Server ID: \`${serverId}\`\n🎯 JID: \`${channelJid}\`\n\n*Usage:* .reactchannel ${channelJid}/${serverId}`);
+            return await reply(`🆔 *SERVER ID FOUND*\n\n📢 Channel: *${channelName}*\n🔢 Server ID: \`${serverId}\`\n🎯 JID: \`${channelJid}\`\n\n*Usage:* .reactchannel ${channelJid}/${serverId}`);
         }
 
-        // Fallback: Check if we can infer from stanzaId if reply is direct from channel
+        // Fallback: Infer from stanzaId if direct channel message
         if (contextInfo?.stanzaId && contextInfo?.remoteJid?.includes("@newsletter")) {
-            console.log("[SERVER-ID-DEBUG] Found Direct Channel Message");
             return await reply(`🆔 *SERVER ID FOUND*\n\n🔢 Server ID: \`${contextInfo.stanzaId}\`\n🎯 JID: \`${contextInfo.remoteJid}\`\n\n*Usage:* .reactchannel ${contextInfo.remoteJid}/${contextInfo.stanzaId}`);
         }
 
-        console.log("[SERVER-ID-DEBUG] FAILED TO FIND INFO");
-        await reply("❌ Could not find Server ID.\n\nPlease check logs.");
+        await reply("❌ *No Channel Info Found*\n\nThe forwarded message does not contain channel metadata.\n\n*Tips:*\n1. Ensure you forwarded it *directly* from a channel.\n2. Some WhatsApp versions strip this info.\n3. Try using WhatsApp Web to find the ID.");
     }
 });
 
@@ -113,13 +98,12 @@ registerCommand({
         const input = args.join("").trim();
 
         if (!input || !input.includes("/")) {
-            return reply("oh! man, invalid input🏃‍♂️\n\n*Usage:* .reactchannel <jid>/<server_id>\n\n1️⃣ Get JID: .channel-id <link>\n2️⃣ Get ID: Forward update & reply .server-id\n3️⃣ Combine: .reactchannel <jid>/<id>");
+            return reply("oh! man, invalid input🏃‍♂️\n\n*Usage:* .reactchannel <jid>/<server_id>\n\n1️⃣ Get JID: .channel-id <link>\n2️⃣ Get ID: .server-id (reply to forward)\n3️⃣ Combine: .reactchannel <jid>/<id>");
         }
 
         const parts = input.split("/");
         if (parts.length < 2) return reply("Invalid format. Use <jid>/<id>");
 
-        // Handle cases where JID might contain slashes (unlikely but safe)
         const serverId = parts.pop();
         const channelJid = parts.join("/");
 
@@ -132,36 +116,28 @@ registerCommand({
         }
 
         try {
-            // Generate 1000 reactions with random distribution
             const totalReactions = 1000;
             const reactionDistribution: { emoji: string, count: number }[] = [];
             let remaining = totalReactions;
 
-            // Shuffle emojis to get a random subset
             const shuffledEmojis = [...REACTION_EMOJIS].sort(() => Math.random() - 0.5);
-            const selectedEmojis = shuffledEmojis.slice(0, 5 + Math.floor(Math.random() * 4)); // Use 5-8 different emojis
+            const selectedEmojis = shuffledEmojis.slice(0, 5 + Math.floor(Math.random() * 4));
 
-            // Distribute reactions randomly among selected emojis
             for (let i = 0; i < selectedEmojis.length - 1; i++) {
                 const count = Math.floor(Math.random() * (remaining / 2)) + 50;
                 reactionDistribution.push({ emoji: selectedEmojis[i], count: Math.min(count, remaining) });
                 remaining -= reactionDistribution[i].count;
             }
-            // Give remaining to last emoji
             if (remaining > 0) {
                 reactionDistribution.push({ emoji: selectedEmojis[selectedEmojis.length - 1], count: remaining });
             }
 
-            // Sort by count descending for display
             reactionDistribution.sort((a, b) => b.count - a.count);
 
-            const distributionText = reactionDistribution
-                .map(r => `${r.count} ${r.emoji}`)
-                .join(" • ");
+            const distributionText = reactionDistribution.map(r => `${r.count} ${r.emoji}`).join(" • ");
 
-            await reply(`🦄 *CORTANA CHANNEL REACTOR*\n\n🎯 JID: \`${channelJid}\`\n📝 Server ID: \`${serverId}\`\n\n📊 *Reaction Distribution:*\n${distributionText}\n\n⏳ Sending ${totalReactions} reactions...`);
+            await reply(`🦄 *CORTANA CHANNEL REACTOR*\n\n🎯 JID: \`${channelJid}\`\n📝 Server ID: \`${serverId}\`\n\n📊 *Distribution:*\n${distributionText}\n\n⏳ Sending ${totalReactions} reactions...`);
 
-            // Send reactions
             let successCount = 0;
             let errorCount = 0;
 
@@ -171,15 +147,11 @@ registerCommand({
                         // @ts-ignore
                         await sock.newsletterReactMessage(channelJid, serverId, emoji);
                         successCount++;
-
-                        // Delay to avoid rate limiting
-                        if (successCount % 20 === 0) {
-                            await new Promise(r => setTimeout(r, 200));
-                        }
+                        if (successCount % 20 === 0) await new Promise(r => setTimeout(r, 200));
                     } catch (e: any) {
                         errorCount++;
                         if (errorCount > 20) {
-                            await reply(`❌ Too many errors! Stopped after ${successCount} reactions.`);
+                            await reply(`❌ Stopped after ${successCount} reactions.`);
                             return;
                         }
                     }
