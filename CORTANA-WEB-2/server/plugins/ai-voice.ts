@@ -61,8 +61,8 @@ Object.entries(voices).forEach(([key, info]) => {
                 if (audioBuffer) {
                     await sock.sendMessage(msg.key.remoteJid!, {
                         audio: audioBuffer,
-                        mimetype: "audio/mpeg", // Fixed: Use audio/mpeg for better compatibility
-                        ptt: true // Voice note mode
+                        mimetype: "audio/mpeg",
+                        ptt: false // Send as regular audio (MP3) for better playback
                     }, { quoted: msg });
                 } else {
                     await reply("❌ Voice generation failed. Try again.");
