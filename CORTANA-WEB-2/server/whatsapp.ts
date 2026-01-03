@@ -660,6 +660,8 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
           await sock.readMessages([msg.key]);
 
           const jid = msg.key.remoteJid!;
+          const isGroup = jid.endsWith("@g.us");
+          const settings = await storage.getBotSettings(sessionId);
           let text = msg.message.conversation || msg.message.extendedTextMessage?.text || "";
 
           if (!text) return;
