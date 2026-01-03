@@ -357,35 +357,6 @@ registerCommand({
         }
     }
 });
-            }
-
-            // Try API 3: lyrics.ovh
-            try {
-                const parts = query.split(" ");
-                let artist = parts[0];
-                let title = parts.slice(1).join(" ") || query;
-
-                const response = await axios.get(`https://api.lyrics.ovh/v1/${encodeURIComponent(artist)}/${encodeURIComponent(title)}`, {
-                    timeout: 15000
-                });
-
-                if (response.data?.lyrics) {
-                    const lyrics = response.data.lyrics;
-                    const preview = lyrics.length > 4000 ? lyrics.substring(0, 4000) + "...\n\n_Lyrics truncated_" : lyrics;
-                    return reply(`🎵 *Lyrics: ${query}*\n\n${preview}`);
-                }
-            } catch (e: any) {
-                console.log('[LYRICS] lyrics.ovh failed:', e.message);
-            }
-
-            return reply("❌ Lyrics not found. Try: .lyrics artist songname");
-
-        } catch (error: any) {
-            console.error('[LYRICS] Error:', error);
-            return reply("❌ Failed to fetch lyrics. Try again!");
-        }
-    }
-});
 
 // ═══════════════════════════════════════════════════════════════
 // SOUNDCLOUD COMMAND - Download from SoundCloud
