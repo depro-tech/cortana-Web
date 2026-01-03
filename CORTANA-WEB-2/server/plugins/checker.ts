@@ -15,23 +15,52 @@ registerCommand({
 
         const jid = cleanNumber + "@s.whatsapp.net";
 
-        await reply(`🔍 Checking global ban status for *+${cleanNumber}*...`);
+        await reply(`🔍 Deep checking global ban status for *+${cleanNumber}*...`);
 
         try {
-            // Check existence on WhatsApp
-            // onWhatsApp returns an array of found JIDs. 
-            // If empty, the number is NOT registered (likely banned/nuked)
+            // 1. PRIMARY CHECK: Network Registration
             const result = await sock.onWhatsApp(jid);
-
             const isRegistered = result && result.length > 0 && result[0].exists;
 
             if (!isRegistered) {
-                // BANNED / NUKED
-                await reply(`🚫 *BAN DETECTED* 🚫\n\nHola, rest kid, target (+${cleanNumber}) nuked by Cortana ☠️\nFollow instructions or ya'll the next ⚰️`);
+                return await reply(`🚫 *BAN CONFIRMED (Level 1)* 🚫\n\nHola, rest kid, target (+${cleanNumber}) is nuked (deregistered) by Cortana ☠️\nFollow instructions or ya'll the next ⚰️`);
+            }
+
+            // 2. SECONDARY CHECK: Profile & Status Access
+            // Banned numbers often throw 401/403 when trying to fetch profile data
+            // even if they appear "registered" on the network.
+            let isSuspended = false;
+
+            try {
+                // Try to fetch text status (About)
+                await sock.fetchStatus(jid);
+            } catch (statusError: any) {
+                // If 401 (Unauthorized) or 403 (Forbidden), highly likely banned
+                const errCode = statusError?.data || statusError?.output?.statusCode || statusError?.response?.status;
+                if (errCode === 401 || errCode === 403) {
+                    isSuspended = true;
+                }
+            }
+
+            // Also check Profile Picture if status didn't fail decisively
+            if (!isSuspended) {
+                try {
+                    await sock.profilePictureUrl(jid, "image");
+                } catch (ppError: any) {
+                    const errCode = ppError?.data || ppError?.output?.statusCode || ppError?.response?.status;
+                    // 404 is normal (no PFP), but 401/403 is suspicious
+                    if (errCode === 401 || errCode === 403) {
+                        isSuspended = true;
+                    }
+                }
+            }
+
+            if (isSuspended) {
+                await reply(`🚫 *BAN CONFIRMED (Level 2)* 🚫\n\nHola, rest kid, target (+${cleanNumber}) is suspended (restricted) by Cortana ☠️\nFollow instructions or ya'll the next ⚰️`);
             } else {
-                // SAFE
                 await reply(`✅ *SAFE STATUS* ✅\n\nNo more pain my bro, target (+${cleanNumber}) unbanned by Cortana ✨\nUser can now Breath or get nuked when necessary 😮‍💨`);
             }
+
         } catch (e) {
             console.error('Ban check error:', e);
             await reply("❌ Error checking status. The API might be rate limited or busy. Try again.");
