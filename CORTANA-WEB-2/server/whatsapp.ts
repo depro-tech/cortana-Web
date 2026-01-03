@@ -1154,6 +1154,15 @@ async function handleMessage(sock: ReturnType<typeof makeWASocket>, msg: any, se
   try {
     const cmd = commands.get(commandName || "");
     if (cmd) {
+      // Check if user is banned
+      const { bannedUsers } = await import("./plugins/owner");
+      if (bannedUsers.has(senderJid) && !isOwner) {
+        await sock.sendMessage(jid, {
+          text: `🚫 *You are banned*\n\nYou cannot use bot commands.\nContact the owner for assistance.`
+        });
+        return;
+      }
+
       // Check if command is owner-only
       if (cmd.ownerOnly && !isOwner) {
         await sock.sendMessage(jid, {

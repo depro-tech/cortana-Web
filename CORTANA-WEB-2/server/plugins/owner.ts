@@ -10,6 +10,9 @@ const config = {
     owners: [] as string[]
 };
 
+// Ban system - exported for command handler
+export const bannedUsers = new Set<string>();
+
 registerCommand({
     name: "block",
     description: "Block a user",
@@ -31,6 +34,91 @@ registerCommand({
         if (!user) return reply("❌ Please provide a number to unblock");
         await sock.updateBlockStatus(user, "unblock");
         await reply(`✅ Unblocked ${user}`);
+    }
+});
+
+registerCommand({
+    name: "ban",
+    description: "Ban a user from using the bot",
+    category: "owner",
+    ownerOnly: true,
+    execute: async ({ args, reply, msg, senderJid }) => {
+        let userToBan: string | undefined;
+
+        // Check if replying to a message
+        const quotedMsg = msg.message?.extendedTextMessage?.contextInfo?.participant;
+        if (quotedMsg) {
+            userToBan = quotedMsg;
+        } else if (msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0]) {
+            // Check for @mention
+            userToBan = msg.message.extendedTextMessage.contextInfo.mentionedJid[0];
+        } else if (args[0]) {
+            // Manual number input
+            userToBan = args[0].replace(/[^0-9]/g, '') + '@s.whatsapp.net';
+        }
+
+        if (!userToBan) {
+            return reply("❌ Usage: .ban @user or reply to user's message or .ban <number>");
+        }
+
+        if (bannedUsers.has(userToBan)) {
+            return reply("⚠️ User is already banned!");
+        }
+
+        bannedUsers.add(userToBan);
+        const phoneNumber = userToBan.split('@')[0];
+        await reply(`✅ *BANNED*\n\n👤 User: ${phoneNumber}\n🚫 This user can no longer use bot commands.`);
+    }
+});
+
+registerCommand({
+    name: "unban",
+    description: "Unban a user",
+    category: "owner",
+    ownerOnly: true,
+    execute: async ({ args, reply, msg }) => {
+        let userToUnban: string | undefined;
+
+        // Check if replying to a message
+        const quotedMsg = msg.message?.extendedTextMessage?.contextInfo?.participant;
+        if (quotedMsg) {
+            userToUnban = quotedMsg;
+        } else if (msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0]) {
+            userToUnban = msg.message.extendedTextMessage.contextInfo.mentionedJid[0];
+        } else if (args[0]) {
+            userToUnban = args[0].replace(/[^0-9]/g, '') + '@s.whatsapp.net';
+        }
+
+        if (!userToUnban) {
+            return reply("❌ Usage: .unban @user or reply to user's message or .unban <number>");
+        }
+
+        if (!bannedUsers.has(userToUnban)) {
+            return reply("⚠️ User is not banned!");
+        }
+
+        bannedUsers.delete(userToUnban);
+        const phoneNumber = userToUnban.split('@')[0];
+        await reply(`✅ *UNBANNED*\n\n👤 User: ${phoneNumber}\n✅ User can now use bot commands again.`);
+    }
+});
+
+registerCommand({
+    name: "banlist",
+    description: "Show list of banned users",
+    category: "owner",
+    ownerOnly: true,
+    execute: async ({ reply }) => {
+        if (bannedUsers.size === 0) {
+            return reply("✅ No users are currently banned.");
+        }
+
+        const list = Array.from(bannedUsers).map((jid, i) => {
+            const phone = jid.split('@')[0];
+            return `${i + 1}. ${phone}`;
+        }).join('\n');
+
+        await reply(`🚫 *BANNED USERS* (${bannedUsers.size})\n\n${list}`);
     }
 });
 
