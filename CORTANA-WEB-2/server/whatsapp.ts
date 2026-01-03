@@ -1024,6 +1024,11 @@ export function getAllActiveSessions(): Array<{ sessionId: string; phoneNumber: 
   return result;
 }
 
+// Export getBotSettings for plugins to use
+export async function getBotSettings(sessionId: string) {
+  return await storage.getBotSettings(sessionId);
+}
+
 // ═══════ ANTIBAN GLOBALS ═══════
 const userCooldowns = new Map<string, number>();
 const commandCooldown = 60000; // 60 seconds
