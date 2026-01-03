@@ -3,7 +3,8 @@ import axios from "axios";
 import { downloadMediaMessage } from "@whiskeysockets/baileys";
 
 // ═══════════════════════════════════════════════════════════════
-// ADVANCED IMAGE EDITING COMMANDS
+// ADVANCED IMAGE EDITING COMMANDS - FIXED WITH WORKING APIs
+// Uses some-random-api.com and telegra.ph for reliability
 // ═══════════════════════════════════════════════════════════════
 
 // Helper to get image buffer from quoted message
@@ -33,7 +34,31 @@ async function getImageBuffer(msg: any, sock: any): Promise<Buffer | null> {
     }
 }
 
+// Helper to upload image to telegra.ph and get URL
+async function uploadToTelegraph(buffer: Buffer): Promise<string | null> {
+    try {
+        const FormData = (await import('form-data')).default;
+        const form = new FormData();
+        form.append('file', buffer, { filename: 'image.jpg', contentType: 'image/jpeg' });
+
+        const res = await axios.post('https://telegra.ph/upload', form, {
+            headers: form.getHeaders(),
+            timeout: 15000
+        });
+
+        if (res.data?.[0]?.src) {
+            return 'https://telegra.ph' + res.data[0].src;
+        }
+        return null;
+    } catch (e) {
+        console.error('[UPLOAD] Telegraph upload failed:', e);
+        return null;
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
 // BLUR
+// ═══════════════════════════════════════════════════════════════
 registerCommand({
     name: "blur",
     description: "Blur an image",
@@ -41,37 +66,24 @@ registerCommand({
     usage: "Send/reply to image with .blur",
     execute: async ({ reply, sock, msg }) => {
         const imageBuffer = await getImageBuffer(msg, sock);
-        if (!imageBuffer) {
-            return reply("❌ Reply to an image with .blur");
-        }
+        if (!imageBuffer) return reply("❌ Reply to an image with .blur");
 
         try {
             await reply("⏳ Applying blur effect...");
 
-            const formData = new FormData();
-            formData.append('image', new Blob([imageBuffer]), 'image.jpg');
+            const imageUrl = await uploadToTelegraph(imageBuffer);
+            if (!imageUrl) return reply("❌ Failed to process image");
 
-            const response = await axios.post('https://api.remove.bg/v1.0/removebg', formData, {
-                headers: { 'X-Api-Key': 'temp_key' },
+            const response = await axios.get(`https://some-random-api.com/canvas/misc/blur`, {
+                params: { avatar: imageUrl },
+                responseType: 'arraybuffer',
                 timeout: 30000
-            }).catch(() => null);
+            });
 
-            // Use canvas-based blur API
-            const base64 = imageBuffer.toString('base64');
-            const blurResponse = await axios.post('https://api.popcat.xyz/blur', {
-                image: base64
-            }, { timeout: 30000 });
-
-            if (blurResponse.data?.image) {
-                const blurred = Buffer.from(blurResponse.data.image, 'base64');
-                await sock.sendMessage(msg.key.remoteJid, {
-                    image: blurred,
-                    caption: "✅ Blurred image"
-                });
-                return;
-            }
-
-            return reply("❌ Failed to blur image. Try again!");
+            await sock.sendMessage(msg.key.remoteJid, {
+                image: Buffer.from(response.data),
+                caption: "✅ Blurred image"
+            });
         } catch (error: any) {
             console.error('[BLUR] Error:', error);
             return reply("❌ Blur effect failed!");
@@ -79,233 +91,153 @@ registerCommand({
     }
 });
 
-// ENHANCE
+// ═══════════════════════════════════════════════════════════════
+// GREYSCALE / GRAYSCALE
+// ═══════════════════════════════════════════════════════════════
 registerCommand({
-    name: "enhance",
-    aliases: ["hd", "quality"],
-    description: "Enhance image quality",
+    name: "greyscale",
+    aliases: ["grayscale", "grey", "gray", "bw"],
+    description: "Convert to black and white",
     category: "image",
-    usage: "Send/reply to image with .enhance",
+    usage: "Send/reply to image with .greyscale",
     execute: async ({ reply, sock, msg }) => {
         const imageBuffer = await getImageBuffer(msg, sock);
-        if (!imageBuffer) {
-            return reply("❌ Reply to an image with .enhance");
-        }
+        if (!imageBuffer) return reply("❌ Reply to an image with .greyscale");
 
         try {
-            await reply("⏳ Enhancing image quality...");
+            await reply("⏳ Converting to greyscale...");
 
-            // Use enhancement API
-            const base64 = imageBuffer.toString('base64');
-            const response = await axios.post('https://api-inference.huggingface.co/models/caidas/swin2SR-classical-sr-x2-64', {
-                inputs: base64
-            }, {
-                headers: { 'Authorization': 'Bearer hf_demo' },
-                responseType: 'arraybuffer',
-                timeout: 45000
-            }).catch(() => null);
+            const imageUrl = await uploadToTelegraph(imageBuffer);
+            if (!imageUrl) return reply("❌ Failed to process image");
 
-            if (response?.data) {
-                await sock.sendMessage(msg.key.remoteJid, {
-                    image: Buffer.from(response.data),
-                    caption: "✅ Enhanced quality"
-                });
-                return;
-            }
-
-            // Fallback: just send back with caption
-            await sock.sendMessage(msg.key.remoteJid, {
-                image: imageBuffer,
-                caption: "⚠️ Enhancement API unavailable, original image returned"
-            });
-
-        } catch (error: any) {
-            console.error('[ENHANCE] Error:', error);
-            return reply("❌ Enhancement failed!");
-        }
-    }
-});
-
-// WANTED POSTER
-registerCommand({
-    name: "wanted",
-    description: "Create a wanted poster",
-    category: "image",
-    usage: "Send/reply to image with .wanted",
-    execute: async ({ reply, sock, msg }) => {
-        const imageBuffer = await getImageBuffer(msg, sock);
-        if (!imageBuffer) {
-            return reply("❌ Reply to an image with .wanted");
-        }
-
-        try {
-            await reply("⏳ Creating wanted poster...");
-
-            const base64 = imageBuffer.toString('base64');
-            const imageUrl = `data:image/jpeg;base64,${base64}`;
-
-            const response = await axios.get(`https://api.popcat.xyz/wanted?image=${encodeURIComponent(imageUrl)}`, {
+            const response = await axios.get(`https://some-random-api.com/canvas/misc/greyscale`, {
+                params: { avatar: imageUrl },
                 responseType: 'arraybuffer',
                 timeout: 30000
             });
 
             await sock.sendMessage(msg.key.remoteJid, {
                 image: Buffer.from(response.data),
-                caption: "🚨 WANTED 🚨"
+                caption: "🖤 Greyscale applied"
             });
-
         } catch (error: any) {
-            console.error('[WANTED] Error:', error);
-            return reply("❌ Failed to create wanted poster!");
+            console.error('[GREYSCALE] Error:', error);
+            return reply("❌ Greyscale effect failed!");
         }
     }
 });
 
-// WASTED (GTA effect)
+// ═══════════════════════════════════════════════════════════════
+// INVERT
+// ═══════════════════════════════════════════════════════════════
 registerCommand({
-    name: "wasted",
-    aliases: ["gta"],
-    description: "Apply GTA wasted effect",
+    name: "invert",
+    aliases: ["negative"],
+    description: "Invert image colors",
     category: "image",
-    usage: "Send/reply to image with .wasted",
+    usage: "Send/reply to image with .invert",
     execute: async ({ reply, sock, msg }) => {
         const imageBuffer = await getImageBuffer(msg, sock);
-        if (!imageBuffer) {
-            return reply("❌ Reply to an image with .wasted");
-        }
+        if (!imageBuffer) return reply("❌ Reply to an image with .invert");
 
         try {
-            await reply("⏳ Applying wasted effect...");
+            await reply("⏳ Inverting colors...");
 
-            // Upload to temporary hosting
-            const formData = new FormData();
-            formData.append('file', new Blob([imageBuffer]), 'image.jpg');
+            const imageUrl = await uploadToTelegraph(imageBuffer);
+            if (!imageUrl) return reply("❌ Failed to process image");
 
-            // Use Some-Random-API
-            const response = await axios.get('https://some-random-api.com/canvas/misc/wasted', {
-                params: { avatar: `data:image/jpeg;base64,${imageBuffer.toString('base64')}` },
+            const response = await axios.get(`https://some-random-api.com/canvas/misc/invert`, {
+                params: { avatar: imageUrl },
                 responseType: 'arraybuffer',
                 timeout: 30000
             });
 
             await sock.sendMessage(msg.key.remoteJid, {
                 image: Buffer.from(response.data),
-                caption: "💀 WASTED 💀"
+                caption: "🔄 Colors inverted"
             });
-
         } catch (error: any) {
-            console.error('[WASTED] Error:', error);
-            return reply("❌ Failed to apply wasted effect!");
+            console.error('[INVERT] Error:', error);
+            return reply("❌ Invert effect failed!");
         }
     }
 });
 
-// TRIGGERED
+// ═══════════════════════════════════════════════════════════════
+// BRIGHTNESS
+// ═══════════════════════════════════════════════════════════════
 registerCommand({
-    name: "trigger",
-    aliases: ["triggered"],
-    description: "Apply triggered effect",
+    name: "bright",
+    aliases: ["brightness", "lighten"],
+    description: "Increase image brightness",
     category: "image",
-    usage: "Send/reply to image with .trigger",
+    usage: "Send/reply to image with .bright",
     execute: async ({ reply, sock, msg }) => {
         const imageBuffer = await getImageBuffer(msg, sock);
-        if (!imageBuffer) {
-            return reply("❌ Reply to an image with .trigger");
-        }
+        if (!imageBuffer) return reply("❌ Reply to an image with .bright");
 
         try {
-            await reply("⏳ Getting triggered...");
+            await reply("⏳ Increasing brightness...");
 
-            const base64 = imageBuffer.toString('base64');
-            const response = await axios.get(`https://some-random-api.com/canvas/misc/triggered?avatar=data:image/jpeg;base64,${base64}`, {
+            const imageUrl = await uploadToTelegraph(imageBuffer);
+            if (!imageUrl) return reply("❌ Failed to process image");
+
+            const response = await axios.get(`https://some-random-api.com/canvas/misc/brightness`, {
+                params: { avatar: imageUrl, brightness: 100 },
                 responseType: 'arraybuffer',
                 timeout: 30000
             });
 
             await sock.sendMessage(msg.key.remoteJid, {
                 image: Buffer.from(response.data),
-                caption: "😤 TRIGGERED 😤"
+                caption: "☀️ Brightness increased"
             });
-
         } catch (error: any) {
-            console.error('[TRIGGER] Error:', error);
-            return reply("❌ Failed to apply trigger effect!");
+            console.error('[BRIGHT] Error:', error);
+            return reply("❌ Brightness effect failed!");
         }
     }
 });
 
-// CIRCLE
+// ═══════════════════════════════════════════════════════════════
+// THRESHOLD
+// ═══════════════════════════════════════════════════════════════
 registerCommand({
-    name: "circle",
-    aliases: ["round"],
-    description: "Make image circular",
+    name: "threshold",
+    aliases: ["thresh"],
+    description: "Apply threshold effect",
     category: "image",
-    usage: "Send/reply to image with .circle",
+    usage: "Send/reply to image with .threshold",
     execute: async ({ reply, sock, msg }) => {
         const imageBuffer = await getImageBuffer(msg, sock);
-        if (!imageBuffer) {
-            return reply("❌ Reply to an image with .circle");
-        }
+        if (!imageBuffer) return reply("❌ Reply to an image with .threshold");
 
         try {
-            await reply("⏳ Making circular...");
+            await reply("⏳ Applying threshold...");
 
-            const base64 = imageBuffer.toString('base64');
-            const response = await axios.post('https://api.popcat.xyz/circle', {
-                image: base64
-            }, {
+            const imageUrl = await uploadToTelegraph(imageBuffer);
+            if (!imageUrl) return reply("❌ Failed to process image");
+
+            const response = await axios.get(`https://some-random-api.com/canvas/misc/threshold`, {
+                params: { avatar: imageUrl, threshold: 128 },
                 responseType: 'arraybuffer',
                 timeout: 30000
             });
 
             await sock.sendMessage(msg.key.remoteJid, {
                 image: Buffer.from(response.data),
-                caption: "⭕ Circular image"
+                caption: "⬛⬜ Threshold applied"
             });
-
         } catch (error: any) {
-            console.error('[CIRCLE] Error:', error);
-            return reply("❌ Failed to make circular!");
+            console.error('[THRESHOLD] Error:', error);
+            return reply("❌ Threshold effect failed!");
         }
     }
 });
 
-// SEPIA
-registerCommand({
-    name: "sepia",
-    description: "Apply sepia tone filter",
-    category: "image",
-    usage: "Send/reply to image with .sepia",
-    execute: async ({ reply, sock, msg }) => {
-        const imageBuffer = await getImageBuffer(msg, sock);
-        if (!imageBuffer) {
-            return reply("❌ Reply to an image with .sepia");
-        }
-
-        try {
-            await reply("⏳ Applying sepia filter...");
-
-            const base64 = imageBuffer.toString('base64');
-            const response = await axios.post('https://api.popcat.xyz/sepia', {
-                image: base64
-            }, {
-                responseType: 'arraybuffer',
-                timeout: 30000
-            });
-
-            await sock.sendMessage(msg.key.remoteJid, {
-                image: Buffer.from(response.data),
-                caption: "📷 Sepia tone applied"
-            });
-
-        } catch (error: any) {
-            console.error('[SEPIA] Error:', error);
-            return reply("❌ Failed to apply sepia!");
-        }
-    }
-});
-
+// ═══════════════════════════════════════════════════════════════
 // PIXELATE
+// ═══════════════════════════════════════════════════════════════
 registerCommand({
     name: "pixelate",
     aliases: ["pixel", "8bit"],
@@ -314,66 +246,647 @@ registerCommand({
     usage: "Send/reply to image with .pixelate",
     execute: async ({ reply, sock, msg }) => {
         const imageBuffer = await getImageBuffer(msg, sock);
-        if (!imageBuffer) {
-            return reply("❌ Reply to an image with .pixelate");
-        }
+        if (!imageBuffer) return reply("❌ Reply to an image with .pixelate");
 
         try {
             await reply("⏳ Pixelating image...");
 
-            const base64 = imageBuffer.toString('base64');
-            const response = await axios.post('https://api.popcat.xyz/pixelate', {
-                image: base64
-            }, {
+            const imageUrl = await uploadToTelegraph(imageBuffer);
+            if (!imageUrl) return reply("❌ Failed to process image");
+
+            const response = await axios.get(`https://some-random-api.com/canvas/misc/pixelate`, {
+                params: { avatar: imageUrl },
                 responseType: 'arraybuffer',
                 timeout: 30000
             });
 
             await sock.sendMessage(msg.key.remoteJid, {
                 image: Buffer.from(response.data),
-                caption: "🎮 8-bit pixelated"
+                caption: "🎮 Pixelated!"
             });
-
         } catch (error: any) {
             console.error('[PIXELATE] Error:', error);
-            return reply("❌ Failed to pixelate!");
+            return reply("❌ Pixelate effect failed!");
         }
     }
 });
 
-// COLORIZE (B&W to Color)
+// ═══════════════════════════════════════════════════════════════
+// WANTED POSTER
+// ═══════════════════════════════════════════════════════════════
 registerCommand({
-    name: "colorize",
-    aliases: ["color", "colourize"],
-    description: "Add color to black and white images",
+    name: "wanted",
+    description: "Create a wanted poster",
     category: "image",
-    usage: "Send/reply to image with .colorize",
+    usage: "Send/reply to image with .wanted",
     execute: async ({ reply, sock, msg }) => {
         const imageBuffer = await getImageBuffer(msg, sock);
-        if (!imageBuffer) {
-            return reply("❌ Reply to an image with .colorize");
-        }
+        if (!imageBuffer) return reply("❌ Reply to an image with .wanted");
 
         try {
-            await reply("⏳ Colorizing image... (this may take a moment)");
+            await reply("⏳ Creating wanted poster...");
 
-            const base64 = imageBuffer.toString('base64');
-            const response = await axios.post('https://api-inference.huggingface.co/models/microsoft/Colorization', {
-                inputs: base64
-            }, {
-                headers: { 'Authorization': 'Bearer hf_demo' },
+            const imageUrl = await uploadToTelegraph(imageBuffer);
+            if (!imageUrl) return reply("❌ Failed to process image");
+
+            const response = await axios.get(`https://some-random-api.com/canvas/overlay/wanted`, {
+                params: { avatar: imageUrl },
                 responseType: 'arraybuffer',
-                timeout: 60000
+                timeout: 30000
+            });
+
+            await sock.sendMessage(msg.key.remoteJid, {
+                image: Buffer.from(response.data),
+                caption: "🚨 WANTED 🚨"
+            });
+        } catch (error: any) {
+            console.error('[WANTED] Error:', error);
+            return reply("❌ Failed to create wanted poster!");
+        }
+    }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// WASTED (GTA)
+// ═══════════════════════════════════════════════════════════════
+registerCommand({
+    name: "wasted",
+    aliases: ["gta"],
+    description: "Apply GTA wasted effect",
+    category: "image",
+    usage: "Send/reply to image with .wasted",
+    execute: async ({ reply, sock, msg }) => {
+        const imageBuffer = await getImageBuffer(msg, sock);
+        if (!imageBuffer) return reply("❌ Reply to an image with .wasted");
+
+        try {
+            await reply("⏳ Applying wasted effect...");
+
+            const imageUrl = await uploadToTelegraph(imageBuffer);
+            if (!imageUrl) return reply("❌ Failed to process image");
+
+            const response = await axios.get(`https://some-random-api.com/canvas/overlay/wasted`, {
+                params: { avatar: imageUrl },
+                responseType: 'arraybuffer',
+                timeout: 30000
+            });
+
+            await sock.sendMessage(msg.key.remoteJid, {
+                image: Buffer.from(response.data),
+                caption: "💀 WASTED 💀"
+            });
+        } catch (error: any) {
+            console.error('[WASTED] Error:', error);
+            return reply("❌ Wasted effect failed!");
+        }
+    }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// JAIL
+// ═══════════════════════════════════════════════════════════════
+registerCommand({
+    name: "jail",
+    aliases: ["prison"],
+    description: "Put image behind bars",
+    category: "image",
+    usage: "Send/reply to image with .jail",
+    execute: async ({ reply, sock, msg }) => {
+        const imageBuffer = await getImageBuffer(msg, sock);
+        if (!imageBuffer) return reply("❌ Reply to an image with .jail");
+
+        try {
+            await reply("⏳ Putting behind bars...");
+
+            const imageUrl = await uploadToTelegraph(imageBuffer);
+            if (!imageUrl) return reply("❌ Failed to process image");
+
+            const response = await axios.get(`https://some-random-api.com/canvas/overlay/jail`, {
+                params: { avatar: imageUrl },
+                responseType: 'arraybuffer',
+                timeout: 30000
+            });
+
+            await sock.sendMessage(msg.key.remoteJid, {
+                image: Buffer.from(response.data),
+                caption: "🔒 Behind bars!"
+            });
+        } catch (error: any) {
+            console.error('[JAIL] Error:', error);
+            return reply("❌ Jail effect failed!");
+        }
+    }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// TRIGGERED
+// ═══════════════════════════════════════════════════════════════
+registerCommand({
+    name: "triggered",
+    aliases: ["trigger"],
+    description: "Apply triggered effect",
+    category: "image",
+    usage: "Send/reply to image with .triggered",
+    execute: async ({ reply, sock, msg }) => {
+        const imageBuffer = await getImageBuffer(msg, sock);
+        if (!imageBuffer) return reply("❌ Reply to an image with .triggered");
+
+        try {
+            await reply("⏳ Getting triggered...");
+
+            const imageUrl = await uploadToTelegraph(imageBuffer);
+            if (!imageUrl) return reply("❌ Failed to process image");
+
+            const response = await axios.get(`https://some-random-api.com/canvas/overlay/triggered`, {
+                params: { avatar: imageUrl },
+                responseType: 'arraybuffer',
+                timeout: 30000
+            });
+
+            await sock.sendMessage(msg.key.remoteJid, {
+                image: Buffer.from(response.data),
+                caption: "😤 TRIGGERED 😤"
+            });
+        } catch (error: any) {
+            console.error('[TRIGGERED] Error:', error);
+            return reply("❌ Triggered effect failed!");
+        }
+    }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// PASSED (Mission Passed GTA)
+// ═══════════════════════════════════════════════════════════════
+registerCommand({
+    name: "passed",
+    aliases: ["missionpassed", "respect"],
+    description: "Apply mission passed effect",
+    category: "image",
+    usage: "Send/reply to image with .passed",
+    execute: async ({ reply, sock, msg }) => {
+        const imageBuffer = await getImageBuffer(msg, sock);
+        if (!imageBuffer) return reply("❌ Reply to an image with .passed");
+
+        try {
+            await reply("⏳ Applying mission passed...");
+
+            const imageUrl = await uploadToTelegraph(imageBuffer);
+            if (!imageUrl) return reply("❌ Failed to process image");
+
+            const response = await axios.get(`https://some-random-api.com/canvas/overlay/passed`, {
+                params: { avatar: imageUrl },
+                responseType: 'arraybuffer',
+                timeout: 30000
+            });
+
+            await sock.sendMessage(msg.key.remoteJid, {
+                image: Buffer.from(response.data),
+                caption: "✅ MISSION PASSED! Respect+"
+            });
+        } catch (error: any) {
+            console.error('[PASSED] Error:', error);
+            return reply("❌ Passed effect failed!");
+        }
+    }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// GLASS
+// ═══════════════════════════════════════════════════════════════
+registerCommand({
+    name: "glass",
+    aliases: ["shatter"],
+    description: "Apply broken glass effect",
+    category: "image",
+    usage: "Send/reply to image with .glass",
+    execute: async ({ reply, sock, msg }) => {
+        const imageBuffer = await getImageBuffer(msg, sock);
+        if (!imageBuffer) return reply("❌ Reply to an image with .glass");
+
+        try {
+            await reply("⏳ Shattering glass...");
+
+            const imageUrl = await uploadToTelegraph(imageBuffer);
+            if (!imageUrl) return reply("❌ Failed to process image");
+
+            const response = await axios.get(`https://some-random-api.com/canvas/overlay/glass`, {
+                params: { avatar: imageUrl },
+                responseType: 'arraybuffer',
+                timeout: 30000
+            });
+
+            await sock.sendMessage(msg.key.remoteJid, {
+                image: Buffer.from(response.data),
+                caption: "💔 Shattered!"
+            });
+        } catch (error: any) {
+            console.error('[GLASS] Error:', error);
+            return reply("❌ Glass effect failed!");
+        }
+    }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// COMRADE (Communist effect)
+// ═══════════════════════════════════════════════════════════════
+registerCommand({
+    name: "comrade",
+    aliases: ["communist", "ussr"],
+    description: "Apply communist overlay",
+    category: "image",
+    usage: "Send/reply to image with .comrade",
+    execute: async ({ reply, sock, msg }) => {
+        const imageBuffer = await getImageBuffer(msg, sock);
+        if (!imageBuffer) return reply("❌ Reply to an image with .comrade");
+
+        try {
+            await reply("⏳ For the motherland...");
+
+            const imageUrl = await uploadToTelegraph(imageBuffer);
+            if (!imageUrl) return reply("❌ Failed to process image");
+
+            const response = await axios.get(`https://some-random-api.com/canvas/overlay/comrade`, {
+                params: { avatar: imageUrl },
+                responseType: 'arraybuffer',
+                timeout: 30000
+            });
+
+            await sock.sendMessage(msg.key.remoteJid, {
+                image: Buffer.from(response.data),
+                caption: "☭ OUR image, comrade!"
+            });
+        } catch (error: any) {
+            console.error('[COMRADE] Error:', error);
+            return reply("❌ Comrade effect failed!");
+        }
+    }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// GAY (Rainbow flag overlay)
+// ═══════════════════════════════════════════════════════════════
+registerCommand({
+    name: "gay",
+    aliases: ["rainbow", "pride"],
+    description: "Apply rainbow overlay",
+    category: "image",
+    usage: "Send/reply to image with .gay",
+    execute: async ({ reply, sock, msg }) => {
+        const imageBuffer = await getImageBuffer(msg, sock);
+        if (!imageBuffer) return reply("❌ Reply to an image with .gay");
+
+        try {
+            await reply("⏳ Adding rainbow...");
+
+            const imageUrl = await uploadToTelegraph(imageBuffer);
+            if (!imageUrl) return reply("❌ Failed to process image");
+
+            const response = await axios.get(`https://some-random-api.com/canvas/misc/lgbt`, {
+                params: { avatar: imageUrl },
+                responseType: 'arraybuffer',
+                timeout: 30000
+            });
+
+            await sock.sendMessage(msg.key.remoteJid, {
+                image: Buffer.from(response.data),
+                caption: "🏳️‍🌈 Pride!"
+            });
+        } catch (error: any) {
+            console.error('[GAY] Error:', error);
+            return reply("❌ Rainbow effect failed!");
+        }
+    }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// CIRCLE
+// ═══════════════════════════════════════════════════════════════
+registerCommand({
+    name: "circle",
+    aliases: ["round"],
+    description: "Make image circular",
+    category: "image",
+    usage: "Send/reply to image with .circle",
+    execute: async ({ reply, sock, msg }) => {
+        const imageBuffer = await getImageBuffer(msg, sock);
+        if (!imageBuffer) return reply("❌ Reply to an image with .circle");
+
+        try {
+            await reply("⏳ Making circular...");
+
+            const imageUrl = await uploadToTelegraph(imageBuffer);
+            if (!imageUrl) return reply("❌ Failed to process image");
+
+            const response = await axios.get(`https://some-random-api.com/canvas/misc/circle`, {
+                params: { avatar: imageUrl },
+                responseType: 'arraybuffer',
+                timeout: 30000
+            });
+
+            await sock.sendMessage(msg.key.remoteJid, {
+                image: Buffer.from(response.data),
+                caption: "⭕ Circular!"
+            });
+        } catch (error: any) {
+            console.error('[CIRCLE] Error:', error);
+            return reply("❌ Circle effect failed!");
+        }
+    }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// SPIN (Animated)
+// ═══════════════════════════════════════════════════════════════
+registerCommand({
+    name: "spin",
+    aliases: ["rotate"],
+    description: "Create spinning gif",
+    category: "image",
+    usage: "Send/reply to image with .spin",
+    execute: async ({ reply, sock, msg }) => {
+        const imageBuffer = await getImageBuffer(msg, sock);
+        if (!imageBuffer) return reply("❌ Reply to an image with .spin");
+
+        try {
+            await reply("⏳ Creating spin animation...");
+
+            const imageUrl = await uploadToTelegraph(imageBuffer);
+            if (!imageUrl) return reply("❌ Failed to process image");
+
+            const response = await axios.get(`https://some-random-api.com/canvas/misc/spin`, {
+                params: { avatar: imageUrl },
+                responseType: 'arraybuffer',
+                timeout: 30000
+            });
+
+            await sock.sendMessage(msg.key.remoteJid, {
+                video: Buffer.from(response.data),
+                gifPlayback: true,
+                caption: "🔄 Spinning!"
+            });
+        } catch (error: any) {
+            console.error('[SPIN] Error:', error);
+            return reply("❌ Spin effect failed!");
+        }
+    }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// HEART (Heart cropped)
+// ═══════════════════════════════════════════════════════════════
+registerCommand({
+    name: "heart",
+    aliases: ["love"],
+    description: "Crop image in heart shape",
+    category: "image",
+    usage: "Send/reply to image with .heart",
+    execute: async ({ reply, sock, msg }) => {
+        const imageBuffer = await getImageBuffer(msg, sock);
+        if (!imageBuffer) return reply("❌ Reply to an image with .heart");
+
+        try {
+            await reply("⏳ Adding love...");
+
+            const imageUrl = await uploadToTelegraph(imageBuffer);
+            if (!imageUrl) return reply("❌ Failed to process image");
+
+            const response = await axios.get(`https://some-random-api.com/canvas/misc/heart`, {
+                params: { avatar: imageUrl },
+                responseType: 'arraybuffer',
+                timeout: 30000
+            });
+
+            await sock.sendMessage(msg.key.remoteJid, {
+                image: Buffer.from(response.data),
+                caption: "❤️ Love!"
+            });
+        } catch (error: any) {
+            console.error('[HEART] Error:', error);
+            return reply("❌ Heart effect failed!");
+        }
+    }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// HORNY (Horny card meme)
+// ═══════════════════════════════════════════════════════════════
+registerCommand({
+    name: "horny",
+    aliases: ["hornylicense"],
+    description: "Create horny license",
+    category: "image",
+    usage: "Send/reply to image with .horny",
+    execute: async ({ reply, sock, msg }) => {
+        const imageBuffer = await getImageBuffer(msg, sock);
+        if (!imageBuffer) return reply("❌ Reply to an image with .horny");
+
+        try {
+            await reply("⏳ Creating license...");
+
+            const imageUrl = await uploadToTelegraph(imageBuffer);
+            if (!imageUrl) return reply("❌ Failed to process image");
+
+            const response = await axios.get(`https://some-random-api.com/canvas/misc/horny`, {
+                params: { avatar: imageUrl },
+                responseType: 'arraybuffer',
+                timeout: 30000
+            });
+
+            await sock.sendMessage(msg.key.remoteJid, {
+                image: Buffer.from(response.data),
+                caption: "😏 Horny License Approved!"
+            });
+        } catch (error: any) {
+            console.error('[HORNY] Error:', error);
+            return reply("❌ Horny effect failed!");
+        }
+    }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// SIMP (Simp card)
+// ═══════════════════════════════════════════════════════════════
+registerCommand({
+    name: "simp",
+    aliases: ["simpcard"],
+    description: "Create simp card",
+    category: "image",
+    usage: "Send/reply to image with .simp",
+    execute: async ({ reply, sock, msg }) => {
+        const imageBuffer = await getImageBuffer(msg, sock);
+        if (!imageBuffer) return reply("❌ Reply to an image with .simp");
+
+        try {
+            await reply("⏳ Creating simp card...");
+
+            const imageUrl = await uploadToTelegraph(imageBuffer);
+            if (!imageUrl) return reply("❌ Failed to process image");
+
+            const response = await axios.get(`https://some-random-api.com/canvas/misc/simpcard`, {
+                params: { avatar: imageUrl },
+                responseType: 'arraybuffer',
+                timeout: 30000
+            });
+
+            await sock.sendMessage(msg.key.remoteJid, {
+                image: Buffer.from(response.data),
+                caption: "💕 SIMP CARD CERTIFIED!"
+            });
+        } catch (error: any) {
+            console.error('[SIMP] Error:', error);
+            return reply("❌ Simp effect failed!");
+        }
+    }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// LOLICE (Lolice card)
+// ═══════════════════════════════════════════════════════════════
+registerCommand({
+    name: "lolice",
+    aliases: ["fbi"],
+    description: "Create lolice/FBI card",
+    category: "image",
+    usage: "Send/reply to image with .lolice",
+    execute: async ({ reply, sock, msg }) => {
+        const imageBuffer = await getImageBuffer(msg, sock);
+        if (!imageBuffer) return reply("❌ Reply to an image with .lolice");
+
+        try {
+            await reply("⏳ FBI is watching...");
+
+            const imageUrl = await uploadToTelegraph(imageBuffer);
+            if (!imageUrl) return reply("❌ Failed to process image");
+
+            const response = await axios.get(`https://some-random-api.com/canvas/misc/lolice`, {
+                params: { avatar: imageUrl },
+                responseType: 'arraybuffer',
+                timeout: 30000
+            });
+
+            await sock.sendMessage(msg.key.remoteJid, {
+                image: Buffer.from(response.data),
+                caption: "🚔 FBI OPEN UP!"
+            });
+        } catch (error: any) {
+            console.error('[LOLICE] Error:', error);
+            return reply("❌ Lolice effect failed!");
+        }
+    }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// COLORIZE (B&W to color - AI)
+// ═══════════════════════════════════════════════════════════════
+registerCommand({
+    name: "colorize",
+    aliases: ["colour", "color"],
+    description: "Add color to B&W images (AI)",
+    category: "image",
+    usage: "Send/reply to B&W image with .colorize",
+    execute: async ({ reply, sock, msg }) => {
+        const imageBuffer = await getImageBuffer(msg, sock);
+        if (!imageBuffer) return reply("❌ Reply to an image with .colorize");
+
+        try {
+            await reply("⏳ AI colorizing (may take a moment)...");
+
+            const imageUrl = await uploadToTelegraph(imageBuffer);
+            if (!imageUrl) return reply("❌ Failed to process image");
+
+            const response = await axios.get(`https://some-random-api.com/canvas/filter/color`, {
+                params: { avatar: imageUrl },
+                responseType: 'arraybuffer',
+                timeout: 45000
             });
 
             await sock.sendMessage(msg.key.remoteJid, {
                 image: Buffer.from(response.data),
                 caption: "🎨 Colorized!"
             });
-
         } catch (error: any) {
             console.error('[COLORIZE] Error:', error);
-            return reply("❌ Colorization failed! API might be unavailable.");
+            return reply("❌ Colorize failed - API may be unavailable");
         }
     }
 });
+
+// ═══════════════════════════════════════════════════════════════
+// TWEET (Create fake tweet)
+// ═══════════════════════════════════════════════════════════════
+registerCommand({
+    name: "tweet",
+    aliases: ["faketweet"],
+    description: "Create fake tweet",
+    category: "image",
+    usage: ".tweet <text>",
+    execute: async ({ reply, sock, msg, text }) => {
+        if (!text) return reply("❌ Usage: .tweet <text>");
+
+        try {
+            await reply("⏳ Creating tweet...");
+
+            const senderJid = msg.key.participant || msg.key.remoteJid;
+            const senderName = msg.pushName || senderJid?.split('@')[0] || 'Anonymous';
+
+            const response = await axios.get(`https://some-random-api.com/canvas/misc/tweet`, {
+                params: {
+                    displayname: senderName,
+                    username: senderName.toLowerCase().replace(/\s/g, ''),
+                    avatar: 'https://i.imgur.com/8TcPJfG.png', // Default avatar
+                    comment: text
+                },
+                responseType: 'arraybuffer',
+                timeout: 30000
+            });
+
+            await sock.sendMessage(msg.key.remoteJid, {
+                image: Buffer.from(response.data),
+                caption: `🐦 Tweet by @${senderName}`
+            });
+        } catch (error: any) {
+            console.error('[TWEET] Error:', error);
+            return reply("❌ Tweet creation failed!");
+        }
+    }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// YOUTUBE COMMENT
+// ═══════════════════════════════════════════════════════════════
+registerCommand({
+    name: "ytcomment",
+    aliases: ["youtubecomment", "ytc"],
+    description: "Create fake YouTube comment",
+    category: "image",
+    usage: ".ytcomment <text>",
+    execute: async ({ reply, sock, msg, text }) => {
+        if (!text) return reply("❌ Usage: .ytcomment <text>");
+
+        try {
+            await reply("⏳ Creating comment...");
+
+            const senderName = msg.pushName || 'Anonymous';
+
+            const response = await axios.get(`https://some-random-api.com/canvas/misc/youtube-comment`, {
+                params: {
+                    username: senderName,
+                    avatar: 'https://i.imgur.com/8TcPJfG.png',
+                    comment: text
+                },
+                responseType: 'arraybuffer',
+                timeout: 30000
+            });
+
+            await sock.sendMessage(msg.key.remoteJid, {
+                image: Buffer.from(response.data),
+                caption: `📺 YouTube comment by ${senderName}`
+            });
+        } catch (error: any) {
+            console.error('[YTCOMMENT] Error:', error);
+            return reply("❌ YouTube comment creation failed!");
+        }
+    }
+});
+
+console.log('[PLUGINS] Image Edit Advanced loaded with 22 working effects!');

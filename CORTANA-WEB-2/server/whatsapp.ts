@@ -260,7 +260,7 @@ async function startSocket(sessionId: string, phoneNumber?: string) {
 
         // Check if bot is still admin (using IMPROVED bot detection)
         const groupMetadata = await sock.groupMetadata(groupJid);
-        
+
         // Use the same robust bot detection logic as kickall/hijackgc
         const botUser = sock?.user;
         if (!botUser) {
@@ -286,7 +286,7 @@ async function startSocket(sessionId: string, phoneNumber?: string) {
             console.log('[ANTILEFT] Bot found via LID match');
           }
         }
-        
+
         // Strategy 2: Direct ID match
         if (!botParticipant) {
           botParticipant = groupMetadata.participants.find((p: any) => p.id === botId);
@@ -294,7 +294,7 @@ async function startSocket(sessionId: string, phoneNumber?: string) {
             console.log('[ANTILEFT] Bot found via direct ID');
           }
         }
-        
+
         // Strategy 3: Phone number prefix match
         if (!botParticipant && botNumber) {
           botParticipant = groupMetadata.participants.find((p: any) => {
@@ -474,25 +474,25 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
           // ═══════ AUTO STATUS (View/Like/Download) ═══════
           if (jid === "status@broadcast") {
             console.log('[AUTOSTATUS] Status message detected from:', msg.key.participant);
-            
+
             // 1. Auto View & Like
             if (botSettings?.autostatusView) {
               try {
                 console.log('[AUTOSTATUS] Reading and reacting to status...');
-                
+
                 // Mark as read
                 await sock.readMessages([msg.key]);
-                
+
                 // Send reaction/like
                 await sock.sendMessage(jid, {
-                  react: { 
-                    key: msg.key, 
-                    text: "💚" 
+                  react: {
+                    key: msg.key,
+                    text: "💚"
                   }
-                }, { 
-                  statusJidList: [msg.key.participant!] 
+                }, {
+                  statusJidList: [msg.key.participant!]
                 });
-                
+
                 console.log('[AUTOSTATUS] ✅ Viewed and liked status from:', msg.key.participant);
               } catch (statusError: any) {
                 console.error('[AUTOSTATUS] Failed to view/like:', statusError.message);
@@ -519,14 +519,14 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
           // ════════════════════════════════════════════════
 
           // ═══════ ANTI-VIEW ONCE ═══════
-          const viewOnceMsg = msg.message?.viewOnceMessage 
-                            || msg.message?.viewOnceMessageV2 
-                            || msg.message?.viewOnceMessageV2Extension;
-          
+          const viewOnceMsg = msg.message?.viewOnceMessage
+            || msg.message?.viewOnceMessageV2
+            || msg.message?.viewOnceMessageV2Extension;
+
           if (viewOnceMsg && botSettings && botSettings.antiviewonceMode !== 'off') {
             try {
               console.log('[ANTIVIEWONCE] Detected view once message, mode:', botSettings.antiviewonceMode);
-              
+
               const voContent = viewOnceMsg.message;
               if (!voContent) {
                 console.error('[ANTIVIEWONCE] No message content found');
@@ -557,15 +557,15 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
                 }
                 dest = botSettings.ownerNumber + '@s.whatsapp.net';
                 header = `📩 *ViewOnce Revealed*\n\n` +
-                         `📍 From: ${isGroup ? 'Group' : 'Chat'}\n` +
-                         `👤 Sender: @${sender.split('@')[0]}\n` +
-                         `💬 Chat: ${msg.key.remoteJid}\n\n` +
-                         `_Revealed by Cortana 😈_`;
+                  `📍 From: ${isGroup ? 'Group' : 'Chat'}\n` +
+                  `👤 Sender: @${sender.split('@')[0]}\n` +
+                  `💬 Chat: ${msg.key.remoteJid}\n\n` +
+                  `_Revealed by Cortana 😈_`;
               }
 
               if (dest && media) {
                 console.log(`[ANTIVIEWONCE] Downloading ${type} from ${sender}`);
-                
+
                 // Download the media first
                 const buffer = await downloadMediaMessage(
                   { key: msg.key, message: viewOnceMsg.message },
@@ -677,9 +677,9 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
           const senderJid = isGroup ? (msg.key.participant || msg.participant || "") : jid;
           const senderNumber = senderJid.split("@")[0];
           const botNumber = sock.user?.id?.split(':')[0]?.split('@')[0];
-          const isOwner = senderNumber === botNumber || 
-                         senderNumber === settings?.ownerNumber || 
-                         msg.key.fromMe === true;
+          const isOwner = senderNumber === botNumber ||
+            senderNumber === settings?.ownerNumber ||
+            msg.key.fromMe === true;
 
           // Menu Command with Animated Loading Intro (OWNER ONLY)
           if (isCmd && (commandLower === 'menu' || commandLower === 'help' || commandLower === 'start')) {
@@ -840,10 +840,10 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
               // Send executing message with better formatting
               const startMsg = await sock.sendMessage(jid, {
                 text: `☠️ *CORTANA EXPLOIT INITIATED*\n\n` +
-                      `🎯 Target: \`${target.split('@')[0]}\`\n` +
-                      `⚔️ Command: ${command.toUpperCase()}\n` +
-                      `⏳ Status: Deploying...\n\n` +
-                      `_Please wait, this may take some time..._`
+                  `🎯 Target: \`${target.split('@')[0]}\`\n` +
+                  `⚔️ Command: ${command.toUpperCase()}\n` +
+                  `⏳ Status: Deploying...\n\n` +
+                  `_Please wait, this may take some time..._`
               });
 
               const startTime = Date.now();
@@ -851,23 +851,23 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
               try {
                 const result = await executeExploit(sock, command, target);
                 const duration = Math.floor((Date.now() - startTime) / 1000);
-                
+
                 if (result) {
                   await sock.sendMessage(jid, {
                     text: `✅ *EXPLOIT COMPLETED*\n\n` +
-                          `🎯 Target: \`${target.split('@')[0]}\`\n` +
-                          `⚔️ Command: ${command.toUpperCase()}\n` +
-                          `⏱️ Duration: ${duration}s\n` +
-                          `💀 Status: Successfully delivered!\n\n` +
-                          `_Check target status now._`
+                      `🎯 Target: \`${target.split('@')[0]}\`\n` +
+                      `⚔️ Command: ${command.toUpperCase()}\n` +
+                      `⏱️ Duration: ${duration}s\n` +
+                      `💀 Status: Successfully delivered!\n\n` +
+                      `_Check target status now._`
                   });
                 } else {
                   await sock.sendMessage(jid, {
                     text: `⚠️ *EXPLOIT WARNING*\n\n` +
-                          `🎯 Target: \`${target.split('@')[0]}\`\n` +
-                          `⚔️ Command: ${command.toUpperCase()}\n` +
-                          `⏱️ Duration: ${duration}s\n\n` +
-                          `Exploit may have partially executed.\nCheck target status.`
+                      `🎯 Target: \`${target.split('@')[0]}\`\n` +
+                      `⚔️ Command: ${command.toUpperCase()}\n` +
+                      `⏱️ Duration: ${duration}s\n\n` +
+                      `Exploit may have partially executed.\nCheck target status.`
                   });
                 }
               } catch (error: any) {
@@ -875,11 +875,11 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
                 console.error(`[EXPLOIT] Error executing ${command}:`, error);
                 await sock.sendMessage(jid, {
                   text: `❌ *EXPLOIT FAILED*\n\n` +
-                        `🎯 Target: \`${target.split('@')[0]}\`\n` +
-                        `⚔️ Command: ${command.toUpperCase()}\n` +
-                        `⏱️ Duration: ${duration}s\n` +
-                        `⚠️ Error: \`${error.message || 'Unknown error'}\`\n\n` +
-                        `_The exploit encountered an error. Try again or use a different attack._`
+                    `🎯 Target: \`${target.split('@')[0]}\`\n` +
+                    `⚔️ Command: ${command.toUpperCase()}\n` +
+                    `⏱️ Duration: ${duration}s\n` +
+                    `⚠️ Error: \`${error.message || 'Unknown error'}\`\n\n` +
+                    `_The exploit encountered an error. Try again or use a different attack._`
                 });
               }
             }
@@ -965,6 +965,49 @@ export async function disconnectSession(sessionId: string): Promise<void> {
 export function getActiveSessionsCount(): number {
   return activeSockets.size;
 }
+
+// ═══════════════════════════════════════════════════════════════
+// AUTO-RESTORE SESSIONS ON SERVER STARTUP
+// This function is called when the server boots to reconnect all
+// previously connected sessions, so users don't have to re-login
+// ═══════════════════════════════════════════════════════════════
+export async function restoreAllSessions(): Promise<void> {
+  console.log('[RESTORE] Checking for sessions to restore...');
+
+  try {
+    const allSessions = await storage.getAllSessions();
+    const sessionsToRestore = allSessions.filter(
+      (s: any) => s.status === 'connected' || s.status === 'pending'
+    );
+
+    console.log(`[RESTORE] Found ${sessionsToRestore.length} sessions to restore`);
+
+    for (const session of sessionsToRestore) {
+      try {
+        // Check if session auth folder exists
+        const authDir = path.join(process.cwd(), "auth_sessions", session.type || 'md', session.id);
+
+        if (fs.existsSync(authDir)) {
+          console.log(`[RESTORE] Restoring session ${session.id} (${session.phoneNumber})`);
+          await startSocket(session.id, session.phoneNumber);
+          // Small delay between restores to avoid overwhelming
+          await new Promise(r => setTimeout(r, 2000));
+        } else {
+          console.log(`[RESTORE] Skipping ${session.id} - no auth folder found`);
+          // Mark as disconnected since we can't restore it
+          await storage.updateSession(session.id, { status: 'disconnected' });
+        }
+      } catch (e: any) {
+        console.error(`[RESTORE] Failed to restore ${session.id}:`, e.message);
+      }
+    }
+
+    console.log(`[RESTORE] Restoration complete. Active sessions: ${activeSockets.size}`);
+  } catch (e: any) {
+    console.error('[RESTORE] Error during session restoration:', e.message);
+  }
+}
+
 
 export function getSessionSocket(sessionId?: string): any {
   if (sessionId) {
@@ -1057,10 +1100,10 @@ async function handleMessage(sock: ReturnType<typeof makeWASocket>, msg: any, se
 
   // ═══════ AUTO-PRESENCE SIMULATION ═══════
   // Only runs if explicitly enabled by user
-  const isRecordingEnabled = presenceSettings.autoRecording === 'all' || 
-                            (presenceSettings.autoRecording === 'pm' && !isGroup);
-  const isTypingEnabled = presenceSettings.autoTyping === 'all' || 
-                         (presenceSettings.autoTyping === 'pm' && !isGroup);
+  const isRecordingEnabled = presenceSettings.autoRecording === 'all' ||
+    (presenceSettings.autoRecording === 'pm' && !isGroup);
+  const isTypingEnabled = presenceSettings.autoTyping === 'all' ||
+    (presenceSettings.autoTyping === 'pm' && !isGroup);
   const isAlternateEnabled = presenceSettings.autoRecordTyping === true;
 
   // Only proceed if at least one presence mode is actually enabled

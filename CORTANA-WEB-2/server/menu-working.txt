@@ -276,14 +276,29 @@
 │        🖼️ I M A G E  E D I T 🖼️      │
 ╰─────────────── ❖ ───────────────╯
 ➥ .blur (reply)
+➥ .greyscale (reply)
+➥ .invert (reply)
+➥ .bright (reply)
+➥ .threshold (reply)
+➥ .pixelate (reply)
+➥ .circle (reply)
+➥ .spin (reply)
+➥ .heart (reply)
 ➥ .wanted (reply)
-➥ .jail (reply)
 ➥ .wasted (reply)
-➥ .trigger (reply)
-➥ .facepalm (reply)
-➥ .circular (reply)
-➥ .wanted (reply)
-➥ .beautiful (reply)
+➥ .jail (reply)
+➥ .triggered (reply)
+➥ .passed (reply)
+➥ .glass (reply)
+➥ .comrade (reply)
+➥ .gay (reply)
+➥ .horny (reply)
+➥ .simp (reply)
+➥ .lolice (reply)
+➥ .colorize (reply)
+➥ .tweet <text>
+➥ .ytcomment <text>
+
 
 
 ╭─────────────── ❖ ───────────────╮

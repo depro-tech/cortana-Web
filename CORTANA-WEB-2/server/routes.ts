@@ -1,12 +1,21 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { requestPairingCode, getSessionStatus, disconnectSession, getActiveSessionsCount } from "./whatsapp";
+import { requestPairingCode, getSessionStatus, disconnectSession, getActiveSessionsCount, restoreAllSessions } from "./whatsapp";
+
 
 export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+
+  // ═══════════════════════════════════════════════════════════════
+  // AUTO-RESTORE: Reconnect saved sessions on server startup
+  // ═══════════════════════════════════════════════════════════════
+  setTimeout(async () => {
+    console.log('[STARTUP] Server ready - initiating session restoration...');
+    await restoreAllSessions();
+  }, 5000); // Wait 5 seconds for server to fully initialize
 
   app.post("/api/pairing/request", async (req, res) => {
     try {
@@ -146,21 +155,21 @@ export async function registerRoutes(
   app.post("/api/mpesa/callback", async (req, res) => {
     try {
       console.log("[MPESA CALLBACK] Received:", JSON.stringify(req.body, null, 2));
-      
+
       const { Body } = req.body;
-      
+
       if (Body && Body.stkCallback) {
         const { ResultCode, ResultDesc, CallbackMetadata } = Body.stkCallback;
-        
+
         if (ResultCode === 0) {
           // Payment successful
           const metadata = CallbackMetadata?.Item || [];
           const amount = metadata.find((item: any) => item.Name === "Amount")?.Value;
           const phone = metadata.find((item: any) => item.Name === "PhoneNumber")?.Value;
           const mpesaRef = metadata.find((item: any) => item.Name === "MpesaReceiptNumber")?.Value;
-          
+
           console.log(`[MPESA] ✅ Payment Success: ${amount} from ${phone}, Ref: ${mpesaRef}`);
-          
+
           // TODO: Update database, notify user via WhatsApp
           // const { getSessionSocket } = await import("./whatsapp");
           // const sock = getSessionSocket();
@@ -174,7 +183,7 @@ export async function registerRoutes(
           console.log(`[MPESA] ❌ Payment Failed: ${ResultDesc}`);
         }
       }
-      
+
       res.json({ ResultCode: 0, ResultDesc: "Accepted" });
     } catch (error: any) {
       console.error("[MPESA CALLBACK] Error:", error);
