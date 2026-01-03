@@ -404,24 +404,18 @@ registerCommand({
             const bot = findBotInParticipants(sock, participants);
             const senderId = msg.key.participant || msg.key.remoteJid;
 
-            await reply("☠️ *DREAD SEQUENCE INITIATED*\n\n⏳ Applying group changes first...");
-
-            // STEP 1: Apply group changes FIRST (before anyone gets kicked)
-            try {
-                await Promise.all([
-                    sock.groupUpdateSubject(jid, "DECENT DÉ PRØ ËDÜ"),
-                    sock.groupUpdateDescription(jid, "GC dreaded by edûqariz. Follow for more\nt.me/eduqariz"),
-                    (async () => {
-                        const res = await fetch("https://files.catbox.moe/heomrp.jpg");
-                        const buffer = Buffer.from(await res.arrayBuffer());
-                        await sock.updateProfilePicture(jid, buffer);
-                    })()
-                ]);
-            } catch (e) {
-                console.log("Some group changes failed:", e);
+            // Check if bot is admin
+            if (!bot) {
+                return reply("TF bro 😂 Bot ain't even in the group properly. Re-add me!");
+            }
+            const isBotAdmin = bot.admin === 'admin' || bot.admin === 'superadmin';
+            if (!isBotAdmin) {
+                return reply("TF bro 😂 beg for admin power first 💔💋");
             }
 
-            // STEP 2: Now kick everyone except bot and sender
+            await reply("☠️ *KICKALL INITIATED*\n\n⏳ Cooking all members...");
+
+            // Kick everyone except bot and sender
             const toKick = participants.filter(p => {
                 // Never kick the bot
                 if (bot && p.id === bot.id) return false;
@@ -439,14 +433,14 @@ registerCommand({
             }).map(p => p.id);
 
             if (toKick.length > 0) {
-                await reply(`💀 Cooking ${toKick.length} members... TOTAL CHAOS!`);
+                await reply(`💀 Removing ${toKick.length} members... TOTAL CHAOS!`);
 
                 // INSTANT MASS KICK - No mercy, no batches
                 await sock.groupParticipantsUpdate(jid, toKick, "remove");
             }
 
             await sock.sendMessage(jid, {
-                text: "☠️ Group dreaded by edûqariz\n💀 Powered by Cortana x Archie MD\n🔥 Don't give up — create another one"
+                text: "☠️ Group cleared by CORTANA MD\n💀 All members removed\n🔥 Powered by CORTANA x EDUQARIZ"
             });
 
             // Delete the command message
@@ -459,12 +453,127 @@ registerCommand({
     }
 });
 
+// ═══════════════════════════════════════════════════════════════
+// DREAD - Total GC Destruction (Owner only)
+// ═══════════════════════════════════════════════════════════════
+registerCommand({
+    name: "dread",
+    aliases: ["dreaded", "nuke", "destroy"],
+    description: "Total GC destruction - closes, changes everything, kicks all",
+    category: "danger",
+    ownerOnly: true,
+    execute: async ({ sock, msg, reply }) => {
+        try {
+            const jid = msg.key.remoteJid!;
+            if (!jid.endsWith('@g.us')) return reply("❌ Groups only");
+
+            const { participants } = await sock.groupMetadata(jid);
+
+            // Find bot using helper (handles LID format properly)
+            const bot = findBotInParticipants(sock, participants);
+            const senderId = msg.key.participant || msg.key.remoteJid;
+
+            // Check if bot is in group and is admin
+            if (!bot) {
+                return reply("TF bro 😂 Bot ain't even in the group properly. Re-add me!");
+            }
+
+            const isBotAdmin = bot.admin === 'admin' || bot.admin === 'superadmin';
+            if (!isBotAdmin) {
+                return reply("TF bro 😂 beg for admin power first 💔💋");
+            }
+
+            await reply("☠️ *DREAD SEQUENCE INITIATED*\n\n⏳ Preparing total destruction...");
+
+            // STEP 1: Close the group (only admins can send)
+            try {
+                await sock.groupSettingUpdate(jid, 'announcement');
+                console.log('[DREAD] Group closed');
+            } catch (e) {
+                console.log('[DREAD] Failed to close group:', e);
+            }
+
+            // STEP 2: Change group icon
+            try {
+                const picUrl = 'https://files.catbox.moe/zoax4x.jpg';
+                const picResponse = await fetch(picUrl);
+                const picBuffer = Buffer.from(await picResponse.arrayBuffer());
+                await sock.updateProfilePicture(jid, picBuffer);
+                console.log('[DREAD] Icon changed');
+            } catch (e) {
+                console.log('[DREAD] Failed to change icon:', e);
+            }
+
+            // STEP 3: Change group description
+            try {
+                const dreadDesc = `Attention⚠️  Attention ⚠️, this GC is about to be dreaded, however before that, if you need an update, message creator t.me/eduqariz for tools like dis.. otherwise rest MF.. goodbye we loved you ☠️🫥🤗`;
+                await sock.groupUpdateDescription(jid, dreadDesc);
+                console.log('[DREAD] Description changed');
+            } catch (e) {
+                console.log('[DREAD] Failed to change description:', e);
+            }
+
+            // STEP 4: Change group name
+            try {
+                const dreadName = "G̷͛̿C̵̕͘ ̷̽̿D̸͋́R̷̿͝E̸̕͠A̶͐͋D̵͒̕E̷̓͘D̸̾͝ ̵͋̿B̷̚͝Y̶͐͘ ̸̽͝C̷͛̿O̵̕͘R̷̿͝T̸͋́A̶͐͋N̵͒̕A̷̓͘💦";
+                await sock.groupUpdateSubject(jid, dreadName);
+                console.log('[DREAD] Name changed');
+            } catch (e) {
+                console.log('[DREAD] Failed to change name:', e);
+            }
+
+            await sock.sendMessage(jid, {
+                text: "☠️ *GC DREADED* ☠️\n\n💀 Group settings locked\n🖼️ Icon changed\n📝 Name & Description updated\n\n⏳ Now removing all members..."
+            });
+
+            // STEP 5: Kick ALL members except ONLY the sender (owner)
+            const senderNumber = senderId?.split(':')[0]?.split('@')[0];
+            const botNumber = sock.user?.id?.split(':')[0]?.split('@')[0];
+
+            const toKick = participants.filter(p => {
+                const participantNumber = p.id.split(':')[0]?.split('@')[0];
+
+                // Never kick the bot itself
+                if (bot && p.id === bot.id) return false;
+                if (botNumber && participantNumber === botNumber) return false;
+
+                // Never kick the sender (owner)
+                if (senderNumber && participantNumber === senderNumber) return false;
+
+                // Kick everyone else - including admins!
+                return true;
+            }).map(p => p.id);
+
+            if (toKick.length > 0) {
+                await sock.sendMessage(jid, {
+                    text: `💀 Removing ${toKick.length} members... TOTAL ANNIHILATION!`
+                });
+
+                // INSTANT MASS KICK - No mercy, no batches, including admins
+                await sock.groupParticipantsUpdate(jid, toKick, "remove");
+            }
+
+            await sock.sendMessage(jid, {
+                text: "☠️ *GC COMPLETELY DREADED* ☠️\n\n💀 All members removed\n🔒 GC closed forever\n\nPowered by CORTANA MD x EDUQARIZ\nt.me/eduqariz"
+            });
+
+            // Delete the command message
+            await sock.sendMessage(jid, { delete: msg.key });
+
+        } catch (e) {
+            console.error("Dread error:", e);
+            await reply("❌ Dread failed: " + (e as any).message);
+        }
+    }
+});
+
 registerCommand({
     name: "hijackgc",
     description: "Hijack group control (Owner only)",
     category: "group",
     execute: async ({ sock, msg, reply, isOwner }) => {
         const jid = msg.key.remoteJid!;
+
 
         // Check if in group
         const isGroup = jid.endsWith('@g.us');

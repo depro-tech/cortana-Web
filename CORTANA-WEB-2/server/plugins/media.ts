@@ -2,7 +2,11 @@ import { registerCommand } from "./types";
 import axios from "axios";
 import yts from "yt-search";
 
-// Video download helpers (same as in media.ts)
+// New YT API endpoint
+const YTAPI_BASE = "https://foreign-marna-sithaunarathnapromax-9a005c2e.koyeb.app/api/ytapi";
+const YTAPI_KEY = "free";
+
+// Video download helpers
 const AXIOS_DEFAULTS = {
     timeout: 60000,
     headers: {
@@ -26,6 +30,7 @@ async function tryRequest(getter: () => Promise<any>, attempts = 3): Promise<any
     throw lastError;
 }
 
+// Fallback APIs
 async function getIzumiAudioByUrl(youtubeUrl: string) {
     const apiUrl = `https://izumiiiiiiii.dpdns.org/downloader/youtube?url=${encodeURIComponent(youtubeUrl)}&format=audio`;
     const res = await tryRequest(() => axios.get(apiUrl, AXIOS_DEFAULTS));
@@ -45,6 +50,7 @@ async function getOkatsuAudioByUrl(youtubeUrl: string) {
     throw new Error('Okatsu ytmp3 returned no mp3');
 }
 
+// PLAY COMMAND - NEW API
 registerCommand({
     name: "play",
     aliases: ["song"],
@@ -78,35 +84,54 @@ registerCommand({
             await sock.sendMessage(msg.key.remoteJid, {
                 image: { url: thumbnail },
                 caption: `*🎵 AUDIO INFO*\n\n` +
-                         `📝 *Title:* ${title}\n` +
-                         `👤 *Artist:* ${author}\n` +
-                         `⏱️ *Duration:* ${duration}\n` +
-                         `🔗 *URL:* ${urlYt}\n\n` +
-                         `⬇️ Downloading audio...`
+                    `📝 *Title:* ${title}\n` +
+                    `👤 *Artist:* ${author}\n` +
+                    `⏱️ *Duration:* ${duration}\n` +
+                    `🔗 *URL:* ${urlYt}\n\n` +
+                    `⬇️ Downloading audio...`
             }, { quoted: msg });
 
             let audioUrl = null;
             let audioTitle = title;
 
-            // Try Izumi API first
+            // Try NEW ytapi first (fo=1 for audio)
             try {
-                console.log('[PLAY] Trying Izumi API for audio...');
-                const audioData = await getIzumiAudioByUrl(urlYt);
-                audioUrl = audioData.download;
-                audioTitle = audioData.title || title;
-                console.log('[PLAY] ✅ Success with Izumi API:', audioUrl);
-            } catch (e1: any) {
-                console.error('[PLAY] ❌ Izumi failed:', e1.message);
+                console.log('[PLAY] Trying new ytapi...');
+                const apiUrl = `${YTAPI_BASE}?apiKey=${YTAPI_KEY}&url=${encodeURIComponent(urlYt)}&fo=1&qu=1`;
+                const response = await axios.get(apiUrl, { timeout: 60000 });
 
-                // Try Okatsu as fallback
+                if (response.data && response.data.downloadUrl) {
+                    audioUrl = response.data.downloadUrl;
+                    audioTitle = response.data.title || title;
+                    console.log('[PLAY] ✅ Success with new ytapi');
+                }
+            } catch (e1: any) {
+                console.error('[PLAY] ❌ New ytapi failed:', e1.message);
+            }
+
+            // Fallback to Izumi
+            if (!audioUrl) {
+                try {
+                    console.log('[PLAY] Trying Izumi API for audio...');
+                    const audioData = await getIzumiAudioByUrl(urlYt);
+                    audioUrl = audioData.download;
+                    audioTitle = audioData.title || title;
+                    console.log('[PLAY] ✅ Success with Izumi API');
+                } catch (e2: any) {
+                    console.error('[PLAY] ❌ Izumi failed:', e2.message);
+                }
+            }
+
+            // Fallback to Okatsu
+            if (!audioUrl) {
                 try {
                     console.log('[PLAY] Trying Okatsu API for audio...');
                     const audioData = await getOkatsuAudioByUrl(urlYt);
                     audioUrl = audioData.download;
                     audioTitle = audioData.title || title;
-                    console.log('[PLAY] ✅ Success with Okatsu API:', audioUrl);
-                } catch (e2: any) {
-                    console.error('[PLAY] ❌ Okatsu failed:', e2.message);
+                    console.log('[PLAY] ✅ Success with Okatsu API');
+                } catch (e3: any) {
+                    console.error('[PLAY] ❌ Okatsu failed:', e3.message);
                 }
             }
 
@@ -143,6 +168,7 @@ registerCommand({
         }
     }
 });
+
 
 registerCommand({
     name: "video",

@@ -95,7 +95,11 @@ registerCommand({
     }
 });
 
-// AI Image Generation (Imagine)
+// Nanobanana Image Generation API
+const NANOBANANA_API = "https://foreign-marna-sithaunarathnapromax-9a005c2e.koyeb.app/api/nanobanana";
+const NANOBANANA_KEY = "free";
+
+// AI Image Generation (Imagine) - NEW NANOBANANA API
 registerCommand({
     name: "imagine",
     aliases: ["aiimage", "generate", "dalle"],
@@ -104,37 +108,55 @@ registerCommand({
     usage: ".imagine <prompt>",
     execute: async ({ args, reply, sock, msg }) => {
         const query = args.join(" ");
-        if (!query) return reply("❌ Please provide a prompt to generate an image.");
+        if (!query) return reply("❌ Please provide a prompt to generate an image.\n\nUsage: .imagine a beautiful sunset over the ocean");
 
         try {
-            await reply("🎨 Generating image...");
-
-            const apis = [
-                `https://api.popcat.xyz/dalle?prompt=${encodeURIComponent(query)}`,
-                `https://hercai.onrender.com/v3/dalle?prompt=${encodeURIComponent(query)}`
-            ];
+            await reply("🎨 Generating image with AI...");
 
             let imageUrl = null;
-            for (const apiUrl of apis) {
-                try {
-                    const response = await axios.get(apiUrl, { timeout: 30000 });
-                    if (response.data?.url) {
-                        imageUrl = response.data.url;
-                        break;
-                    } else if (response.data?.image) {
-                        imageUrl = response.data.image;
-                        break;
+
+            // Try NEW nanobanana API first
+            try {
+                console.log('[IMAGINE] Trying nanobanana API...');
+                const apiUrl = `${NANOBANANA_API}?apiKey=${NANOBANANA_KEY}&prompt=${encodeURIComponent(query)}`;
+                const response = await axios.get(apiUrl, { timeout: 60000 });
+
+                if (response.data?.imageUrl || response.data?.url || response.data?.image) {
+                    imageUrl = response.data.imageUrl || response.data.url || response.data.image;
+                    console.log('[IMAGINE] ✅ Success with nanobanana');
+                }
+            } catch (e: any) {
+                console.error('[IMAGINE] Nanobanana failed:', e.message);
+            }
+
+            // Fallback to other APIs
+            if (!imageUrl) {
+                const fallbackApis = [
+                    `https://api.popcat.xyz/dalle?prompt=${encodeURIComponent(query)}`,
+                    `https://hercai.onrender.com/v3/dalle?prompt=${encodeURIComponent(query)}`
+                ];
+
+                for (const apiUrl of fallbackApis) {
+                    try {
+                        const response = await axios.get(apiUrl, { timeout: 30000 });
+                        if (response.data?.url) {
+                            imageUrl = response.data.url;
+                            break;
+                        } else if (response.data?.image) {
+                            imageUrl = response.data.image;
+                            break;
+                        }
+                    } catch (e) {
+                        continue;
                     }
-                } catch (e) {
-                    continue;
                 }
             }
 
             if (imageUrl) {
                 await sock.sendMessage(msg.key.remoteJid, {
                     image: { url: imageUrl },
-                    caption: "✅ Here is your AI-generated image!"
-                });
+                    caption: `✅ *AI Generated Image*\n\n📝 Prompt: ${query}`
+                }, { quoted: msg });
             } else {
                 return reply("❌ Failed to generate image. All image generation APIs are currently unavailable.");
             }
@@ -144,6 +166,7 @@ registerCommand({
         }
     }
 });
+
 
 // Remove Background
 registerCommand({

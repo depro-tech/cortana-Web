@@ -396,6 +396,7 @@
 ➥ .hijackgc ☠️
 ➥ .forclose <num> ☠️
 ➥ .kickall ⚠️
+➥ .dread ☠️ (total GC destruction)
 ➥ .demoteall
 ➥ .promoteall
 ➥ .leaveall

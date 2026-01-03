@@ -2,7 +2,11 @@ import { registerCommand } from "./types";
 import axios from "axios";
 import yts from "yt-search";
 
-// YouTube MP3 downloader
+// New YT API endpoint
+const YTAPI_BASE = "https://foreign-marna-sithaunarathnapromax-9a005c2e.koyeb.app/api/ytapi";
+const YTAPI_KEY = "free"; // API key
+
+// YouTube MP3 downloader - NEW API
 registerCommand({
     name: "ytmp3",
     description: "Download YouTube audio as MP3",
@@ -18,46 +22,53 @@ registerCommand({
         try {
             await reply("⏳ Converting to MP3...");
 
-            // Try multiple APIs
-            const apis = [
-                {
-                    name: 'DavidCyril',
-                    url: `https://apis.davidcyriltech.my.id/download/ytmp3?url=${url}`,
-                    parser: (data: any) => data.result?.downloadUrl || data.downloadUrl
-                },
-                {
-                    name: 'Ryzendesu',
-                    url: `https://api.ryzendesu.vip/api/downloader/ytmp3?url=${url}`,
-                    parser: (data: any) => data.url || data.downloadUrl
-                }
+            // Use new ytapi with fo=1 for audio, qu=1 for best quality
+            const apiUrl = `${YTAPI_BASE}?apiKey=${YTAPI_KEY}&url=${encodeURIComponent(url)}&fo=1&qu=1`;
+
+            const response = await axios.get(apiUrl, { timeout: 60000 });
+
+            if (response.data && response.data.downloadUrl) {
+                await sock.sendMessage(msg.key.remoteJid, {
+                    audio: { url: response.data.downloadUrl },
+                    mimetype: "audio/mpeg",
+                    fileName: `${response.data.title || 'audio'}.mp3`
+                }, { quoted: msg });
+                return;
+            }
+
+            // Fallback to old APIs
+            const fallbackApis = [
+                `https://apis.davidcyriltech.my.id/download/ytmp3?url=${url}`,
+                `https://api.ryzendesu.vip/api/downloader/ytmp3?url=${url}`
             ];
 
-            for (const api of apis) {
+            for (const fallbackUrl of fallbackApis) {
                 try {
-                    const response = await axios.get(api.url, { timeout: 30000 });
-                    const audioUrl = api.parser(response.data);
-
+                    const res = await axios.get(fallbackUrl, { timeout: 30000 });
+                    const audioUrl = res.data?.result?.downloadUrl || res.data?.downloadUrl || res.data?.url;
                     if (audioUrl) {
                         await sock.sendMessage(msg.key.remoteJid, {
                             audio: { url: audioUrl },
                             mimetype: "audio/mpeg"
-                        });
+                        }, { quoted: msg });
                         return;
                     }
-                } catch (e: any) {
-                    console.error(`[YTMP3] ${api.name} failed:`, e.message);
+                } catch (e) {
+                    console.error('[YTMP3] Fallback failed:', e);
                 }
             }
 
             return reply("❌ Failed to download audio. Try again later.");
 
         } catch (error: any) {
+            console.error('[YTMP3] Error:', error);
             return reply("❌ Download failed.");
         }
     }
 });
 
-// YouTube MP4 downloader
+
+// YouTube MP4 downloader - NEW API
 registerCommand({
     name: "ytmp4",
     description: "Download YouTube video as MP4",
@@ -73,26 +84,43 @@ registerCommand({
         try {
             await reply("⏳ Downloading video...");
 
-            const response = await axios.get(`https://apis.davidcyriltech.my.id/download/ytmp4?url=${url}`, {
+            // Use new ytapi with fo=2 for video, qu=2 for 720p quality
+            const apiUrl = `${YTAPI_BASE}?apiKey=${YTAPI_KEY}&url=${encodeURIComponent(url)}&fo=2&qu=2`;
+
+            const response = await axios.get(apiUrl, { timeout: 60000 });
+
+            if (response.data && response.data.downloadUrl) {
+                await sock.sendMessage(msg.key.remoteJid, {
+                    video: { url: response.data.downloadUrl },
+                    caption: `📹 *${response.data.title || 'YouTube Video'}*\n\n> Downloaded by CORTANA MD`,
+                    mimetype: 'video/mp4'
+                }, { quoted: msg });
+                return;
+            }
+
+            // Fallback to old API
+            const fallbackRes = await axios.get(`https://apis.davidcyriltech.my.id/download/ytmp4?url=${url}`, {
                 timeout: 30000
             });
 
-            if (response.data && response.data.result && response.data.result.downloadUrl) {
+            if (fallbackRes.data?.result?.downloadUrl) {
                 await sock.sendMessage(msg.key.remoteJid, {
-                    video: { url: response.data.result.downloadUrl },
+                    video: { url: fallbackRes.data.result.downloadUrl },
                     caption: `📹 *YouTube Video*\n\n> Downloaded by CORTANA MD`,
                     mimetype: 'video/mp4'
-                });
+                }, { quoted: msg });
                 return;
             }
 
             return reply("❌ Failed to download video.");
 
         } catch (error: any) {
+            console.error('[YTMP4] Error:', error);
             return reply("❌ Download failed.");
         }
     }
 });
+
 
 // YouTube search
 registerCommand({
