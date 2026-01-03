@@ -1,0 +1,606 @@
+╔════════════════════════════════════════════╗
+║      C̷O̷R̷T̷A̷N̷A̷  M̷D̷  U̷T̷R̷A̷      ║
+╠════════════════════════════════════════════╣
+║ ➥ Version      : Gen II                   ║
+║ ➥ Uptime       : {{UPTIME}}               ║
+║ ➥ Greeting     : {{GREETING}}             ║
+║ ➥ Creator      : È̷D̷Û̷Q̷A̷R̷Î̷Z̷         ║
+║ ➥ Availability : All-Day                  ║
+╚════════════════════════════════════════════╝
+
+
+╭─────────────── ❖ ───────────────╮
+│     🌷🌹 A N T I  F E A T U R E S 🌹🌷     │
+╰─────────────── ❖ ───────────────╯
+
+╭─────────────── ❖ ───────────────╮
+│        ✦ V I E W  O N C E ✦        │
+╰─────────────── ❖ ───────────────╯
+➥ .vv1 (reply: reveal to chat)
+➥ .vv2 (reply: reveal to dm)
+➥ .antiviewonce-all-on
+➥ .antiviewonce-pm-on
+➥ .antiviewonce-off
+
+
+╭─────────────── ❖ ───────────────╮
+│       ✦ A N T I  D E L E T E ✦       │
+╰─────────────── ❖ ───────────────╯
+➥ .antidelete-all-on
+➥ .antidelete-pm-on
+➥ .antidelete-off
+
+
+╭─────────────── ❖ ───────────────╮
+│        ✦ A N T I  E D I T ✦        │
+╰─────────────── ❖ ───────────────╯
+➥ .antiedit-all-on
+➥ .antiedit-pm-on
+➥ .antiedit-off
+
+
+╭─────────────── ❖ ───────────────╮
+│        ✦ A U T O  S T A T U S ✦        │
+╰─────────────── ❖ ───────────────╯
+➥ .autodownload-status-on
+➥ .autodownload-status-off
+➥ .autolikestatus-on
+➥ .autostatuslike-off
+
+
+╭─────────────── ❖ ───────────────╮
+│          ✦ P R E S E N C E ✦          │
+╰─────────────── ❖ ───────────────╯
+➥ .autorecording-all-on
+➥ .autorecording-pm-on
+➥ .autorecording-off
+➥ .autotyping-all-on
+➥ .autotyping-pm-on
+➥ .autotyping-off
+
+
+╭─────────────── ❖ ───────────────╮
+│       🔐 G R O U P  S E C U R I T Y 🔐       │
+╰─────────────── ❖ ───────────────╯
+➥ .antilink-kick
+➥ .antilink-warn
+➥ .antilink-off
+➥ .antitag-kick
+➥ .antitag-warn
+➥ .antitag-off
+➥ .antileft <on/off> 😈
+➥ .antibot-on
+➥ .antibot-off
+➥ .promote <@user>
+➥ .demote <@user>
+➥ .kick <@user>
+➥ .add <number>
+➥ .tagall <text>
+➥ .hidetag <text>
+➥ .open
+➥ .close
+➥ .link
+➥ .resetlink
+➥ .delete (reply)
+➥ .setppgc (reply image)
+➥ .approveall
+➥ .rejectall
+➥ .listrequest
+➥ .groupjid <link>
+➥ .gcname <text>
+➥ .gcdesc <text>
+➥ .vcf (export contacts)
+➥ .join <group link>
+➥ .newgc <name>
+➥ .invite
+➥ .revoke
+➥ .gpp (reply image)
+➥ .fullgpp (reply image)
+➥ .setname <name>
+➥ .setdesc <description>
+➥ .left
+➥ .tag <message>
+➥ .tagadmin
+➥ .kik @user
+➥ .num <254>
+➥ .getjids
+➥ .mute
+➥ .unmute
+➥ .lock
+➥ .unlock
+➥ .group <open/close>
+➥ .acceptall
+➥ .broadcast <message>
+➥ .kickall
+
+
+╭─────────────── ❖ ───────────────╮
+│        👥 G R O U P  A D V A N C E D 👥      │
+╰─────────────── ❖ ───────────────╯
+➥ .ginfo <group link>
+➥ .common (common members)
+➥ .diff (group changes)
+➥ .pick (random member)
+➥ .ship (match two members)
+➥ .poll question | opt1 | opt2
+
+
+╭─────────────── ❖ ───────────────╮
+│        🌸🌼 C H A N N E L 🌼🌸        │
+╰─────────────── ❖ ───────────────╯
+➥ .channel-id <link>
+➥ .server-id (reply to update)
+➥ .reactchannel <jid>/<update_id>
+
+
+╭─────────────── ❖ ───────────────╮
+│      🎵 M U S I C  &  A U D I O 🎵      │
+╰─────────────── ❖ ───────────────╯
+➥ .play <name/link>
+➥ .video <name/link>
+➥ .song <name/link>
+➥ .lyrics <song name>
+➥ .soundcloud <link>
+➥ .ytmp3 <link>
+➥ .ytmp4 <link>
+➥ .yts <query>
+➥ .spotify <link>
+➥ .applemusic <link>
+➥ .deezer <link>
+➥ .shazam (reply to audio)
+
+
+╭─────────────── ❖ ───────────────╮
+│        🎧 A U D I O  E F F E C T S 🎧      │
+╰─────────────── ❖ ───────────────╯
+➥ .bass (reply to audio)
+➥ .nightcore (reply to audio)
+➥ .robot (reply to audio)
+➥ .slow (reply to audio)
+➥ .fast (reply to audio)
+➥ .earrape (reply to audio)
+➥ .chipmunk (reply to audio)
+➥ .deep (reply to audio)
+➥ .blown (reply to audio)
+➥ .fat (reply to audio)
+➥ .reverse (reply to audio)
+➥ .smooth (reply to audio)
+➥ .vibrato (reply to audio)
+➥ .echo (reply to audio)
+➥ .chorus (reply to audio)
+➥ .audioeffect (list all)
+
+
+╭─────────────── ❖ ───────────────╮
+│        ⬇️ D O W N L O A D E R S ⬇️        │
+╰─────────────── ❖ ───────────────╯
+➥ .tiktok <link>
+➥ .ttdl <link>
+➥ .tiktokmp3 <link>
+➥ .facebook <link>
+➥ .fb <link>
+➥ .fbdl <link>
+➥ .ig <link>
+➥ .instagram <link>
+➥ .igdl <link>
+➥ .twitter <link>
+➥ .x <link>
+➥ .twdl <link>
+➥ .youtube <link>
+➥ .yt <link>
+➥ .apk <app name>
+➥ .app <app name>
+➥ .mediafire <link>
+➥ .gdrive <link>
+➥ .pinterest <query>
+➥ .pin <query>
+➥ .wallpaper <query>
+➥ .stickersearch <query>
+➥ .stickerpack <query>
+➥ .playstore <app name>
+➥ .screenshot <url>
+
+
+╭─────────────── ❖ ───────────────╮
+│        😈 R E A C T I O N S 😈        │
+╰─────────────── ❖ ───────────────╯
+➥ .hug
+➥ .kiss
+➥ .slap
+➥ .pat
+➥ .poke
+➥ .bonk
+➥ .bite
+➥ .cuddle
+➥ .wave
+➥ .wink
+➥ .smile
+➥ .cry
+➥ .blush
+➥ .happy
+➥ .dance
+➥ .yeet
+➥ .bully
+➥ .handhold
+➥ .highfive
+➥ .lick
+➥ .glomp
+➥ .nom
+➥ .kill
+➥ .awoo
+➥ .cringe
+➥ .love
+➥ .headpat
+➥ .triggered
+
+
+╭─────────────── ❖ ───────────────╮
+│        😂 F U N  &  M E M E S 😂        │
+╰─────────────── ❖ ───────────────╯
+➥ .joke
+➥ .meme
+➥ .quote
+➥ .animequote
+➥ .fact
+➥ .roast
+➥ .insult
+➥ .compliment
+➥ .burn
+➥ .rate <thing>
+➥ .ask <question>
+➥ .how <question>
+➥ .when <question>
+➥ .owo <text>
+➥ .uwu <text>
+➥ .mock <text>
+➥ .zalgo <text>
+➥ .vaporwave <text>
+➥ .cowsay <text>
+➥ .clap <text>
+➥ .lenny
+➥ .tableflip
+➥ .unflip
+➥ .shrug
+➥ .facepalm
+➥ .disapprove
+➥ .wyr
+➥ .neverhave
+➥ .gg
+➥ .f
+➥ .chad
+➥ .based
+➥ .flex
+➥ .dank
+➥ .yolo
+➥ .legend
+➥ .dealwithit
+➥ .notbad
+➥ .oops
+➥ .shipname <names>
+
+
+╭─────────────── ❖ ───────────────╮
+│        🎮 G A M E S 🎮        │
+╰─────────────── ❖ ───────────────╯
+➥ .truth
+➥ .dare
+➥ .math
+➥ .quiz
+➥ .trivia
+➥ .riddle
+➥ .slot
+➥ .dice
+➥ .coinflip
+➥ .rps <choice>
+➥ .8ball <question>
+➥ .guessnumber
+➥ .hangman
+➥ .tictactoe @user
+➥ .casino
+➥ .blackjack
+➥ .poker
+➥ .werewolf
+
+
+╭─────────────── ❖ ───────────────╮
+│        💰 E C O N O M Y 💰        │
+╰─────────────── ❖ ───────────────╯
+➥ .balance
+➥ .bal
+➥ .daily
+➥ .weekly
+➥ .monthly
+➥ .work
+➥ .rob @user
+➥ .transfer @user <amount>
+➥ .pay @user <amount>
+➥ .gamble <amount>
+➥ .bet <amount>
+➥ .shop
+➥ .buy <item>
+➥ .sell <item>
+➥ .inventory
+➥ .inv
+➥ .leaderboard
+➥ .lb
+➥ .rank
+➥ .level
+
+
+╭─────────────── ❖ ───────────────╮
+│        🤖 A I  F E A T U R E S 🤖        │
+╰─────────────── ❖ ───────────────╯
+➥ .chatgpt <prompt>
+➥ .gpt <prompt>
+➥ .ai <prompt>
+➥ .imagine <prompt>
+➥ .aiimage <prompt>
+➥ .dalle <prompt>
+➥ .bing <prompt>
+➥ .removebg (reply)
+➥ .enhance (reply)
+➥ .hd (reply)
+➥ .upscale (reply)
+➥ .colorize (reply)
+➥ .anime (reply)
+➥ .cartoon (reply)
+➥ .ocr (reply)
+➥ .chatbot <on/off>
+➥ .aivision (reply)
+
+
+╭─────────────── ❖ ───────────────╮
+│        🖼️ I M A G E  E D I T I N G 🖼️      │
+╰─────────────── ❖ ───────────────╯
+➥ .blur (reply)
+➥ .brighten (reply)
+➥ .darken (reply)
+➥ .greyscale (reply)
+➥ .sepia (reply)
+➥ .invert (reply)
+➥ .pixelate (reply)
+➥ .flip (reply)
+➥ .rotate <degrees>
+➥ .crop <width>x<height>
+➥ .resize <width>x<height>
+➥ .circle (reply)
+➥ .frame (reply)
+➥ .wanted (reply)
+➥ .jail (reply)
+➥ .beautiful (reply)
+➥ .facepalm (reply)
+➥ .delete (reply)
+➥ .trash (reply)
+➥ .rip (reply)
+➥ .trigger (reply)
+
+
+╭─────────────── ❖ ───────────────╮
+│        🎨 T E X T  E F F E C T S 🎨        │
+╰─────────────── ❖ ───────────────╯
+➥ .glitch <text>
+➥ .neon <text>
+➥ .3d <text>
+➥ .gold <text>
+➥ .silver <text>
+➥ .fire <text>
+➥ .ice <text>
+➥ .thunder <text>
+➥ .matrix <text>
+➥ .horror <text>
+➥ .hologram <text>
+➥ .graffiti <text>
+➥ .pornhub <text1> <text2>
+➥ .youtube <text>
+➥ .netflix <text>
+➥ .spotify <text>
+
+
+╭─────────────── ❖ ───────────────╮
+│        🔍 S E A R C H  &  I N F O 🔍      │
+╰─────────────── ❖ ───────────────╯
+➥ .google <query>
+➥ .gimage <query>
+➥ .wikipedia <query>
+➥ .wiki <query>
+➥ .urban <word>
+➥ .define <word>
+➥ .translate <lang> <text>
+➥ .weather <city>
+➥ .news
+➥ .technews
+➥ .movie <title>
+➥ .anime <title>
+➥ .manga <title>
+➥ .character <name>
+➥ .npm <package>
+➥ .github <repo>
+➥ .stackoverflow <query>
+
+
+╭─────────────── ❖ ───────────────╮
+│        🎬 A N I M E  &  M A N G A 🎬      │
+╰─────────────── ❖ ───────────────╯
+➥ .waifu
+➥ .neko
+➥ .shinobu
+➥ .megumin
+➥ .smug
+
+
+╭─────────────── ❖ ───────────────╮
+│        📝 T E X T  T O O L S 📝        │
+╰─────────────── ❖ ───────────────╯
+➥ .fancy <text>
+➥ .styletext <text>
+➥ .fliptext <text>
+➥ .binary <text>
+➥ .hex <text>
+➥ .base64 <text>
+➥ .encode <text>
+➥ .decode <text>
+➥ .encrypt <text>
+➥ .decrypt <text>
+➥ .hash <text>
+➥ .md5 <text>
+➥ .sha1 <text>
+➥ .sha256 <text>
+
+
+╭─────────────── ❖ ───────────────╮
+│        🛠️ U T I L I T I E S 🛠️        │
+╰─────────────── ❖ ───────────────╯
+➥ .sticker (reply)
+➥ .s (reply)
+➥ .takesticker <pack|author>
+➥ .take <pack|author>
+➥ .steal <pack|author>
+➥ .smeme <text> (reply)
+➥ .memegen <top|bottom>
+➥ .attp <text>
+➥ .ttp <text>
+➥ .emojimix <emoji1+emoji2>
+➥ .getsticker <query>
+➥ .toimg (reply)
+➥ .toimage (reply)
+➥ .tomp3 (reply)
+➥ .togif (reply)
+➥ .toaudio (reply)
+➥ .tovideo (reply)
+➥ .tourl (reply)
+➥ .upload (reply)
+➥ .telegraph (reply)
+➥ .qr <text>
+➥ .readqr (reply)
+➥ .readbarcode (reply)
+➥ .calc <expression>
+➥ .calculator <expression>
+➥ .tinyurl <url>
+➥ .shorturl <url>
+➥ .bitly <url>
+➥ .readmore <text>
+➥ .carbon <code>
+➥ .pastebin <code>
+➥ .emoji <emoji>
+➥ .getexif (reply)
+➥ .zipfile
+➥ .webp2mp4 (reply)
+➥ .webp2png (reply)
+➥ .pdftoimage (reply)
+➥ .ping
+➥ .speed
+➥ .runtime
+➥ .alive
+➥ .ip <ip>
+➥ .uuid
+➥ .creator
+➥ .repo
+➥ .owner
+➥ .dev
+➥ .script
+➥ .sc
+➥ .donate
+➥ .support
+➥ .help
+➥ .menu
+➥ .allmenu
+
+
+╭─────────────── ❖ ───────────────╮
+│        💳 M - P E S A 💳        │
+╰─────────────── ❖ ───────────────╯
+➥ .mpesa <amount>
+➥ .stkpush <phone> <amount>
+➥ .checkbalance
+➥ .mpesawithdraw <amount>
+➥ .mpesadeposit <amount>
+➥ .mpesatransfer <phone> <amount>
+➥ .mpesahistory
+
+
+╭─────────────── ❖ ───────────────╮
+│        🔮 P R I M B O N 🔮        │
+╰─────────────── ❖ ───────────────╯
+➥ .artinama <name>
+➥ .artimimpi <dream>
+➥ .ramalanjodoh <name1> <name2>
+➥ .tanggaljadian <date>
+➥ .zodiak <zodiac>
+➥ .shio <shio>
+➥ .weton <date>
+➥ .pekerjaan <date>
+➥ .rejeki <date>
+➥ .pernikahan <date>
+➥ .sifat <name>
+➥ .keberuntungan <name>
+
+
+╭─────────────── ❖ ───────────────╮
+│        🐉 D A N G E R  Z O N E 🐉        │
+╰─────────────── ❖ ───────────────╯
+➥ .public (everyone can use bot)
+➥ .self (only owner can use bot)
+➥ .mode <public/self>
+➥ .forclose <num> ☠️
+➥ .hijackgc ☠️
+➥ .promoteall
+➥ .demoteall
+➥ .tempban <num>
+➥ .antiban <on/off>
+➥ .antibug <on/off>
+➥ .reactall <on/off>
+➥ .leaveall
+➥ .block @user
+➥ .unblock @user
+➥ .blocklist
+➥ .ban @user
+➥ .unban @user
+➥ .banlist
+➥ .broadcast <message>
+➥ .bcgc <message>
+➥ .bcall <message>
+➥ .listgc
+➥ .listpc
+➥ .listcontact
+➥ .forward @user (reply)
+➥ .eval <code>
+➥ .exec <command>
+➥ .$ <command>
+➥ .> <code>
+➥ .clearall
+➥ .deleteall
+➥ .restart
+➥ .update
+➥ .plugins
+➥ .plugin <name>
+➥ .install <plugin>
+➥ .shutdown
+➥ .bug <number>
+➥ .bugmenu
+➥ .exploit <number>
+➥ .exploitmenu
+➥ .crash <number>
+➥ .freeze <number>
+➥ .lag <number>
+➥ .bugvid <number>
+➥ .bugaudio <number>
+➥ .bugdoc <number>
+➥ .buglocation <number>
+➥ .bugcontact <number>
+➥ .bugcatalog <number>
+➥ .xandroid <number>
+➥ .xios <number>
+➥ .xreact <amount>
+➥ .spam <amount> <text>
+➥ .spamcall <number>
+➥ .ddos <target>
+➥ .nukegc
+➥ .killgc
+➥ .destroygc
+➥ .doomsday
+
+
+╔════════════════════════════════════════════╗
+║   🔊 C O R T A N A  M D  U T R A           ║
+║   💝 Powered by È̷D̷Û̷Q̷A̷R̷Î̷Z̷              ║
+╚════════════════════════════════════════════╝

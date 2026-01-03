@@ -142,5 +142,45 @@ export async function registerRoutes(
     res.sendStatus(200);
   });
 
+  // M-Pesa STK Push Callback Handler
+  app.post("/api/mpesa/callback", async (req, res) => {
+    try {
+      console.log("[MPESA CALLBACK] Received:", JSON.stringify(req.body, null, 2));
+      
+      const { Body } = req.body;
+      
+      if (Body && Body.stkCallback) {
+        const { ResultCode, ResultDesc, CallbackMetadata } = Body.stkCallback;
+        
+        if (ResultCode === 0) {
+          // Payment successful
+          const metadata = CallbackMetadata?.Item || [];
+          const amount = metadata.find((item: any) => item.Name === "Amount")?.Value;
+          const phone = metadata.find((item: any) => item.Name === "PhoneNumber")?.Value;
+          const mpesaRef = metadata.find((item: any) => item.Name === "MpesaReceiptNumber")?.Value;
+          
+          console.log(`[MPESA] ✅ Payment Success: ${amount} from ${phone}, Ref: ${mpesaRef}`);
+          
+          // TODO: Update database, notify user via WhatsApp
+          // const { getSessionSocket } = await import("./whatsapp");
+          // const sock = getSessionSocket();
+          // if (sock) {
+          //   await sock.sendMessage(`${phone}@s.whatsapp.net`, {
+          //     text: `✅ Payment of KES ${amount} received! Ref: ${mpesaRef}`
+          //   });
+          // }
+        } else {
+          // Payment failed
+          console.log(`[MPESA] ❌ Payment Failed: ${ResultDesc}`);
+        }
+      }
+      
+      res.json({ ResultCode: 0, ResultDesc: "Accepted" });
+    } catch (error: any) {
+      console.error("[MPESA CALLBACK] Error:", error);
+      res.status(500).json({ ResultCode: 1, ResultDesc: "Internal Server Error" });
+    }
+  });
+
   return httpServer;
 }

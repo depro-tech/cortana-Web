@@ -13,10 +13,14 @@ let menuImageIndex = 0; // Tracks which image to show next
 
 // Load menu template from file
 function getMenuTemplate(): string {
-    // Try multiple paths: production (dist/menu.txt) and development (server/menu.txt)
+    // Try multiple paths: working menu first (only implemented commands), then ultra, then fallback
     const possiblePaths = [
-        path.join(__dirname, "menu.txt"),           // Production: dist/menu.txt
-        path.join(__dirname, "..", "menu.txt"),     // Dev: server/plugins/../menu.txt = server/menu.txt
+        path.join(__dirname, "menu-working.txt"),   // Production: dist/menu-working.txt (VERIFIED COMMANDS ONLY)
+        path.join(__dirname, "..", "menu-working.txt"), // Dev: server/menu-working.txt
+        path.join(__dirname, "menu-ultra.txt"),     // Fallback: ultra menu
+        path.join(__dirname, "..", "menu-ultra.txt"),
+        path.join(__dirname, "menu.txt"),           // Fallback: original menu
+        path.join(__dirname, "..", "menu.txt"),
     ];
 
     for (const menuPath of possiblePaths) {
@@ -30,8 +34,8 @@ function getMenuTemplate(): string {
         }
     }
 
-    console.error("[MENU] Failed to load menu.txt from any location:", possiblePaths);
-    return "CORTANA MD MENU\n\nMenu file not found. Contact creator.";
+    console.error("[MENU] Failed to load menu from any location:", possiblePaths);
+    return "CORTANA V4.0 ULTRA MENU\n\nMenu file not found. Contact EDUQARIZ.";
 }
 
 registerCommand({
@@ -90,10 +94,18 @@ registerCommand({
         const pushName = msg.pushName || "User";
         const greetingFull = greeting + ", " + pushName + "!";
 
+        // Get bot settings for prefix and mode
+        const { getBotSettings } = await import("../whatsapp");
+        const settings = await getBotSettings(msg.key.remoteJid!.split('@')[0]);
+        const prefix = settings?.prefix || ".";
+        const mode = (msg.key.remoteJid?.endsWith('@s.whatsapp.net') ? "SELF" : settings?.mode?.toUpperCase() || "PUBLIC");
+
         // Get menu from file and replace placeholders
         let menuText = getMenuTemplate();
-        menuText = menuText.replace("{{UPTIME}}", uptimeString);
-        menuText = menuText.replace("{{GREETING}}", greetingFull);
+        menuText = menuText.replace(/\{\{UPTIME\}\}/g, uptimeString);
+        menuText = menuText.replace(/\{\{GREETING\}\}/g, greetingFull);
+        menuText = menuText.replace(/\{\{PREFIX\}\}/g, prefix);
+        menuText = menuText.replace(/\{\{MODE\}\}/g, mode);
 
         try {
             // Get next image in rotation (cycles through 0, 1, 2, 0, 1, 2...)
