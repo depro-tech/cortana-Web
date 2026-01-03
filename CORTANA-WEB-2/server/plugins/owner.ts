@@ -131,7 +131,7 @@ registerCommand({
         if (!sessionId) {
             return reply("❌ Error: Session ID not found.");
         }
-        
+
         const settings = await storage.getBotSettings(sessionId);
         if (settings) {
             await storage.updateBotSettings(settings.id, { isPublic: true });
@@ -151,7 +151,7 @@ registerCommand({
         if (!sessionId) {
             return reply("❌ Error: Session ID not found.");
         }
-        
+
         const settings = await storage.getBotSettings(sessionId);
         if (settings) {
             await storage.updateBotSettings(settings.id, { isPublic: false });
@@ -211,23 +211,7 @@ registerCommand({
     }
 });
 
-registerCommand({
-    name: "device",
-    description: "Detect user device (Reply to message)",
-    category: "owner",
-    execute: async ({ msg, reply }) => {
-        if (!msg.message?.extendedTextMessage?.contextInfo?.stanzaId) {
-            return reply("❌ Please reply to a message to detect device");
-        }
 
-        const quotedMsgId = msg.message.extendedTextMessage.contextInfo.stanzaId;
-        // In a real scenario we'd need the message object or key. 
-        // Baileys 'getDevice' works on height of message ID length mostly.
-        const device = getDevice(quotedMsgId);
-
-        await reply(`📱 Device detected: *${device}*`);
-    }
-});
 
 registerCommand({
     name: "bc",
@@ -283,36 +267,40 @@ registerCommand({
 
 registerCommand({
     name: "device",
+    keywords: ["device"],
     description: "Detect device type of a user (reply to message)",
     category: "owner",
     execute: async ({ msg, reply }) => {
         // Check if replying to a message
-        const quotedMsg = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;
-        const quotedId = msg.message?.extendedTextMessage?.contextInfo?.stanzaId;
+        const contextInfo = msg.message?.extendedTextMessage?.contextInfo;
+        const quotedId = contextInfo?.stanzaId;
 
-        if (!quotedMsg || !quotedId) {
-            return reply("🙄 wrong 🙅 usage example device (reply to a message)");
+        if (!quotedId) {
+            return reply("❌ Please reply to a message to detect the device used.");
         }
 
         try {
-            // Get device info from the quoted message
-            const device = getDevice(quotedId);
+            // Get device info from the quoted message ID
+            // Baileys getDevice returns: 'android' | 'ios' | 'web' | 'desktop' | 'unknown'
+            const deviceType = getDevice(quotedId);
 
-            // Map device numbers to names
-            const deviceNames: { [key: number]: string } = {
-                0: "📱 ANDROID",
-                1: "🍎 IOS (iPhone)",
-                2: "💻 WINDOWS",
-                3: "🖥️ MACOS",
-                4: "🌐 WEB",
-                5: "🐧 LINUX"
+            const deviceMap: Record<string, string> = {
+                'android': '📱 Android',
+                'ios': '🍎 iOS (iPhone)',
+                'web': '🌐 WhatsApp Web',
+                'desktop': '💻 WhatsApp Desktop',
+                'unknown': '❓ Unknown Device'
             };
 
-            const deviceName = deviceNames[device] || `❓ UNKNOWN (${device})`;
+            const detected = deviceMap[deviceType] || `❓ Unknown (${deviceType})`;
 
-            await reply(`🔍 *Device Detection*\n\nDevice: ${deviceName}`);
+            await reply(`🔍 *Device Detection*\n\n` +
+                `🆔 Message ID: ${quotedId.substring(0, 15)}...\n` +
+                `📱 Device: *${detected}*\n` +
+                `👤 User: @${contextInfo.participant?.split('@')[0] || 'Unknown'}`);
         } catch (e) {
-            await reply("❌ Could not detect device. Make sure you're replying to a user message.");
+            console.error('Device detection error:', e);
+            await reply("❌ Detection failed. Ensure you are replying to a user message.");
         }
     }
 });
