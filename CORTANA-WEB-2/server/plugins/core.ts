@@ -3,13 +3,13 @@ import axios from "axios";
 import * as fs from "fs";
 import * as path from "path";
 
-// Menu images - rotate sequentially
+// Menu images - rotate sequentially (cycle through 3 images)
 const MENU_IMAGES = [
     "https://files.catbox.moe/y0yjzu.jpg",
     "https://files.catbox.moe/2ob13q.jpg",
     "https://files.catbox.moe/zn4l18.jpg"
 ];
-let menuImageIndex = 0;
+let menuImageIndex = 0; // Tracks which image to show next
 
 // Load menu template from file
 function getMenuTemplate(): string {
@@ -96,11 +96,14 @@ registerCommand({
         menuText = menuText.replace("{{GREETING}}", greetingFull);
 
         try {
-            const randomImage = MENU_IMAGES[menuImageIndex % MENU_IMAGES.length];
-            menuImageIndex++;
+            // Get next image in rotation (cycles through 0, 1, 2, 0, 1, 2...)
+            const currentImage = MENU_IMAGES[menuImageIndex % MENU_IMAGES.length];
+            menuImageIndex++; // Increment for next time
+            
+            console.log(`[MENU] Using image ${menuImageIndex % MENU_IMAGES.length} (index ${menuImageIndex - 1})`);
 
             await sock.sendMessage(chatJid, {
-                image: { url: randomImage },
+                image: { url: currentImage },
                 caption: menuText,
                 contextInfo: {
                     forwardingScore: 999,

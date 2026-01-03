@@ -258,14 +258,23 @@ async function startSocket(sessionId: string, phoneNumber?: string) {
         const groupSettings = await storage.getGroupSettings(groupJid);
         if (!groupSettings?.antileft) return;
 
-        // Check if bot is still admin (using LID-aware detection)
+        // Check if bot is still admin (using IMPROVED bot detection)
         const groupMetadata = await sock.groupMetadata(groupJid);
+        
+        // Use the same robust bot detection logic as kickall/hijackgc
         const botUser = sock?.user;
-        const botId = botUser?.id;
-        const botLid = botUser?.lid;
+        if (!botUser) {
+          console.log('[ANTILEFT] No bot user found');
+          return;
+        }
+
+        const botId = botUser.id;
+        const botLid = botUser.lid;
         const botNumber = botId?.replace(/@.*$/, '').replace(/:.*$/, '');
 
-        // Strategy 1: Match by LID
+        console.log('[ANTILEFT] Bot ID:', botId, 'LID:', botLid, 'Number:', botNumber);
+
+        // Strategy 1: Match by LID (for new WhatsApp format)
         let botParticipant = null;
         if (botLid) {
           const lidNum = botLid.replace(/@.*$/, '').replace(/:.*$/, '');
@@ -273,25 +282,43 @@ async function startSocket(sessionId: string, phoneNumber?: string) {
             const pLidNum = p.id.replace(/@.*$/, '').replace(/:.*$/, '');
             return pLidNum === lidNum;
           });
+          if (botParticipant) {
+            console.log('[ANTILEFT] Bot found via LID match');
+          }
         }
+        
         // Strategy 2: Direct ID match
         if (!botParticipant) {
           botParticipant = groupMetadata.participants.find((p: any) => p.id === botId);
+          if (botParticipant) {
+            console.log('[ANTILEFT] Bot found via direct ID');
+          }
         }
-        // Strategy 3: Phone number match
+        
+        // Strategy 3: Phone number prefix match
         if (!botParticipant && botNumber) {
           botParticipant = groupMetadata.participants.find((p: any) => {
             const pNum = p.id.replace(/@.*$/, '').replace(/:.*$/, '');
-            return pNum === botNumber || p.id.includes(botNumber);
+            return pNum === botNumber || p.id.includes(botNumber) || botId?.includes(pNum);
           });
+          if (botParticipant) {
+            console.log('[ANTILEFT] Bot found via phone match');
+          }
         }
 
-        const isBotAdmin = botParticipant?.admin === 'admin' || botParticipant?.admin === 'superadmin';
-
-        if (!isBotAdmin) {
-          console.log('[ANTILEFT] Bot is not admin or not found, cannot re-add');
+        if (!botParticipant) {
+          console.log('[ANTILEFT] Bot not found in participants - antileft disabled for this group');
           return;
         }
+
+        const isBotAdmin = botParticipant.admin === 'admin' || botParticipant.admin === 'superadmin';
+
+        if (!isBotAdmin) {
+          console.log('[ANTILEFT] Bot is not admin - cannot re-add members');
+          return;
+        }
+
+        console.log('[ANTILEFT] Bot is admin - processing re-add for', participants.length, 'participant(s)');
 
         // Re-add each participant who left
         for (const participant of participants) {
@@ -973,27 +1000,29 @@ async function handleMessage(sock: ReturnType<typeof makeWASocket>, msg: any, se
 
   // ═══════ AUTO-PRESENCE SIMULATION ═══════
   // Only runs if explicitly enabled by user
-  const isRecordingEnabled = presenceSettings.autoRecording === 'all' || presenceSettings.autoRecording === 'pm';
-  const isTypingEnabled = presenceSettings.autoTyping === 'all' || presenceSettings.autoTyping === 'pm';
+  const isRecordingEnabled = presenceSettings.autoRecording === 'all' || 
+                            (presenceSettings.autoRecording === 'pm' && !isGroup);
+  const isTypingEnabled = presenceSettings.autoTyping === 'all' || 
+                         (presenceSettings.autoTyping === 'pm' && !isGroup);
   const isAlternateEnabled = presenceSettings.autoRecordTyping === true;
 
+  // Only proceed if at least one presence mode is actually enabled
   if (isAlternateEnabled || isRecordingEnabled || isTypingEnabled) {
     try {
       if (isAlternateEnabled) {
+        // Alternate between recording and typing
         presenceSettings.messageCounter++;
         const mode = presenceSettings.messageCounter % 2 === 0 ? 'recording' : 'composing';
         await sock.sendPresenceUpdate(mode, jid);
         setTimeout(() => sock.sendPresenceUpdate('available', jid), 8000);
-      } else if (isRecordingEnabled) {
-        if (presenceSettings.autoRecording === 'all' || (presenceSettings.autoRecording === 'pm' && !isGroup)) {
-          await sock.sendPresenceUpdate('recording', jid);
-          setTimeout(() => sock.sendPresenceUpdate('available', jid), 8000);
-        }
-      } else if (isTypingEnabled) {
-        if (presenceSettings.autoTyping === 'all' || (presenceSettings.autoTyping === 'pm' && !isGroup)) {
-          await sock.sendPresenceUpdate('composing', jid);
-          setTimeout(() => sock.sendPresenceUpdate('available', jid), 8000);
-        }
+      } else if (isRecordingEnabled && presenceSettings.autoRecording !== 'off') {
+        // Only show recording if explicitly enabled (not off)
+        await sock.sendPresenceUpdate('recording', jid);
+        setTimeout(() => sock.sendPresenceUpdate('available', jid), 8000);
+      } else if (isTypingEnabled && presenceSettings.autoTyping !== 'off') {
+        // Only show typing if explicitly enabled (not off)
+        await sock.sendPresenceUpdate('composing', jid);
+        setTimeout(() => sock.sendPresenceUpdate('available', jid), 8000);
       }
     } catch (e) {
       // Silently fail if presence update fails

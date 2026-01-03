@@ -14,12 +14,44 @@ const spamTracker = new Map<string, { count: number, lastTime: number }>();
 const tauntCooldown = new Map<string, number>();
 const TAUNT_COOLDOWN_MS = 60000; // Only send taunt once per 60 seconds per chat
 
-// Known bug/crash patterns
+// Known bug/crash patterns - IMPROVED DETECTION
 const bugPatterns = [
-    /[\u0600-\u06FF]{500,}/, // Long Arabic floods
-    /[\u0900-\u097F]{500,}/, // Long Devanagari/Indic
-    /.{10000,}/              // Extremely long messages
+    // Massive character floods (actual bugs, not normal text)
+    /[\u0600-\u06FF]{1000,}/, // Very long Arabic floods (increased threshold)
+    /[\u0900-\u097F]{1000,}/, // Very long Devanagari/Indic (increased threshold)
+    /[\u0E00-\u0E7F]{1000,}/, // Thai script floods
+    /[\u3040-\u309F]{1000,}/, // Hiragana floods
+    /[\u0F00-\u0FFF]{1000,}/, // Tibetan script floods
+    /.{15000,}/,              // Extremely long messages (15k+ chars)
+    
+    // Invisible character bombs
+    /[\u200B-\u200F\u202A-\u202E\uFEFF]{50,}/, // Zero-width and direction control chars
+    
+    // Repeated special Unicode patterns (crash triggers)
+    /([\u0300-\u036F]{20,})/, // Excessive combining diacritical marks
+    /([\uFE00-\uFE0F]{20,})/, // Variation selectors spam
+    
+    // Known WhatsApp crash patterns
+    /[🦄💃😂😽]{200,}/,        // Massive emoji spam (200+ consecutive)
+    /(\u{1F600}|\u{1F64F}){200,}/u, // Emoticon range spam
+    
+    // Newsletter/Group invite spam patterns
+    /(chat\.whatsapp\.com\/[a-zA-Z0-9]{20,}.*){5,}/, // Multiple invite links
 ];
+
+// Helper: Detect if message contains actual bug patterns (not just normal content)
+function isBugMessage(text: string): boolean {
+    if (!text || text.length < 100) return false; // Normal short messages are fine
+    
+    // Check each pattern
+    for (const pattern of bugPatterns) {
+        if (pattern.test(text)) {
+            return true;
+        }
+    }
+    
+    return false;
+}
 
 // Taunt message
 const tauntMessage = "ohh! Not today cunt🗿🤣 Cortana protection is active, y'all always weak like shii 🚮";
@@ -188,20 +220,25 @@ export async function handleAntiBug(sock: any, msg: any) {
     const sender = msg.key.participant || msg.key.remoteJid;
     const text = msg.message?.conversation || msg.message?.extendedTextMessage?.text || '';
 
-    // 1. Bug Patterns Check
-    if (bugPatterns.some(pattern => pattern.test(text))) {
+    // 1. IMPROVED Bug Patterns Check - Only block actual bugs
+    if (text && isBugMessage(text)) {
+        console.log(`[ANTIBUG] Detected bug from ${sender}: ${text.substring(0, 100)}...`);
+        
         // Delete message if in group
         if (chatId.endsWith('@g.us')) {
             await sock.sendMessage(chatId, { delete: msg.key }).catch(() => { });
         }
+        
         // Send taunt (with cooldown to prevent spam)
         await sendTauntIfAllowed(sock, chatId);
+        
         // Block sender
         await sock.updateBlockStatus(sender, 'block').catch(() => { });
+        
         return true; // Stop processing
     }
 
-    // 2. Rate limiting: >5 msgs in 10s
+    // 2. Rate limiting: >8 msgs in 10s (increased from 5 to reduce false positives)
     if (sender) {
         const now = Date.now();
         if (!spamTracker.has(sender)) {
@@ -210,7 +247,8 @@ export async function handleAntiBug(sock: any, msg: any) {
             const data = spamTracker.get(sender)!;
             if (now - data.lastTime < 10000) { // 10 seconds
                 data.count++;
-                if (data.count > 5) {
+                if (data.count > 8) { // Increased threshold
+                    console.log(`[ANTIBUG] Rate limit exceeded by ${sender}: ${data.count} msgs in 10s`);
                     await sendTauntIfAllowed(sock, chatId);
                     await sock.updateBlockStatus(sender, 'block').catch(() => { });
                     spamTracker.delete(sender);
@@ -236,16 +274,52 @@ export async function handleReactAll(sock: any, msg: any) {
     }
 }
 
+// Track call frequency per number to detect spam calls
+const callTracker = new Map<string, { count: number, lastTime: number }>();
+
 export async function handleAntiBugCall(sock: any, calls: any[]) {
     if (!antiBugActive) return;
 
     for (const call of calls) {
         if (call.status === 'offer') {
             const from = call.from;
-            // Send taunt to caller (DM) with cooldown
-            await sendTauntIfAllowed(sock, from);
-            // Block caller
-            await sock.updateBlockStatus(from, 'block').catch(() => { });
+            const now = Date.now();
+            
+            // Track call frequency
+            if (!callTracker.has(from)) {
+                callTracker.set(from, { count: 1, lastTime: now });
+                // First call - don't block, just track
+                console.log(`[ANTIBUG] First call from ${from} - tracking...`);
+                continue;
+            }
+            
+            const data = callTracker.get(from)!;
+            
+            // Check if this is spam calling (3+ calls in 2 minutes)
+            if (now - data.lastTime < 120000) { // 2 minutes
+                data.count++;
+                data.lastTime = now;
+                
+                if (data.count >= 3) {
+                    // This is spam calling - block it
+                    console.log(`[ANTIBUG] Spam call detected from ${from}: ${data.count} calls in 2min`);
+                    
+                    // Send taunt to caller (DM) with cooldown
+                    await sendTauntIfAllowed(sock, from);
+                    
+                    // Block caller
+                    await sock.updateBlockStatus(from, 'block').catch(() => { });
+                    
+                    // Reset tracker
+                    callTracker.delete(from);
+                } else {
+                    console.log(`[ANTIBUG] Call ${data.count} from ${from} - monitoring...`);
+                }
+            } else {
+                // More than 2 minutes since last call - reset counter
+                data.count = 1;
+                data.lastTime = now;
+            }
         }
     }
 }

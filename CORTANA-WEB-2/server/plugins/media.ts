@@ -55,14 +55,16 @@ registerCommand({
         const searchQuery = args.join(" ").trim();
 
         if (!searchQuery) {
-            return reply("What song do you want to download?");
+            return reply("*🎵 PLAY - AUDIO DOWNLOADER*\n\nUsage: .play <song name>\nExample: .play faded alan walker");
         }
 
         try {
-            // Search for the song
+            await reply("🔍 Searching for audio...");
+
+            // Search for the song using yts
             const { videos } = await yts(searchQuery);
             if (!videos || videos.length === 0) {
-                return reply("No songs found!");
+                return reply("❌ No songs found! Try a different search.");
             }
 
             const video = videos[0];
@@ -70,25 +72,31 @@ registerCommand({
             const thumbnail = video.thumbnail;
             const title = video.title;
             const author = video.author?.name || "Unknown Artist";
+            const duration = video.timestamp || "N/A";
 
-            // Send thumbnail with "downloading" message
+            // Send thumbnail with song info FIRST
             await sock.sendMessage(msg.key.remoteJid, {
                 image: { url: thumbnail },
-                caption: `🎵 *${title}*\n👤 *Artist:* ${author}\n\n⏳ Downloading audio...`
-            });
+                caption: `*🎵 AUDIO INFO*\n\n` +
+                         `📝 *Title:* ${title}\n` +
+                         `👤 *Artist:* ${author}\n` +
+                         `⏱️ *Duration:* ${duration}\n` +
+                         `🔗 *URL:* ${urlYt}\n\n` +
+                         `⬇️ Downloading audio...`
+            }, { quoted: msg });
 
             let audioUrl = null;
             let audioTitle = title;
 
-            // Try Izumi API first (use same as video)
+            // Try Izumi API first
             try {
                 console.log('[PLAY] Trying Izumi API for audio...');
                 const audioData = await getIzumiAudioByUrl(urlYt);
                 audioUrl = audioData.download;
                 audioTitle = audioData.title || title;
-                console.log('[PLAY] Success with Izumi API');
+                console.log('[PLAY] ✅ Success with Izumi API');
             } catch (e1: any) {
-                console.error('[PLAY] Izumi failed:', e1.message);
+                console.error('[PLAY] ❌ Izumi failed:', e1.message);
 
                 // Try Okatsu as fallback
                 try {
@@ -96,29 +104,28 @@ registerCommand({
                     const audioData = await getOkatsuAudioByUrl(urlYt);
                     audioUrl = audioData.download;
                     audioTitle = audioData.title || title;
-                    console.log('[PLAY] Success with Okatsu API');
+                    console.log('[PLAY] ✅ Success with Okatsu API');
                 } catch (e2: any) {
-                    console.error('[PLAY] Okatsu failed:', e2.message);
+                    console.error('[PLAY] ❌ Okatsu failed:', e2.message);
                 }
             }
 
             if (!audioUrl) {
-                return reply("Failed to fetch audio from all APIs. Please try again later.");
+                return reply("❌ Failed to download audio from all APIs. Try again or use .ytmp3 <youtube link>");
             }
 
-            // Send the audio
+            // Send the audio file
             await sock.sendMessage(msg.key.remoteJid, {
                 audio: { url: audioUrl },
                 mimetype: "audio/mpeg",
-                fileName: `${audioTitle}.mp3`
-            });
+                fileName: `${audioTitle.replace(/[\\/:*?"<>|]/g, "").slice(0, 80)}.mp3`
+            }, { quoted: msg });
 
-            // Send success message
-            await reply("✅ Let's go! CORTANA downloaded your audio successfully! 🎶");
+            console.log(`[PLAY] ✅ Successfully sent audio: ${title}`);
 
         } catch (error: any) {
-            console.error('Error in play command:', error);
-            await reply("Download failed. Please try again later.");
+            console.error('[PLAY] Error:', error);
+            await reply("❌ Download failed. Please try again or use .ytmp3 <link>");
         }
     }
 });

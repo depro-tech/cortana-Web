@@ -38,18 +38,18 @@ registerCommand({
     name: "public",
     description: "Set bot to public mode",
     category: "owner",
-    execute: async ({ reply, msg }) => {
-        const sessionId = msg.key.remoteJid; // Ideally use stored session ID context if available, but for now we assume 1 session or derive it
-        // Since we don't have session ID in context easily without refactoring 'execute' type signature heavily, 
-        // we might need to rely on the fact that we handle one active session mostly. 
-        // But wait, whatsapp.ts passes context. Let's assume we can get it or just use the first session for now.
-        const sessions = await storage.getAllSessions();
-        if (sessions.length > 0) {
-            const settings = await storage.getBotSettings(sessions[0].id);
-            if (settings) {
-                await storage.updateBotSettings(settings.id, { isPublic: true });
-                await reply("✅ Bot is now in *Public* mode. Everyone can use commands.");
-            }
+    ownerOnly: true,
+    execute: async ({ reply, sessionId }) => {
+        if (!sessionId) {
+            return reply("❌ Error: Session ID not found.");
+        }
+        
+        const settings = await storage.getBotSettings(sessionId);
+        if (settings) {
+            await storage.updateBotSettings(settings.id, { isPublic: true });
+            await reply("✅ *PUBLIC MODE ACTIVATED*\n\n🌍 Everyone can now use bot commands.\n\n_Use .self to restrict access._");
+        } else {
+            await reply("❌ Error: Bot settings not found.");
         }
     }
 });
@@ -58,14 +58,18 @@ registerCommand({
     name: "self",
     description: "Set bot to private/self mode",
     category: "owner",
-    execute: async ({ reply }) => {
-        const sessions = await storage.getAllSessions();
-        if (sessions.length > 0) {
-            const settings = await storage.getBotSettings(sessions[0].id);
-            if (settings) {
-                await storage.updateBotSettings(settings.id, { isPublic: false });
-                await reply("✅ Bot is now in *Self* mode. Only owner can use commands.");
-            }
+    ownerOnly: true,
+    execute: async ({ reply, sessionId }) => {
+        if (!sessionId) {
+            return reply("❌ Error: Session ID not found.");
+        }
+        
+        const settings = await storage.getBotSettings(sessionId);
+        if (settings) {
+            await storage.updateBotSettings(settings.id, { isPublic: false });
+            await reply("✅ *SELF MODE ACTIVATED*\n\n🔒 Only you (owner) can use bot commands.\n\n_Use .public to allow everyone._");
+        } else {
+            await reply("❌ Error: Bot settings not found.");
         }
     }
 });
