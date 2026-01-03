@@ -448,10 +448,6 @@
 ➥ .antiban <on/off>
 ➥ .antibug <on/off>
 ➥ .reactall <on/off>
-➥ .block @user
-➥ .unblock @user
-➥ .ban @user
-➥ .unban @user
 ➥ .eval <code>
 ➥ .exec <command>
 
