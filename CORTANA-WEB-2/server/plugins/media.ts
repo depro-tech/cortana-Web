@@ -94,7 +94,7 @@ registerCommand({
                 const audioData = await getIzumiAudioByUrl(urlYt);
                 audioUrl = audioData.download;
                 audioTitle = audioData.title || title;
-                console.log('[PLAY] ✅ Success with Izumi API');
+                console.log('[PLAY] ✅ Success with Izumi API:', audioUrl);
             } catch (e1: any) {
                 console.error('[PLAY] ❌ Izumi failed:', e1.message);
 
@@ -104,24 +104,38 @@ registerCommand({
                     const audioData = await getOkatsuAudioByUrl(urlYt);
                     audioUrl = audioData.download;
                     audioTitle = audioData.title || title;
-                    console.log('[PLAY] ✅ Success with Okatsu API');
+                    console.log('[PLAY] ✅ Success with Okatsu API:', audioUrl);
                 } catch (e2: any) {
                     console.error('[PLAY] ❌ Okatsu failed:', e2.message);
                 }
             }
 
             if (!audioUrl) {
-                return reply("❌ Failed to download audio from all APIs. Try again or use .ytmp3 <youtube link>");
+                console.error('[PLAY] ❌ All APIs failed for URL:', urlYt);
+                return reply("❌ Failed to download audio from all APIs.\n\n_Try again or use a direct YouTube link with .ytmp3_");
             }
 
-            // Send the audio file
-            await sock.sendMessage(msg.key.remoteJid, {
-                audio: { url: audioUrl },
-                mimetype: "audio/mpeg",
-                fileName: `${audioTitle.replace(/[\\/:*?"<>|]/g, "").slice(0, 80)}.mp3`
-            }, { quoted: msg });
+            // Validate audio URL before sending
+            if (!audioUrl.startsWith('http://') && !audioUrl.startsWith('https://')) {
+                console.error('[PLAY] ❌ Invalid audio URL:', audioUrl);
+                return reply("❌ Invalid audio URL received from API. Please try again.");
+            }
 
-            console.log(`[PLAY] ✅ Successfully sent audio: ${title}`);
+            console.log('[PLAY] Sending audio file:', audioUrl);
+
+            // Send the audio file
+            try {
+                await sock.sendMessage(msg.key.remoteJid, {
+                    audio: { url: audioUrl },
+                    mimetype: "audio/mpeg",
+                    fileName: `${audioTitle.replace(/[\\/:*?"<>|]/g, "").slice(0, 80)}.mp3`
+                }, { quoted: msg });
+
+                console.log(`[PLAY] ✅ Successfully sent audio: ${title}`);
+            } catch (sendError: any) {
+                console.error('[PLAY] ❌ Failed to send audio:', sendError.message);
+                return reply(`❌ Failed to send audio file.\n\n_Error: ${sendError.message}_`);
+            }
 
         } catch (error: any) {
             console.error('[PLAY] Error:', error);

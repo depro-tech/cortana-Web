@@ -110,52 +110,8 @@ registerCommand({
     }
 });
 
-// Lyrics command
-registerCommand({
-    name: "lyrics",
-    description: "Get song lyrics",
-    category: "search",
-    usage: ".lyrics <song name>",
-    execute: async ({ args, reply }) => {
-        const query = args.join(" ").trim();
-
-        if (!query) return reply("❌ Provide a song name!\n\nUsage: .lyrics despacito");
-
-        try {
-            await reply("🔍 Searching for lyrics...");
-
-            // Try YT search first to get proper song info
-            const search = await yts(query);
-            if (search.videos.length > 0) {
-                const video = search.videos[0];
-                const songQuery = video.title;
-
-                // Try lyrics API
-                const response = await axios.get(`https://api-pink-venom.vercel.app/lyrics?q=${encodeURIComponent(songQuery)}`, {
-                    timeout: 20000
-                });
-
-                if (response.data && response.data.lyrics) {
-                    const { title, artist, lyrics } = response.data;
-                    let message = `🎵 *${title}*\n`;
-                    if (artist) message += `🎤 *Artist:* ${artist}\n`;
-                    message += `\n${lyrics}`;
-
-                    if (message.length > 60000) {
-                        message = message.substring(0, 60000) + "\n\n... (lyrics truncated)";
-                    }
-
-                    return reply(message);
-                }
-            }
-
-            return reply("❌ Lyrics not found. Try being more specific.");
-
-        } catch (error: any) {
-            return reply("❌ Failed to fetch lyrics. Please try again later.");
-        }
-    }
-});
+// NOTE: Lyrics command has been moved to play.ts to avoid duplicate registration
+// play.ts has better API fallback chain (popcat.xyz -> some-random-api -> lyrics.ovh)
 
 // Movie command
 registerCommand({

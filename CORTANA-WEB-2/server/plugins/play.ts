@@ -254,8 +254,41 @@ registerCommand({
         try {
             await reply("🔍 Searching lyrics for: " + query + "...");
 
-            // Try API 1: Lyricz API
+            // Try API 1: Pink Venom API (with YT search first)
             try {
+                console.log('[LYRICS] Trying pink-venom API...');
+                const yts = require("yt-search");
+                const search = await yts(query);
+                
+                if (search.videos.length > 0) {
+                    const video = search.videos[0];
+                    const songQuery = video.title;
+                    
+                    const response = await axios.get(`https://api-pink-venom.vercel.app/lyrics?q=${encodeURIComponent(songQuery)}`, {
+                        timeout: 15000
+                    });
+
+                    if (response.data && response.data.lyrics) {
+                        const { title, artist, lyrics } = response.data;
+                        let message = `🎵 *${title}*\n`;
+                        if (artist) message += `🎤 *Artist:* ${artist}\n`;
+                        message += `\n${lyrics}`;
+
+                        if (message.length > 60000) {
+                            message = message.substring(0, 60000) + "\n\n... (lyrics truncated)";
+                        }
+
+                        console.log('[LYRICS] ✅ Success with pink-venom API');
+                        return reply(message);
+                    }
+                }
+            } catch (e: any) {
+                console.log('[LYRICS] pink-venom failed:', e.message);
+            }
+
+            // Try API 2: Popcat API
+            try {
+                console.log('[LYRICS] Trying popcat API...');
                 const response = await axios.get(`https://api.popcat.xyz/lyrics?song=${encodeURIComponent(query)}`, {
                     timeout: 15000
                 });
@@ -266,14 +299,16 @@ registerCommand({
                     const artist = response.data.artist || "Unknown";
                     const preview = lyrics.length > 4000 ? lyrics.substring(0, 4000) + "...\n\n_Lyrics truncated_" : lyrics;
 
+                    console.log('[LYRICS] ✅ Success with popcat API');
                     return reply(`🎵 *${title}*\n👤 *Artist:* ${artist}\n\n${preview}`);
                 }
             } catch (e: any) {
                 console.log('[LYRICS] popcat failed:', e.message);
             }
 
-            // Try API 2: Some-Random-API
+            // Try API 3: Some-Random-API
             try {
+                console.log('[LYRICS] Trying some-random-api...');
                 const response = await axios.get(`https://some-random-api.com/others/lyrics?title=${encodeURIComponent(query)}`, {
                     timeout: 15000
                 });
@@ -284,10 +319,44 @@ registerCommand({
                     const artist = response.data.author || "Unknown";
                     const preview = lyrics.length > 4000 ? lyrics.substring(0, 4000) + "...\n\n_Lyrics truncated_" : lyrics;
 
+                    console.log('[LYRICS] ✅ Success with some-random-api');
                     return reply(`🎵 *${title}*\n👤 *Artist:* ${artist}\n\n${preview}`);
                 }
             } catch (e: any) {
                 console.log('[LYRICS] some-random-api failed:', e.message);
+            }
+
+            // Try API 4: lyrics.ovh
+            try {
+                console.log('[LYRICS] Trying lyrics.ovh...');
+                const parts = query.split(" ");
+                let artist = parts[0];
+                let title = parts.slice(1).join(" ") || query;
+
+                const response = await axios.get(`https://api.lyrics.ovh/v1/${encodeURIComponent(artist)}/${encodeURIComponent(title)}`, {
+                    timeout: 15000
+                });
+
+                if (response.data?.lyrics) {
+                    const lyrics = response.data.lyrics;
+                    const preview = lyrics.length > 4000 ? lyrics.substring(0, 4000) + "...\n\n_Lyrics truncated_" : lyrics;
+                    
+                    console.log('[LYRICS] ✅ Success with lyrics.ovh');
+                    return reply(`🎵 *Lyrics: ${query}*\n\n${preview}`);
+                }
+            } catch (e: any) {
+                console.log('[LYRICS] lyrics.ovh failed:', e.message);
+            }
+
+            console.error('[LYRICS] ❌ All APIs failed for query:', query);
+            return reply("❌ Lyrics not found on all APIs. Try:\n• .lyrics artist songname\n• .lyrics hello adele\n• Be more specific");
+
+        } catch (error: any) {
+            console.error('[LYRICS] Error:', error);
+            return reply("❌ Failed to fetch lyrics. Try again!");
+        }
+    }
+});
             }
 
             // Try API 3: lyrics.ovh

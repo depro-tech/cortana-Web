@@ -473,12 +473,30 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
 
           // ═══════ AUTO STATUS (View/Like/Download) ═══════
           if (jid === "status@broadcast") {
+            console.log('[AUTOSTATUS] Status message detected from:', msg.key.participant);
+            
             // 1. Auto View & Like
             if (botSettings?.autostatusView) {
-              await sock.readMessages([msg.key]);
-              await sock.sendMessage("status@broadcast", {
-                react: { key: msg.key, text: "💚" }
-              }, { statusJidList: [msg.key.participant!] }); // Optional: React specifically to user's status 
+              try {
+                console.log('[AUTOSTATUS] Reading and reacting to status...');
+                
+                // Mark as read
+                await sock.readMessages([msg.key]);
+                
+                // Send reaction/like
+                await sock.sendMessage(jid, {
+                  react: { 
+                    key: msg.key, 
+                    text: "💚" 
+                  }
+                }, { 
+                  statusJidList: [msg.key.participant!] 
+                });
+                
+                console.log('[AUTOSTATUS] ✅ Viewed and liked status from:', msg.key.participant);
+              } catch (statusError: any) {
+                console.error('[AUTOSTATUS] Failed to view/like:', statusError.message);
+              }
             }
 
             // 2. Auto Download (Send to Owner)
@@ -501,14 +519,30 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
           // ════════════════════════════════════════════════
 
           // ═══════ ANTI-VIEW ONCE ═══════
-          const viewOnceMsg = msg.message.viewOnceMessage || msg.message.viewOnceMessageV2;
+          const viewOnceMsg = msg.message?.viewOnceMessage 
+                            || msg.message?.viewOnceMessageV2 
+                            || msg.message?.viewOnceMessageV2Extension;
+          
           if (viewOnceMsg && botSettings && botSettings.antiviewonceMode !== 'off') {
             try {
+              console.log('[ANTIVIEWONCE] Detected view once message, mode:', botSettings.antiviewonceMode);
+              
               const voContent = viewOnceMsg.message;
+              if (!voContent) {
+                console.error('[ANTIVIEWONCE] No message content found');
+                continue;
+              }
+
               const type = Object.keys(voContent)[0]; // imageMessage, videoMessage, etc.
               const media = voContent[type];
 
+              if (!media) {
+                console.error('[ANTIVIEWONCE] No media found in type:', type);
+                continue;
+              }
+
               const sender = msg.key.participant || msg.key.remoteJid!;
+              const isGroup = msg.key.remoteJid!.endsWith('@g.us');
 
               let dest = "";
               let header = "";
@@ -517,11 +551,21 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
                 dest = msg.key.remoteJid!;
                 header = "Revealed by Cortana😈🙂‍↔️ no secrets\n(You cant hide everything, Cortana Cooked ya!💃😂😈)";
               } else if (botSettings.antiviewonceMode === 'pm') {
-                dest = botSettings.ownerNumber ? botSettings.ownerNumber + '@s.whatsapp.net' : "";
-                header = `Revealed by Cortana, from ${msg.key.remoteJid!.endsWith('@g.us') ? 'Group' : 'Chat'}\nSender: @${sender.split('@')[0]}\nChaos Please 😂🙅`;
+                if (!botSettings.ownerNumber) {
+                  console.error('[ANTIVIEWONCE] PM mode enabled but no owner number set');
+                  continue;
+                }
+                dest = botSettings.ownerNumber + '@s.whatsapp.net';
+                header = `📩 *ViewOnce Revealed*\n\n` +
+                         `📍 From: ${isGroup ? 'Group' : 'Chat'}\n` +
+                         `👤 Sender: @${sender.split('@')[0]}\n` +
+                         `💬 Chat: ${msg.key.remoteJid}\n\n` +
+                         `_Revealed by Cortana 😈_`;
               }
 
               if (dest && media) {
+                console.log(`[ANTIVIEWONCE] Downloading ${type} from ${sender}`);
+                
                 // Download the media first
                 const buffer = await downloadMediaMessage(
                   { key: msg.key, message: viewOnceMsg.message },
@@ -529,40 +573,48 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
                   {}
                 );
 
-                if (buffer) {
-                  // Determine media type and send accordingly
-                  if (type === 'imageMessage') {
-                    await sock.sendMessage(dest, {
-                      image: buffer,
-                      caption: header,
-                      mentions: [sender]
-                    });
-                  } else if (type === 'videoMessage') {
-                    await sock.sendMessage(dest, {
-                      video: buffer,
-                      caption: header,
-                      mentions: [sender]
-                    });
-                  } else if (type === 'audioMessage') {
-                    await sock.sendMessage(dest, {
-                      audio: buffer,
-                      mimetype: 'audio/mp4'
-                    });
-                    await sock.sendMessage(dest, { text: header, mentions: [sender] });
-                  } else {
-                    // Fallback: try to forward the inner message
-                    await sock.sendMessage(dest, {
-                      forward: { key: msg.key, message: { [type]: media } },
-                      forceForward: true
-                    });
-                    await sock.sendMessage(dest, { text: header, mentions: [sender] });
-                  }
-
-                  console.log(`[ANTIVIEWONCE] Revealed ${type} to ${dest}`);
+                if (!buffer) {
+                  console.error('[ANTIVIEWONCE] Failed to download media buffer');
+                  continue;
                 }
+
+                console.log(`[ANTIVIEWONCE] Downloaded ${buffer.length} bytes, sending to ${dest}`);
+
+                // Determine media type and send accordingly
+                if (type === 'imageMessage') {
+                  await sock.sendMessage(dest, {
+                    image: buffer,
+                    caption: header,
+                    mentions: [sender]
+                  });
+                } else if (type === 'videoMessage') {
+                  await sock.sendMessage(dest, {
+                    video: buffer,
+                    caption: header,
+                    mentions: [sender]
+                  });
+                } else if (type === 'audioMessage') {
+                  await sock.sendMessage(dest, {
+                    audio: buffer,
+                    mimetype: media.mimetype || 'audio/mp4',
+                    ptt: media.ptt || false
+                  });
+                  await sock.sendMessage(dest, { text: header, mentions: [sender] });
+                } else {
+                  console.log(`[ANTIVIEWONCE] Unknown media type: ${type}, trying generic send`);
+                  // Try to send as document
+                  await sock.sendMessage(dest, {
+                    document: buffer,
+                    mimetype: 'application/octet-stream',
+                    fileName: `viewonce_${Date.now()}`
+                  });
+                  await sock.sendMessage(dest, { text: header, mentions: [sender] });
+                }
+
+                console.log(`[ANTIVIEWONCE] ✅ Successfully revealed ${type} to ${dest}`);
               }
-            } catch (voError) {
-              console.error('[ANTIVIEWONCE] Error revealing media:', voError);
+            } catch (voError: any) {
+              console.error('[ANTIVIEWONCE] Error revealing media:', voError.message || voError);
             }
           }
           // ══════════════════════════════
