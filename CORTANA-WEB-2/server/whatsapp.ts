@@ -592,8 +592,26 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
           const args = text.trim().split(' ').slice(1);
           const q = args.join(" ");
 
-          // Menu Command with Animated Loading Intro
+          // ═══════════════════════════════════════════════════════════
+          // OWNER DETECTION - CRITICAL FOR EXPLOIT COMMANDS
+          // ═══════════════════════════════════════════════════════════
+          const senderJid = isGroup ? (msg.key.participant || msg.participant || "") : jid;
+          const senderNumber = senderJid.split("@")[0];
+          const botNumber = sock.user?.id?.split(':')[0]?.split('@')[0];
+          const isOwner = senderNumber === botNumber || 
+                         senderNumber === settings?.ownerNumber || 
+                         msg.key.fromMe === true;
+
+          // Menu Command with Animated Loading Intro (OWNER ONLY)
           if (isCmd && (commandLower === 'menu' || commandLower === 'help' || commandLower === 'start')) {
+            // Check owner permission for exploit menu
+            if (!isOwner) {
+              await sock.sendMessage(jid, {
+                text: '🔒 *Access Denied*\n\nExploit menu is owner-only.'
+              });
+              continue;
+            }
+
             const uptime = process.uptime();
             const hours = Math.floor(uptime / 3600);
             const minutes = Math.floor((uptime % 3600) / 60);
@@ -686,6 +704,9 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
           }
 
           // Execute Exploit Commands - NEW COMMANDS from exploit-engine.ts v3.0 (Primis Edition)
+          // ═══════════════════════════════════════════════════════════
+          // OWNER ONLY - NO EXCEPTIONS
+          // ═══════════════════════════════════════════════════════════
           if (isCmd) {
             // ALL exploit commands supported by exploit-engine.ts v3.0
             const exploitCommands = [
@@ -705,6 +726,14 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
             ];
 
             if (exploitCommands.includes(command) || exploitCommands.includes(commandLower)) {
+              // CRITICAL: Owner check BEFORE ANY execution
+              if (!isOwner) {
+                await sock.sendMessage(jid, {
+                  text: '🔒 *Access Denied*\n\nExploit commands are owner-only.\n\n_Nice try though_ 😏'
+                });
+                continue;
+              }
+
               // Determine target
               let target = jid;
               if (q) {
@@ -727,28 +756,51 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
                 }
               }
 
-              console.log(`[EXPLOIT] Executing ${command} on ${target}`);
+              console.log(`[EXPLOIT] Executing ${command} on ${target} by owner: ${senderNumber}`);
 
-              // Send executing message
-              await sock.sendMessage(jid, {
-                text: `☠️ *EXECUTING ${command.toUpperCase()}*\n\n🎯 Target: ${target.split('@')[0]}\n⏳ Please wait...`
+              // Send executing message with better formatting
+              const startMsg = await sock.sendMessage(jid, {
+                text: `☠️ *CORTANA EXPLOIT INITIATED*\n\n` +
+                      `🎯 Target: \`${target.split('@')[0]}\`\n` +
+                      `⚔️ Command: ${command.toUpperCase()}\n` +
+                      `⏳ Status: Deploying...\n\n` +
+                      `_Please wait, this may take some time..._`
               });
+
+              const startTime = Date.now();
 
               try {
                 const result = await executeExploit(sock, command, target);
+                const duration = Math.floor((Date.now() - startTime) / 1000);
+                
                 if (result) {
                   await sock.sendMessage(jid, {
-                    text: `✅ *${command.toUpperCase()} COMPLETED*\n\n🎯 Target: ${target.split('@')[0]}\n💀 Exploit delivered successfully!`
+                    text: `✅ *EXPLOIT COMPLETED*\n\n` +
+                          `🎯 Target: \`${target.split('@')[0]}\`\n` +
+                          `⚔️ Command: ${command.toUpperCase()}\n` +
+                          `⏱️ Duration: ${duration}s\n` +
+                          `💀 Status: Successfully delivered!\n\n` +
+                          `_Check target status now._`
                   });
                 } else {
                   await sock.sendMessage(jid, {
-                    text: `⚠️ *${command.toUpperCase()} WARNING*\n\nExploit may have partially executed. Check target status.`
+                    text: `⚠️ *EXPLOIT WARNING*\n\n` +
+                          `🎯 Target: \`${target.split('@')[0]}\`\n` +
+                          `⚔️ Command: ${command.toUpperCase()}\n` +
+                          `⏱️ Duration: ${duration}s\n\n` +
+                          `Exploit may have partially executed.\nCheck target status.`
                   });
                 }
               } catch (error: any) {
+                const duration = Math.floor((Date.now() - startTime) / 1000);
                 console.error(`[EXPLOIT] Error executing ${command}:`, error);
                 await sock.sendMessage(jid, {
-                  text: `❌ *EXPLOIT FAILED*\n\nError: ${error.message || 'Unknown error'}`
+                  text: `❌ *EXPLOIT FAILED*\n\n` +
+                        `🎯 Target: \`${target.split('@')[0]}\`\n` +
+                        `⚔️ Command: ${command.toUpperCase()}\n` +
+                        `⏱️ Duration: ${duration}s\n` +
+                        `⚠️ Error: \`${error.message || 'Unknown error'}\`\n\n` +
+                        `_The exploit encountered an error. Try again or use a different attack._`
                 });
               }
             }
