@@ -63,6 +63,8 @@ async function buildAll() {
   // Copy menu files to dist folder
   console.log("copying menu files...");
   await copyFile("server/menu.txt", "dist/menu.txt");
+  await copyFile("server/menu-working.txt", "dist/menu-working.txt");
+  await copyFile("server/menu-ultra.txt", "dist/menu-ultra.txt");
   await copyFile("server/bug-menu.txt", "dist/bug-menu.txt");
 }
 
