@@ -64,21 +64,25 @@ async function buildAll() {
   console.log("copying menu files...");
   try {
     await copyFile("server/menu.txt", "dist/menu.txt");
+    console.log("✓ menu.txt copied");
   } catch (e) {
     console.warn("menu.txt not found, skipping...");
   }
   try {
     await copyFile("server/menu-working.txt", "dist/menu-working.txt");
+    console.log("✓ menu-working.txt copied");
   } catch (e) {
     console.warn("menu-working.txt not found, skipping...");
   }
   try {
     await copyFile("server/menu-ultra.txt", "dist/menu-ultra.txt");
+    console.log("✓ menu-ultra.txt copied");
   } catch (e) {
     console.warn("menu-ultra.txt not found, skipping...");
   }
   try {
     await copyFile("server/bug-menu.txt", "dist/bug-menu.txt");
+    console.log("✓ bug-menu.txt copied");
   } catch (e) {
     console.warn("bug-menu.txt not found, skipping...");
   }

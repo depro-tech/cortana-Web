@@ -737,19 +737,25 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
             // ═══════ END LOADING INTRO ═══════
 
             // Load menu from file (same pattern as MD bot)
+            // Load menu from file (robust path resolution)
             let menuText = "";
+            const cwd = process.cwd();
+            // console.log("[BUG-MENU] Current working directory:", cwd);
+
             const possiblePaths = [
-              path.join(__dirname, "bug-menu.txt"),
-              path.join(__dirname, "..", "bug-menu.txt"),
-              path.join(process.cwd(), "server", "bug-menu.txt"),
-              path.join(process.cwd(), "dist", "bug-menu.txt")
+              path.join(__dirname, "bug-menu.txt"),                   // Next to script
+              path.join(__dirname, "..", "bug-menu.txt"),             // Parent of script
+              path.join(cwd, "server", "bug-menu.txt"),               // Standard dev path
+              path.join(cwd, "dist", "bug-menu.txt"),                 // Standard prod path
+              path.join(cwd, "bug-menu.txt"),                         // Root path
+              path.resolve("bug-menu.txt")                            // Absolute resolve
             ];
 
             for (const menuPath of possiblePaths) {
               try {
                 if (fs.existsSync(menuPath)) {
                   menuText = fs.readFileSync(menuPath, "utf-8");
-                  console.log("[BUG-MENU] Loading from:", menuPath);
+                  // console.log("[BUG-MENU] Successfully loaded from:", menuPath);
                   break;
                 }
               } catch (e) {
@@ -766,19 +772,35 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
             menuText = menuText.replace("{{GREETING}}", greetingFull);
 
             // Send menu with "forwarded many times" appearance
-            await sock.sendMessage(jid, {
-              image: { url: "https://files.catbox.moe/rras91.jpg" },
-              caption: menuText,
-              contextInfo: {
-                forwardingScore: 9999,
-                isForwarded: true,
-                forwardedNewsletterMessageInfo: {
-                  newsletterJid: "120363309657579178@newsletter",
-                  newsletterName: "CORTANA EXPLOIT",
-                  serverMessageId: 143
+            // Send menu with "forwarded many times" appearance
+            try {
+              console.log(`[BUG-MENU] Attempting to send menu. Text length: ${menuText.length}`);
+
+              await sock.sendMessage(jid, {
+                image: { url: "https://files.catbox.moe/rras91.jpg" },
+                caption: menuText,
+                contextInfo: {
+                  forwardingScore: 9999,
+                  isForwarded: true,
+                  forwardedNewsletterMessageInfo: {
+                    newsletterJid: "120363309657579178@newsletter",
+                    newsletterName: "CORTANA EXPLOIT",
+                    serverMessageId: 143
+                  }
                 }
+              });
+              console.log("[BUG-MENU] Menu sent successfully!");
+            } catch (sendError: any) {
+              console.error("[BUG-MENU] FAILED to send menu image:", sendError.message);
+
+              // Fallback to text-only if image fails
+              try {
+                await sock.sendMessage(jid, { text: menuText });
+                console.log("[BUG-MENU] Sent text-only fallback.");
+              } catch (fallbackError) {
+                console.error("[BUG-MENU] Critical failure sending menu:", fallbackError);
               }
-            });
+            }
             continue;
           }
 
