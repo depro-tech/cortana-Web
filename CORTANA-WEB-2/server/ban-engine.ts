@@ -184,6 +184,28 @@ export class CortanaDoomsday {
     }
 
     async executeNuclearStrike(target: string, intensity: 'LIGHT' | 'MEDIUM' | 'HEAVY' | 'NUCLEAR' = 'NUCLEAR'): Promise<AttackResult> {
+        // STRICT TARGET VALIDATION
+        // Must contain at least 7 digits (valid phone number) before the suffix
+        // Prevents execution on empty targets like "@s.whatsapp.net" or "null"
+        const cleanTarget = target.replace('@s.whatsapp.net', '');
+        if (!target || target === 'null' || target === 'undefined' || cleanTarget.length < 7 || !/^\d+$/.test(cleanTarget)) {
+            log.red(`❌ Execution BLOCKED: Invalid target detected '${target}'`);
+            return {
+                attackId: 'INVALID',
+                target: target || 'NULL',
+                intensity,
+                duration: 0,
+                successRate: 0,
+                banProbability: 0,
+                thresholdsCrossed: [],
+                estimatedBanTime: 'N/A',
+                phases: {},
+                timestamp: new Date().toISOString(),
+                failed: true,
+                error: "Invalid target number. Execution blocked safety."
+            };
+        }
+
         const attackId = `CORTANA_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
         const startTime = Date.now();
 
