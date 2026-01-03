@@ -34,3 +34,6 @@ import "./chatbot";
 import "./presence";
 import "./utilities";
 import "./protection"; // Fixes antibug, reactall
+import "./audio-effects"; // NEW: Audio effects from Anita-V4
+import "./advanced-scrapers"; // NEW: TikTok, Pinterest, etc.
+import "./group-advanced"; // NEW: Ship, Poll, Pick commands

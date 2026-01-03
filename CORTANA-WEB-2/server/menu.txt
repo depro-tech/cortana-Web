@@ -109,6 +109,26 @@
 ➥ .yts <query>
 ➥ .spotify <link>
 
+╭─────────────── ❖ ───────────────╮
+│        🎧 A U D I O  E F F E C T S 🎧      │
+╰─────────────── ❖ ───────────────╯
+➥ .bass (reply to audio)
+➥ .nightcore (reply to audio)
+➥ .robot (reply to audio)
+➥ .slow (reply to audio)
+➥ .fast (reply to audio)
+➥ .earrape (reply to audio)
+➥ .chipmunk (reply to audio)
+➥ .deep (reply to audio)
+➥ .blown (reply to audio)
+➥ .fat (reply to audio)
+➥ .reverse (reply to audio)
+➥ .smooth (reply to audio)
+➥ .vibrato (reply to audio)
+➥ .echo (reply to audio)
+➥ .chorus (reply to audio)
+➥ .audioeffect (list all)
+
 
 ╭─────────────── ❖ ───────────────╮
 │        ⬇️ D O W N L O A D E R S ⬇️        │
@@ -119,6 +139,10 @@
 ➥ .ig <link>
 ➥ .twitter <link>
 ➥ .apk <app name>
+➥ .pinterest <query>
+➥ .stickersearch <query>
+➥ .playstore <app name>
+➥ .screenshot <url>
 
 
 ╭─────────────── ❖ ───────────────╮
@@ -162,10 +186,11 @@
 ➥ .insult
 ➥ .compliment
 ➥ .burn
-➥ .ship <name1 name2>
+➥ .ship (random group match)
+➥ .pick (random group member)
+➥ .poll question | opt1 | opt2
 ➥ .rate <thing>
 ➥ .ask <question>
-➥ .pick <opt1 | opt2>
 ➥ .owo <text>
 ➥ .uwu <text>
 ➥ .mock <text>
@@ -198,6 +223,14 @@
 ➥ .shipname <names>
 ➥ .how <question>
 ➥ .when <question>
+
+
+╭─────────────── ❖ ───────────────╮
+│        👥 G R O U P  A D V A N C E D 👥      │
+╰─────────────── ❖ ───────────────╯
+➥ .ginfo <group link>
+➥ .common (common members)
+➥ .diff (group changes)
 
 
 ╭─────────────── ❖ ───────────────╮
