@@ -109,8 +109,9 @@
 ➥ .play <name/link>
 ➥ .video <name/link>
 ➥ .song <name/link>
-➥ .lyrics <song>
-➥ .yts <query>
+➥ .play <song>
+➥ .lyrics <song - artist>
+➥ .ytmp3 <url>
 ➥ .ytmp3 <link>
 ➥ .ytmp4 <link>
 

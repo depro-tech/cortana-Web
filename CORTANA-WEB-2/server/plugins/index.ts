@@ -44,3 +44,4 @@ import "./love-diss"; // NEW: Love Quote, Pickup, Roast, Hate
 import "./advisor"; // NEW: Finance, Life, Relationships, Nature
 import "./religion"; // NEW: Bible, Quran, Dark Quotes
 import "./hackmode"; // NEW: Simulations (Fake hacks)
+import "./lyrics"; // NEW: Lyrics Command
