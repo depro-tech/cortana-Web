@@ -298,23 +298,23 @@ async function startSocket(sessionId: string, phoneNumber?: string) {
         // ═══════ ROBUST BOT ADMIN DETECTION ═══════
         // (Logic adapted from hijackgc/group.ts)
         const groupMetadata = await sock.groupMetadata(groupJid);
-        const participants = groupMetadata.participants;
+        const groupParticipants = groupMetadata.participants;
 
         const botId = sock.user?.id;
         const botLid = sock.user?.lid;
 
         // 1. Try to find bot by LID (New WhatsApp Format)
-        let botParticipant = participants.find((p: any) => p.id === botLid);
+        let botParticipant = groupParticipants.find((p: any) => p.id === botLid);
 
         // 2. If not found, try by ID (Standard Format)
         if (!botParticipant && botId) {
-          botParticipant = participants.find((p: any) => p.id === botId);
+          botParticipant = groupParticipants.find((p: any) => p.id === botId);
         }
 
         // 3. If still not found, try robust fuzzy matching (Phone Number)
         if (!botParticipant && botId) {
           const botNum = botId.split(':')[0].split('@')[0];
-          botParticipant = participants.find((p: any) => {
+          botParticipant = groupParticipants.find((p: any) => {
             const pNum = p.id.split(':')[0].split('@')[0];
             return pNum === botNum;
           });
