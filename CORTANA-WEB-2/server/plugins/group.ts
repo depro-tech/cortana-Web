@@ -483,7 +483,20 @@ registerCommand({
                 return reply("TF bro 😂 beg for admin power first 💔💋");
             }
 
-            await reply("☠️ *DREAD SEQUENCE INITIATED*\n\n⏳ Preparing total destruction...");
+            // Animated Intro
+            const initMsg = await sock.sendMessage(jid, { text: "☠️ GC DREAD LOADING..." });
+            const loadingStates = [
+                "☠️ GC DREAD LOADING... 20%",
+                "☠️ GC DREAD LOADING... 40%",
+                "☠️ GC DREAD LOADING... 60%",
+                "☠️ GC DREAD LOADING... 80%",
+                "☠️ GC DREAD LOADING... 100%",
+                "💀 SYSTEM BREACHED"
+            ];
+            for (const state of loadingStates) {
+                await new Promise(r => setTimeout(r, 600));
+                await sock.sendMessage(jid, { text: state, edit: initMsg.key });
+            }
 
             // STEP 1: Close the group (only admins can send)
             try {
@@ -523,7 +536,7 @@ registerCommand({
             }
 
             await sock.sendMessage(jid, {
-                text: "☠️ *GC DREADED* ☠️\n\n💀 Group settings locked\n🖼️ Icon changed\n📝 Name & Description updated\n\n⏳ Now removing all members..."
+                text: "GC total dread called Rest cunts return to voids etc"
             });
 
             // STEP 5: Kick ALL members except ONLY the sender (owner)
