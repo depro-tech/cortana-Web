@@ -101,26 +101,82 @@ registerCommand({
     usage: ".technews",
     execute: async ({ reply, sock, msg }) => {
         const jid = msg.key.remoteJid!;
+        const axios = require('axios');
 
         try {
             await sock.sendMessage(jid, { react: { text: "📰", key: msg.key } }).catch(() => { });
+            await reply("📰 *Fetching tech news...*");
 
-            const response = await fetch('https://fantox001-scrappy-api.vercel.app/technews/random');
-            const data = await response.json();
+            let newsData: { thumbnail?: string; news?: string; title?: string; description?: string } | null = null;
 
-            if (!data || !data.news) {
+            // Try multiple news APIs
+            const newsApis = [
+                // API 1: Fantox Tech News
+                async () => {
+                    const res = await axios.get('https://fantox001-scrappy-api.vercel.app/technews/random', { timeout: 15000 });
+                    if (res.data?.news) {
+                        return { news: res.data.news, thumbnail: res.data.thumbnail };
+                    }
+                    throw new Error('No data');
+                },
+
+                // API 2: HackerNews (top stories)
+                async () => {
+                    const idsRes = await axios.get('https://hacker-news.firebaseio.com/v0/topstories.json', { timeout: 10000 });
+                    const randomId = idsRes.data[Math.floor(Math.random() * 20)]; // Top 20
+                    const storyRes = await axios.get(`https://hacker-news.firebaseio.com/v0/item/${randomId}.json`, { timeout: 10000 });
+                    if (storyRes.data?.title) {
+                        return {
+                            news: `*${storyRes.data.title}*\n\n${storyRes.data.url || ''}\n\n👍 ${storyRes.data.score || 0} points | 💬 ${storyRes.data.descendants || 0} comments`,
+                            thumbnail: null
+                        };
+                    }
+                    throw new Error('No data');
+                },
+
+                // API 3: Random tech fact fallback
+                async () => {
+                    const facts = [
+                        "💡 The first computer virus was created in 1983 and was called 'Elk Cloner'.",
+                        "💡 Google processes over 8.5 billion searches per day.",
+                        "💡 The first smartphone was IBM's Simon, released in 1994.",
+                        "💡 Over 6 million new blog posts are published every day.",
+                        "💡 Email was invented before the World Wide Web.",
+                        "💡 The average person spends 7 hours per day on the internet.",
+                        "💡 Amazon started as an online bookstore in 1994.",
+                        "💡 The first YouTube video was uploaded on April 23, 2005.",
+                        "💡 WhatsApp handles over 100 billion messages daily.",
+                        "💡 Tesla's Autopilot has driven over 5 billion miles."
+                    ];
+                    return {
+                        news: facts[Math.floor(Math.random() * facts.length)],
+                        thumbnail: null
+                    };
+                }
+            ];
+
+            // Try each API until one works
+            for (const api of newsApis) {
+                try {
+                    newsData = await api();
+                    if (newsData?.news) break;
+                } catch (e) {
+                    continue;
+                }
+            }
+
+            if (!newsData || !newsData.news) {
                 return reply("❌ Failed to fetch tech news. Try again later.");
             }
 
-            const { thumbnail, news } = data;
-
-            if (thumbnail) {
+            // Send the news
+            if (newsData.thumbnail) {
                 await sock.sendMessage(jid, {
-                    image: { url: thumbnail },
-                    caption: `📰 *TECH NEWS*\n\n${news}`
+                    image: { url: newsData.thumbnail },
+                    caption: `📰 *CORTANA TECH NEWS*\n\n${newsData.news}`
                 }, { quoted: msg });
             } else {
-                await reply(`📰 *TECH NEWS*\n\n${news}`);
+                await reply(`📰 *CORTANA TECH NEWS*\n\n${newsData.news}`);
             }
 
             await sock.sendMessage(jid, { react: { text: "✅", key: msg.key } }).catch(() => { });

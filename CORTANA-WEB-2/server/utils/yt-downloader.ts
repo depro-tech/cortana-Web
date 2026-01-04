@@ -1,20 +1,16 @@
 import axios from 'axios';
 import * as fs from 'fs';
 import * as path from 'path';
-import { randomBytes } from 'crypto';
 
 // ═══════════════════════════════════════════════════════════════
-// YT DOWNLOADER UTILITY
-// Downloads YouTube audio with proper quality and metadata
+// YT DOWNLOADER UTILITY - FIXED VERSION
+// Downloads YouTube audio with proper quality
 // ═══════════════════════════════════════════════════════════════
 
 const ytIdRegex = /(?:youtube\.com\/\S*(?:(?:\/e(?:mbed))?\/|watch\?(?:\S*?&?v\=))|youtu\.be\/)([a-zA-Z0-9_-]{6,11})/;
 
-// Ensure data directory exists
-const dataDir = path.join(process.cwd(), 'data');
-if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, { recursive: true });
-}
+// Minimum audio size - should be at least 100KB for a real audio file
+const MIN_AUDIO_SIZE = 100000; // 100KB
 
 /**
  * Check if URL is a YouTube URL
@@ -43,51 +39,6 @@ export async function searchYT(query: string): Promise<any[]> {
     } catch (error) {
         console.error('[YT] Search error:', error);
         return [];
-    }
-}
-
-/**
- * Get video info from YouTube
- */
-export async function getVideoInfo(urlOrId: string): Promise<any> {
-    try {
-        const videoId = isYTUrl(urlOrId) ? getVideoID(urlOrId) : urlOrId;
-        if (!videoId) throw new Error('Invalid video ID');
-
-        // Try multiple info APIs
-        const apis = [
-            `https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`,
-            `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`
-        ];
-
-        for (const api of apis) {
-            try {
-                const response = await axios.get(api, { timeout: 10000 });
-                if (response.data && response.data.title) {
-                    return {
-                        id: videoId,
-                        title: response.data.title,
-                        author: response.data.author_name || 'Unknown',
-                        thumbnail: `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`,
-                        url: `https://www.youtube.com/watch?v=${videoId}`
-                    };
-                }
-            } catch (e) {
-                continue;
-            }
-        }
-
-        // Fallback - return basic info
-        return {
-            id: videoId,
-            title: 'Unknown Title',
-            author: 'Unknown Artist',
-            thumbnail: `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`,
-            url: `https://www.youtube.com/watch?v=${videoId}`
-        };
-    } catch (error) {
-        console.error('[YT] Get info error:', error);
-        throw error;
     }
 }
 
@@ -124,75 +75,122 @@ export async function downloadAudio(urlOrQuery: string): Promise<{
         } else {
             videoUrl = urlOrQuery;
             const videoId = getVideoID(urlOrQuery);
-            videoInfo = await getVideoInfo(urlOrQuery);
-            videoInfo.duration = 'N/A';
+            videoInfo = {
+                id: videoId,
+                title: 'YouTube Audio',
+                author: 'Unknown',
+                thumbnail: `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`,
+                duration: 'N/A'
+            };
         }
 
         console.log(`[YT] Downloading: ${videoInfo.title}`);
+        console.log(`[YT] URL: ${videoUrl}`);
 
-        // Try multiple download APIs
+        // Try multiple download APIs - prioritize the ones that work
         const downloadApis = [
-            // API 1: Notube
+            // API 1: RuangDev (reliable)
             async () => {
-                const cheerio = await import('cheerio');
-                const qs = await import('querystring');
+                console.log('[YT] Trying RuangDev API...');
+                const apiUrl = `https://api.itsrose.site/download/ytmp3?url=${encodeURIComponent(videoUrl)}`;
+                const res = await axios.get(apiUrl, { timeout: 60000 });
 
-                const params = { url: videoUrl, format: 'mp3', lang: 'en' };
-                const convRes = await axios.post('https://s64.notube.net/recover_weight.php',
-                    qs.stringify(params),
-                    { timeout: 30000, headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
-                );
+                if (!res.data?.status || !res.data?.result?.download_url) {
+                    throw new Error('No RuangDev download URL');
+                }
 
-                if (!convRes.data.token) throw new Error('No notube token');
-
-                const pageRes = await axios.get(`https://notube.net/en/download?token=${convRes.data.token}`, { timeout: 30000 });
-                const $ = cheerio.load(pageRes.data);
-                const downloadUrl = $('#breadcrumbs-section #downloadButton').attr('href');
-
-                if (!downloadUrl) throw new Error('No notube download URL');
-
-                const audioRes = await axios.get(downloadUrl, { responseType: 'arraybuffer', timeout: 120000 });
+                console.log('[YT] Got download URL from RuangDev');
+                const audioRes = await axios.get(res.data.result.download_url, {
+                    responseType: 'arraybuffer',
+                    timeout: 180000,
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                    }
+                });
                 return Buffer.from(audioRes.data);
             },
 
-            // API 2: Foreign ytapi
+            // API 2: Widipe API (usually works)
             async () => {
-                const apiUrl = `https://foreign-marna-sithaunarathnapromax-9a005c2e.koyeb.app/api/ytapi?apiKey=free&url=${encodeURIComponent(videoUrl)}&fo=1&qu=1`;
+                console.log('[YT] Trying Widipe API...');
+                const apiUrl = `https://widipe.com/download/ytdl?url=${encodeURIComponent(videoUrl)}`;
                 const res = await axios.get(apiUrl, { timeout: 60000 });
-                if (!res.data?.downloadUrl) throw new Error('No ytapi download URL');
 
-                const audioRes = await axios.get(res.data.downloadUrl, { responseType: 'arraybuffer', timeout: 120000 });
+                if (!res.data?.result?.mp3) {
+                    throw new Error('No Widipe download URL');
+                }
+
+                console.log('[YT] Got download URL from Widipe');
+                const audioRes = await axios.get(res.data.result.mp3, {
+                    responseType: 'arraybuffer',
+                    timeout: 180000,
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                    }
+                });
                 return Buffer.from(audioRes.data);
             },
 
-            // API 3: Izumi
+            // API 3: BK9 API
             async () => {
-                const apiUrl = `https://izumiiiiiiii.dpdns.org/downloader/youtube?url=${encodeURIComponent(videoUrl)}&format=audio`;
+                console.log('[YT] Trying BK9 API...');
+                const apiUrl = `https://bk9.fun/download/youtube?url=${encodeURIComponent(videoUrl)}`;
                 const res = await axios.get(apiUrl, { timeout: 60000 });
-                if (!res.data?.result?.download) throw new Error('No Izumi download URL');
 
-                const audioRes = await axios.get(res.data.result.download, { responseType: 'arraybuffer', timeout: 120000 });
+                if (!res.data?.BK9?.audio) {
+                    throw new Error('No BK9 download URL');
+                }
+
+                console.log('[YT] Got download URL from BK9');
+                const audioRes = await axios.get(res.data.BK9.audio, {
+                    responseType: 'arraybuffer',
+                    timeout: 180000,
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                    }
+                });
                 return Buffer.from(audioRes.data);
             },
 
-            // API 4: Okatsu
+            // API 4: Vreden API
             async () => {
-                const apiUrl = `https://okatsu-rolezapiiz.vercel.app/downloader/ytmp3?url=${encodeURIComponent(videoUrl)}`;
+                console.log('[YT] Trying Vreden API...');
+                const apiUrl = `https://api.vreden.my.id/api/ytmp3?url=${encodeURIComponent(videoUrl)}`;
                 const res = await axios.get(apiUrl, { timeout: 60000 });
-                const downloadUrl = res.data?.result?.mp3 || res.data?.result?.downloadUrl;
-                if (!downloadUrl) throw new Error('No Okatsu download URL');
 
-                const audioRes = await axios.get(downloadUrl, { responseType: 'arraybuffer', timeout: 120000 });
+                if (!res.data?.result?.download?.url) {
+                    throw new Error('No Vreden download URL');
+                }
+
+                console.log('[YT] Got download URL from Vreden');
+                const audioRes = await axios.get(res.data.result.download.url, {
+                    responseType: 'arraybuffer',
+                    timeout: 180000,
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                    }
+                });
                 return Buffer.from(audioRes.data);
             },
 
-            // API 5: ChatGPT-4o API (abrahamdw882)
+            // API 5: SiputZX
             async () => {
-                const apiUrl = `https://ab-chatgpt4o.abrahamdw882.workers.dev/ytmp3?url=${encodeURIComponent(videoUrl)}`;
+                console.log('[YT] Trying SiputZX API...');
+                const apiUrl = `https://api.siputzx.my.id/api/d/ytmp3?url=${encodeURIComponent(videoUrl)}`;
                 const res = await axios.get(apiUrl, { timeout: 60000 });
-                if (!res.data?.data?.download) throw new Error('No abrahamdw882 download URL');
 
-                const audioRes = await axios.get(res.data.data.download, { responseType: 'arraybuffer', timeout: 120000 });
+                if (!res.data?.data?.dl) {
+                    throw new Error('No SiputZX download URL');
+                }
+
+                console.log('[YT] Got download URL from SiputZX');
+                const audioRes = await axios.get(res.data.data.dl, {
+                    responseType: 'arraybuffer',
+                    timeout: 180000,
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                    }
+                });
                 return Buffer.from(audioRes.data);
             }
         ];
@@ -201,19 +199,23 @@ export async function downloadAudio(urlOrQuery: string): Promise<{
 
         for (let i = 0; i < downloadApis.length; i++) {
             try {
-                console.log(`[YT] Trying API ${i + 1}...`);
                 audioBuffer = await downloadApis[i]();
-                if (audioBuffer && audioBuffer.length > 10000) {
-                    console.log(`[YT] ✅ Success with API ${i + 1}`);
+
+                // Check if buffer is valid and large enough for audio
+                if (audioBuffer && audioBuffer.length >= MIN_AUDIO_SIZE) {
+                    console.log(`[YT] ✅ Success with API ${i + 1} - Size: ${formatSize(audioBuffer.length)}`);
                     break;
+                } else if (audioBuffer) {
+                    console.log(`[YT] ❌ API ${i + 1} returned too small file: ${formatSize(audioBuffer.length)}`);
+                    audioBuffer = null;
                 }
             } catch (e: any) {
                 console.log(`[YT] ❌ API ${i + 1} failed:`, e.message);
             }
         }
 
-        if (!audioBuffer) {
-            throw new Error('All download APIs failed');
+        if (!audioBuffer || audioBuffer.length < MIN_AUDIO_SIZE) {
+            throw new Error('All download APIs failed or returned invalid audio');
         }
 
         // Clean filename
