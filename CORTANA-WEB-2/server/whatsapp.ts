@@ -910,7 +910,7 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
   }
 }
 
-export async function requestPairingCode(phoneNumber: string, type: 'md' | 'bug' = 'md'): Promise<{ sessionId: string; pairingCode: string }> {
+export async function requestPairingCode(phoneNumber: string, type: 'md' | 'bug' = 'md', createdBy?: string): Promise<{ sessionId: string; pairingCode: string }> {
   const cleanPhone = phoneNumber.replace(/[^0-9]/g, "");
 
   if (cleanPhone.length < 10) throw new Error("Invalid phone number");
@@ -922,6 +922,7 @@ export async function requestPairingCode(phoneNumber: string, type: 'md' | 'bug'
     phoneNumber: cleanPhone,
     type,
     status: "pending",
+    createdBy: createdBy || null,
     creds: null,
     keys: null,
   });

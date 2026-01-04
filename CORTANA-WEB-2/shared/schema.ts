@@ -24,6 +24,7 @@ export const sessions = pgTable("sessions", {
   creds: text("creds"),
   keys: text("keys"),
   status: text("status").default("pending"),
+  createdBy: text("created_by"), // Track who created this session (Pair Chamber)
   createdAt: timestamp("created_at").defaultNow(),
 });
 
