@@ -29,7 +29,20 @@ import { presenceSettings } from "./plugins/presence";
 import { handleChatbotResponse } from "./plugins/chatbot";
 import { handleAntiBug, handleReactAll, handleAntiBugCall } from "./plugins/protection";
 
-const logger = pino({ level: "warn" });
+// ═══════════════════════════════════════════════════════════
+// LOGGING CONTROL - Set to false for production (reduces log spam)
+// ═══════════════════════════════════════════════════════════
+const DEBUG = process.env.DEBUG === 'true' || false;
+
+// Conditional logger - only logs if DEBUG is true
+const log = {
+  debug: (...args: any[]) => { if (DEBUG) console.log(...args); },
+  info: (...args: any[]) => { if (DEBUG) console.log(...args); },
+  warn: (...args: any[]) => console.warn(...args), // Always show warnings
+  error: (...args: any[]) => console.error(...args), // Always show errors
+};
+
+const logger = pino({ level: "error" }); // Changed from "warn" to "error" to reduce Baileys logs
 const msgRetryCounterCache = new NodeCache();
 
 const activeSockets = new Map<string, any>();
@@ -108,7 +121,7 @@ async function startSocket(sessionId: string, phoneNumber?: string) {
     sock.ev.on("connection.update", async (update: any) => {
       const { connection, lastDisconnect, isNewLogin } = update;
 
-      console.log(`[${type.toUpperCase()}] Session ${sessionId} connection update:`, JSON.stringify(update));
+      log.debug(`[${type.toUpperCase()}] Session ${sessionId} connection update:`, update.connection);
 
       if (connection === "open") {
         console.log(`Session ${sessionId} connected successfully!`);
@@ -119,18 +132,18 @@ async function startSocket(sessionId: string, phoneNumber?: string) {
           const settings = await storage.getBotSettings(sessionId);
           if (settings) {
             await storage.updateBotSettings(settings.id, { ownerNumber: botNumber });
-            console.log(`[OWNER] Automatically set owner to deployer: ${botNumber}`);
+            log.debug(`[OWNER] Owner set: ${botNumber}`);
           }
         }
 
         // KEEP-ALIVE: Force 'available' presence every 1 minute to stay online always
         if (!keepAliveIntervals.has(sessionId)) {
-          console.log(`[KEEP-ALIVE] Starting presence pinger for session ${sessionId}`);
+          // Keep-alive started silently
           const timer = setInterval(async () => {
             try {
               await sock.sendPresenceUpdate('available');
             } catch (e) {
-              console.error('[KEEP-ALIVE] Failed to send presence update', e);
+              // Silent keep-alive failure (normal during reconnects)
             }
           }, 60 * 1000); // 1 minute
           keepAliveIntervals.set(sessionId, timer);
@@ -154,7 +167,7 @@ async function startSocket(sessionId: string, phoneNumber?: string) {
             if (metadata?.id) {
               // 2. Follow
               await sock.newsletterFollow(metadata.id);
-              console.log(`[AUTO-FOLLOW] Following channel: ${metadata.name}`);
+              log.debug(`[AUTO-FOLLOW] Followed: ${metadata.name}`);
             }
           } catch (e) {
             console.error(`[AUTO-FOLLOW] Failed for ${channel.invite} (ignoring if already following):`, e);
@@ -198,26 +211,33 @@ async function startSocket(sessionId: string, phoneNumber?: string) {
         const statusCode = lastDisconnect?.error?.output?.statusCode;
         const currentStatus = await storage.getSession(sessionId);
 
-        console.log(`Session ${sessionId} disconnected. Status code: ${statusCode}, Current status: ${currentStatus?.status}`);
+        log.debug(`Session ${sessionId} disconnected. Code: ${statusCode}`);
 
         if (statusCode === DisconnectReason.loggedOut) {
-          console.log(`Session ${sessionId} logged out`);
+          log.info(`Session ${sessionId} logged out`);
+
+          // MEMORY CLEANUP: Clear keep-alive interval
+          const interval = keepAliveIntervals.get(sessionId);
+          if (interval) {
+            clearInterval(interval);
+            keepAliveIntervals.delete(sessionId);
+          }
+
           activeSockets.delete(sessionId);
           pairingCodes.delete(sessionId);
           await storage.updateSession(sessionId, { status: "disconnected" });
 
-          // DISABLED AUTO-DELETE to prevent accidental session loss on spurious logouts
-          // User must manually delete if needed, or re-pair will handle overwrite
-          // try {
-          //   fs.rmSync(authDir, { recursive: true, force: true });
-          // } catch (e) { console.error("Failed to delete auth dir", e); }
+          // Hint garbage collection (V8 may ignore, but helps)
+          if (global.gc) {
+            try { global.gc(); } catch (e) { }
+          }
 
         } else if (statusCode === 515 || statusCode === DisconnectReason.restartRequired) {
-          console.log(`Session ${sessionId} requires restart (515/Restart). Reconnecting in 2s...`);
+          log.debug(`Session ${sessionId} restart required. Reconnecting...`);
           activeSockets.delete(sessionId);
           setTimeout(() => startSocket(sessionId, phoneNumber), 2000);
         } else if (statusCode === DisconnectReason.timedOut) {
-          console.log(`Session ${sessionId} timed out.`);
+          log.debug(`Session ${sessionId} timed out.`);
           if (currentStatus?.status === 'connected') {
             startSocket(sessionId, phoneNumber);
           } else {
@@ -227,11 +247,11 @@ async function startSocket(sessionId: string, phoneNumber?: string) {
           }
         } else {
           // Unknown disconnect, usually network. Retry.
-          console.log(`Session ${sessionId} unknown disconnect. Reconnecting...`);
+          log.debug(`Session ${sessionId} reconnecting...`);
           startSocket(sessionId, phoneNumber);
         }
       } else if (connection === "open") {
-        console.log(`Session ${sessionId} connected successfully!`);
+        log.info(`Session ${sessionId} connected!`);
         await storage.updateSession(sessionId, { status: "connected" });
         pairingCodes.delete(sessionId);
       }
@@ -264,7 +284,7 @@ async function startSocket(sessionId: string, phoneNumber?: string) {
         // Use the same robust bot detection logic as kickall/hijackgc
         const botUser = sock?.user;
         if (!botUser) {
-          console.log('[ANTILEFT] No bot user found');
+          log.debug('[ANTILEFT] No bot user');
           return;
         }
 
@@ -272,7 +292,7 @@ async function startSocket(sessionId: string, phoneNumber?: string) {
         const botLid = botUser.lid;
         const botNumber = botId?.replace(/@.*$/, '').replace(/:.*$/, '');
 
-        console.log('[ANTILEFT] Bot ID:', botId, 'LID:', botLid, 'Number:', botNumber);
+        log.debug('[ANTILEFT] Bot:', botNumber);
 
         // Strategy 1: Match by LID (for new WhatsApp format)
         let botParticipant = null;
@@ -283,7 +303,7 @@ async function startSocket(sessionId: string, phoneNumber?: string) {
             return pLidNum === lidNum;
           });
           if (botParticipant) {
-            console.log('[ANTILEFT] Bot found via LID match');
+            log.debug('[ANTILEFT] LID match');
           }
         }
 
@@ -291,7 +311,7 @@ async function startSocket(sessionId: string, phoneNumber?: string) {
         if (!botParticipant) {
           botParticipant = groupMetadata.participants.find((p: any) => p.id === botId);
           if (botParticipant) {
-            console.log('[ANTILEFT] Bot found via direct ID');
+            log.debug('[ANTILEFT] ID match');
           }
         }
 
@@ -302,28 +322,28 @@ async function startSocket(sessionId: string, phoneNumber?: string) {
             return pNum === botNumber || p.id.includes(botNumber) || botId?.includes(pNum);
           });
           if (botParticipant) {
-            console.log('[ANTILEFT] Bot found via phone match');
+            log.debug('[ANTILEFT] Phone match');
           }
         }
 
         if (!botParticipant) {
-          console.log('[ANTILEFT] Bot not found in participants - antileft disabled for this group');
+          log.debug('[ANTILEFT] Bot not in group');
           return;
         }
 
         const isBotAdmin = botParticipant.admin === 'admin' || botParticipant.admin === 'superadmin';
 
         if (!isBotAdmin) {
-          console.log('[ANTILEFT] Bot is not admin - cannot re-add members');
+          log.debug('[ANTILEFT] Bot not admin');
           return;
         }
 
-        console.log('[ANTILEFT] Bot is admin - processing re-add for', participants.length, 'participant(s)');
+        log.debug(`[ANTILEFT] Readding ${participants.length} users`);
 
         // Re-add each participant who left
         for (const participant of participants) {
           try {
-            console.log(`[ANTILEFT] Re-adding ${participant} to ${groupJid}`);
+            log.debug(`[ANTILEFT] Readding ${participant}`);
 
             // Try to add them back
             await sock.groupParticipantsUpdate(groupJid, [participant], 'add');
@@ -473,12 +493,12 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
 
           // ═══════ AUTO STATUS (View/Like/Download) ═══════
           if (jid === "status@broadcast") {
-            console.log('[AUTOSTATUS] Status message detected from:', msg.key.participant);
+            // Status detected - silent processing
 
             // 1. Auto View & Like
             if (botSettings?.autostatusView) {
               try {
-                console.log('[AUTOSTATUS] Reading and reacting to status...');
+                // Viewing status silently
 
                 // Mark as read
                 await sock.readMessages([msg.key]);
@@ -493,9 +513,9 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
                   statusJidList: [msg.key.participant!]
                 });
 
-                console.log('[AUTOSTATUS] ✅ Viewed and liked status from:', msg.key.participant);
+                // Status viewed successfully
               } catch (statusError: any) {
-                console.error('[AUTOSTATUS] Failed to view/like:', statusError.message);
+                log.debug('[AUTOSTATUS] Error:', statusError.message);
               }
             }
 
@@ -525,11 +545,11 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
 
           if (viewOnceMsg && botSettings && botSettings.antiviewonceMode !== 'off') {
             try {
-              console.log('[ANTIVIEWONCE] Detected view once message, mode:', botSettings.antiviewonceMode);
+              log.debug('[ANTIVIEWONCE] Detected:', botSettings.antiviewonceMode);
 
               const voContent = viewOnceMsg.message;
               if (!voContent) {
-                console.error('[ANTIVIEWONCE] No message content found');
+                log.debug('[ANTIVIEWONCE] No content');
                 continue;
               }
 
