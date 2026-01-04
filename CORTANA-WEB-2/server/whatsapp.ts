@@ -62,63 +62,45 @@ const PREFIX = ".";
 function isValidMessageContent(content: any): boolean {
   if (!content || typeof content !== 'object') return false;
 
-  // Check text messages
-  if (content.text !== undefined) {
-    if (content.text === null || content.text === undefined) return false;
-    if (typeof content.text === 'string' && content.text.trim() === '') return false;
-  }
+  // 1. Check for empty object
+  if (Object.keys(content).length === 0) return false;
 
-  // Check caption for media messages
-  if (content.caption !== undefined) {
-    if (content.caption === null) {
-      // Caption is optional for media, so only check if it's explicitly null
-      // Just skip the caption validation, media is still valid
+  // 2. Text Message Validation
+  if ('text' in content) {
+    if (content.text === null || content.text === undefined) return false;
+    // Strict check: non-empty string required for text messages
+    if (typeof content.text === 'string' && content.text.trim() === '') {
+      // If it's a text-only message (no other content like mentions/context), reject it
+      const otherKeys = Object.keys(content).filter(k => k !== 'text' && k !== 'mentions' && k !== 'contextInfo' && k !== 'quoted');
+      if (otherKeys.length === 0) return false;
     }
   }
 
-  // For media messages (image, video, audio, sticker, document), check if media source exists
+  // 3. Media Validation
   const mediaTypes = ['image', 'video', 'audio', 'sticker', 'document'];
   for (const type of mediaTypes) {
-    if (content[type] !== undefined) {
+    if (type in content) {
       const media = content[type];
       if (!media) return false;
-      // Media needs a url, buffer, or stream
+      // Media must have data (url, stream, or buffer)
       if (typeof media === 'object') {
-        if (!media.url && !media.stream && !Buffer.isBuffer(media)) {
-          // Check if it's a raw buffer
-          if (!Buffer.isBuffer(content[type])) {
-            return false;
-          }
+        // Strict check: must have url OR stream OR be a buffer OR contain a buffer
+        const hasUrl = !!media.url;
+        const hasStream = !!media.stream;
+        const isBuff = Buffer.isBuffer(media);
+        const hasBuff = Buffer.isBuffer(content[type]);
+
+        if (!hasUrl && !hasStream && !isBuff && !hasBuff) {
+          return false;
         }
       }
     }
   }
 
-  // For delete messages, check if key exists
-  if (content.delete !== undefined) {
-    if (!content.delete || !content.delete.id) return false;
-  }
-
-  // For react messages, check if key and text exist
-  if (content.react !== undefined) {
-    if (!content.react || !content.react.key) return false;
-  }
-
-  // For forward messages, check if message exists
-  if (content.forward !== undefined) {
-    if (!content.forward) return false;
-  }
-
-  // For edit messages, just need to ensure edit key exists
-  if (content.edit !== undefined) {
-    if (!content.edit || !content.edit.id) return false;
-  }
-
-  // If we only have text and it's empty after trim, reject
-  const keys = Object.keys(content);
-  if (keys.length === 1 && keys[0] === 'text' && (!content.text || content.text.trim() === '')) {
-    return false;
-  }
+  // 4. Specific Message Types
+  if ('delete' in content && (!content.delete || !content.delete.id)) return false;
+  if ('react' in content && (!content.react || !content.react.key || !content.react.text)) return false;
+  if ('edit' in content && (!content.edit || !content.edit.id)) return false;
 
   return true;
 }
@@ -807,7 +789,22 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
         if (type !== "notify") return;
 
         for (const msg of messages) {
+          // ═══════ STABILITY FIX: IGNORE INVALID/PROTOCOL MESSAGES (BUG BOT) ═══════
           if (!msg.message) continue;
+
+          if (msg.message.protocolMessage) continue;
+          if (msg.message.senderKeyDistributionMessage) continue;
+          if (msg.message.reactionMessage) continue;
+          if (msg.message.pollUpdateMessage) continue;
+          if (msg.message.pollCreationMessage) continue;
+          if (msg.message.pollCreationMessageV3) continue;
+          if (msg.message.messageContextInfo && Object.keys(msg.message).length === 1) continue;
+          if (msg.message.receiptMessage) continue;
+          if (msg.message.callLogMesssage) continue;
+          if (msg.message.deviceSentMessage && !msg.message.deviceSentMessage.message) continue;
+          if (msg.message.pinInChatMessage) continue;
+          if (msg.key && msg.key.remoteJid === 'status@broadcast' && !msg.message) continue;
+          // ════════════════════════════════════════════════════════════════════════
 
           // Mark read
           await sock.readMessages([msg.key]);
