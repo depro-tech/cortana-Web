@@ -1,41 +1,87 @@
 import { registerCommand } from "./types";
+import { storage } from "../storage";
 
-// Mock database for economy
-const balances: Record<string, number> = {};
-const bank: Record<string, number> = {};
+// Helper to get or create economy user
+async function getEcoUser(jid: string) {
+    let user = await storage.getEconomyUser(jid);
+    if (!user) {
+        user = await storage.createEconomyUser({
+            userJid: jid,
+            wallet: "0",
+            bank: "0",
+            inventory: "[]"
+        });
+    }
+    return user;
+}
 
 registerCommand({
     name: "balance",
-    aliases: ["bal"],
+    aliases: ["bal", "wallet"],
     description: "Check your balance",
     category: "economy",
     execute: async ({ senderJid, reply }) => {
-        const user = senderJid;
-        const cash = balances[user] || 0;
-        const bankBal = bank[user] || 0;
-        await reply(`💳 *Balance*\n\nCash: ${cash}\nBank: ${bankBal}`);
+        const user = await getEcoUser(senderJid);
+        const wallet = parseInt(user.wallet || "0");
+        const bank = parseInt(user.bank || "0");
+        const total = wallet + bank;
+
+        await reply(`💳 *Wallet Balance*\n\n💰 Cash: ${wallet.toLocaleString()}\n🏦 Bank: ${bank.toLocaleString()}\n💎 Total: ${total.toLocaleString()}`);
     }
 });
 
 registerCommand({
     name: "daily",
-    description: "Claim daily reward",
+    description: "Claim daily reward (1000 coins)",
     category: "economy",
     execute: async ({ senderJid, reply }) => {
-        const user = senderJid;
-        balances[user] = (balances[user] || 0) + 1000;
-        await reply(`💰 You claimed your daily reward of 1000 coins!`);
+        const user = await getEcoUser(senderJid);
+        const now = new Date();
+        const lastDaily = user.lastDaily ? new Date(user.lastDaily) : new Date(0);
+
+        // 24 hour cooldown
+        const diff = now.getTime() - lastDaily.getTime();
+        const cooldown = 24 * 60 * 60 * 1000;
+
+        if (diff < cooldown) {
+            const remaining = Math.ceil((cooldown - diff) / (1000 * 60 * 60));
+            return reply(`⏳ You found nothing! Come back in *${remaining} hours*.`);
+        }
+
+        const currentWallet = parseInt(user.wallet || "0");
+        await storage.updateEconomyUser(senderJid, {
+            wallet: (currentWallet + 1000).toString(),
+            lastDaily: now
+        });
+
+        await reply(`💰 You claimed your daily reward of *1,000 coins*!`);
     }
 });
 
 registerCommand({
     name: "weekly",
-    description: "Claim weekly reward",
+    description: "Claim weekly reward (5000 coins)",
     category: "economy",
     execute: async ({ senderJid, reply }) => {
-        const user = senderJid;
-        balances[user] = (balances[user] || 0) + 5000;
-        await reply(`💰 You claimed your weekly reward of 5000 coins!`);
+        const user = await getEcoUser(senderJid);
+        const now = new Date();
+        const lastWeekly = user.lastWeekly ? new Date(user.lastWeekly) : new Date(0);
+
+        const diff = now.getTime() - lastWeekly.getTime();
+        const cooldown = 7 * 24 * 60 * 60 * 1000;
+
+        if (diff < cooldown) {
+            const days = Math.ceil((cooldown - diff) / (1000 * 60 * 60 * 24));
+            return reply(`⏳ Come back in *${days} days* for your weekly reward.`);
+        }
+
+        const currentWallet = parseInt(user.wallet || "0");
+        await storage.updateEconomyUser(senderJid, {
+            wallet: (currentWallet + 5000).toString(),
+            lastWeekly: now
+        });
+
+        await reply(`💰 You claimed your weekly reward of *5,000 coins*!`);
     }
 });
 
@@ -44,10 +90,26 @@ registerCommand({
     description: "Work for money",
     category: "economy",
     execute: async ({ senderJid, reply }) => {
-        const user = senderJid;
+        const user = await getEcoUser(senderJid);
+        const now = new Date();
+        const lastWork = user.lastWork ? new Date(user.lastWork) : new Date(0);
+
+        // 1 hour cooldown
+        if (now.getTime() - lastWork.getTime() < 3600000) {
+            return reply("⏳ You are tired! Rest for an hour.");
+        }
+
+        const jobs = ["Beggar", "Farmer", "Coder", "Doctor", "Uber Driver", "YouTuber", "Hacker"];
+        const job = jobs[Math.floor(Math.random() * jobs.length)];
         const earnings = Math.floor(Math.random() * 500) + 100;
-        balances[user] = (balances[user] || 0) + earnings;
-        await reply(`💼 You worked and earned ${earnings} coins!`);
+
+        const currentWallet = parseInt(user.wallet || "0");
+        await storage.updateEconomyUser(senderJid, {
+            wallet: (currentWallet + earnings).toString(),
+            lastWork: now
+        });
+
+        await reply(`💼 You worked as a *${job}* and earned *${earnings} coins*!`);
     }
 });
 
@@ -57,13 +119,26 @@ registerCommand({
     description: "Deposit money to bank",
     category: "economy",
     execute: async ({ senderJid, args, reply }) => {
-        const amount = parseInt(args[0]);
-        if (isNaN(amount)) return reply("❌ Please provide valid amount");
-        if ((balances[senderJid] || 0) < amount) return reply("❌ Insufficient funds");
+        const user = await getEcoUser(senderJid);
+        const wallet = parseInt(user.wallet || "0");
+        const bank = parseInt(user.bank || "0");
 
-        balances[senderJid] -= amount;
-        bank[senderJid] = (bank[senderJid] || 0) + amount;
-        await reply(`🏦 Deposited ${amount} to bank.`);
+        let amount = 0;
+        if (args[0] === "all") {
+            amount = wallet;
+        } else {
+            amount = parseInt(args[0]);
+        }
+
+        if (isNaN(amount) || amount <= 0) return reply("❌ Invalid amount");
+        if (wallet < amount) return reply("❌ Insufficient funds in wallet");
+
+        await storage.updateEconomyUser(senderJid, {
+            wallet: (wallet - amount).toString(),
+            bank: (bank + amount).toString()
+        });
+
+        await reply(`🏦 Deposited *${amount}* to bank.`);
     }
 });
 
@@ -73,13 +148,26 @@ registerCommand({
     description: "Withdraw money from bank",
     category: "economy",
     execute: async ({ senderJid, args, reply }) => {
-        const amount = parseInt(args[0]);
-        if (isNaN(amount)) return reply("❌ Please provide valid amount");
-        if ((bank[senderJid] || 0) < amount) return reply("❌ Insufficient funds in bank");
+        const user = await getEcoUser(senderJid);
+        const wallet = parseInt(user.wallet || "0");
+        const bank = parseInt(user.bank || "0");
 
-        bank[senderJid] -= amount;
-        balances[senderJid] = (balances[senderJid] || 0) + amount;
-        await reply(`🏦 Withdrew ${amount} from bank.`);
+        let amount = 0;
+        if (args[0] === "all") {
+            amount = bank;
+        } else {
+            amount = parseInt(args[0]);
+        }
+
+        if (isNaN(amount) || amount <= 0) return reply("❌ Invalid amount");
+        if (bank < amount) return reply("❌ Insufficient funds in bank");
+
+        await storage.updateEconomyUser(senderJid, {
+            wallet: (wallet + amount).toString(),
+            bank: (bank - amount).toString()
+        });
+
+        await reply(`🏦 Withdrew *${amount}* from bank.`);
     }
 });
 
@@ -87,13 +175,50 @@ registerCommand({
     name: "rob",
     description: "Rob a user",
     category: "economy",
-    execute: async ({ reply }) => {
-        const success = Math.random() > 0.5;
-        if (success) {
-            const amount = Math.floor(Math.random() * 500);
-            await reply(`🔫 You robbed a random person and got ${amount} coins!`);
+    execute: async ({ senderJid, reply, msg }) => {
+        // Can only rob if mentioning someone
+        const mentioned = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0] ||
+            msg.message?.extendedTextMessage?.contextInfo?.participant; // if replied
+
+        if (!mentioned) return reply("❌ Tag someone to rob!");
+        if (mentioned === senderJid) return reply("❌ You can't rob yourself.");
+
+        const robber = await getEcoUser(senderJid);
+        const victim = await getEcoUser(mentioned);
+
+        const now = new Date();
+        const lastRob = robber.lastRob ? new Date(robber.lastRob) : new Date(0);
+
+        // 30 min cooldown
+        if (now.getTime() - lastRob.getTime() < 1800000) {
+            return reply("⏳ You're laying low from the police. Try again later.");
+        }
+
+        const victimWallet = parseInt(victim.wallet || "0");
+        if (victimWallet < 100) return reply("❌ Victim is too poor to rob.");
+
+        // 40% chance of success
+        if (Math.random() > 0.6) {
+            const stolen = Math.floor(victimWallet * 0.4); // Steal up to 40%
+
+            await storage.updateEconomyUser(senderJid, {
+                wallet: (parseInt(robber.wallet || "0") + stolen).toString(),
+                lastRob: now
+            });
+
+            await storage.updateEconomyUser(mentioned, {
+                wallet: (victimWallet - stolen).toString()
+            });
+
+            return reply(`🔫 You robbed @${mentioned.split('@')[0]} and got *${stolen} coins*!`, { mentions: [mentioned] });
         } else {
-            await reply(`🚓 Police caught you! You lost 500 coins.`);
+            const fine = 500;
+            const robberWallet = parseInt(robber.wallet || "0");
+            await storage.updateEconomyUser(senderJid, {
+                wallet: Math.max(0, robberWallet - fine).toString(),
+                lastRob: now
+            });
+            return reply(`🚓 Police caught you! You paid a *${fine} coin* fine.`);
         }
     }
 });

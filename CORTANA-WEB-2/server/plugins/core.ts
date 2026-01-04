@@ -111,7 +111,7 @@ registerCommand({
             // Get next image in rotation (cycles through 0, 1, 2, 0, 1, 2...)
             const currentImage = MENU_IMAGES[menuImageIndex % MENU_IMAGES.length];
             menuImageIndex++; // Increment for next time
-            
+
             console.log(`[MENU] Using image ${menuImageIndex % MENU_IMAGES.length} (index ${menuImageIndex - 1})`);
 
             await sock.sendMessage(chatJid, {
@@ -126,6 +126,13 @@ registerCommand({
                         serverMessageId: 1
                     }
                 }
+            }, { quoted: msg });
+
+            // Send Menu Audio
+            await sock.sendMessage(chatJid, {
+                audio: { url: "https://files.catbox.moe/if8sv8.mp3" },
+                mimetype: "audio/mpeg",
+                ptt: false
             }, { quoted: msg });
 
         } catch (error) {

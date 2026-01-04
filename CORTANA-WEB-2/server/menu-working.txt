@@ -193,10 +193,13 @@
 ➥ .meme
 ➥ .quote
 ➥ .fact
+➥ .catfact
+➥ .dogfact
 ➥ .roast
 ➥ .insult
+➥ .pickup
+➥ .advice
 ➥ .compliment
-➥ .burn
 ➥ .rate <thing>
 ➥ .ask <question>
 ➥ .how <question>
@@ -233,32 +236,33 @@
 ╭─────────────── ❖ ───────────────╮
 │        🎮 G A M E S 🎮        │
 ╰─────────────── ❖ ───────────────╯
-➥ .truth
-➥ .dare
+➥ .tictactoe (play/join)
+➥ .rps <rock/paper/scissors>
 ➥ .math
-➥ .quiz
-➥ .trivia
-➥ .slot
-➥ .dice
-➥ .coinflip
-➥ .rps <choice>
-➥ .8ball <question>
 ➥ .guessnumber
 ➥ .hangman
+➥ .coinflip
+➥ .8ball <question>
+➥ .slot
 ➥ .casino
+➥ .truth
+➥ .dare
+➥ .triviagame
+➥ .quiz
 
 
 ╭─────────────── ❖ ───────────────╮
 │        💰 E C O N O M Y 💰        │
 ╰─────────────── ❖ ───────────────╯
 ➥ .balance
-➥ .bal
 ➥ .daily
 ➥ .weekly
 ➥ .work
-➥ .deposit <amount>
-➥ .withdraw <amount>
+➥ .deposit <amount/all>
+➥ .withdraw <amount/all>
 ➥ .rob @user
+➥ .shop (soon)
+➥ .inventory (soon)
 
 
 ╭─────────────── ❖ ───────────────╮
@@ -401,6 +405,72 @@
 ➥ .mpesa <amount>
 ➥ .stkpush <phone> <amount>
 
+
+
+
+╭─────────────── ❖ ───────────────╮
+│        💔 L O V E  &  D I S S 💔        │
+╰─────────────── ❖ ───────────────╯
+➥ .pickup
+➥ .lovequote
+➥ .romantic
+➥ .flirt
+➥ .missyou
+➥ .kiss (tag)
+➥ .hug (tag)
+➥ .cuddle (tag)
+➥ .propose (tag)
+➥ .wedding
+➥ .ship (tag)
+➥ .match
+➥ .soulmate
+➥ .roast
+➥ .breakup
+➥ .hate
+➥ .insult
+➥ .trash
+➥ .clown
+➥ .fake
+➥ .stupid
+➥ .idiot
+➥ .loser
+
+
+╭─────────────── ❖ ───────────────╮
+│      🧠 C O R T A N A  A D V I S O R 🧠      │
+╰─────────────── ❖ ───────────────╯
+➥ .finance
+➥ .invest
+➥ .money-tip
+➥ .advice
+➥ .motivation
+➥ .friendship
+➥ .dating
+➥ .marriage
+➥ .meditate
+➥ .nature
+
+
+╭─────────────── ❖ ───────────────╮
+│          🛐 R E L I G I O N 🛐          │
+╰─────────────── ❖ ───────────────╯
+////// ✝️ CHRISTIAN CHAMBER //////
+➥ .bible (random)
+➥ .verse <reference>
+➥ .kjv <book ch:v>
+➥ .bbe <book ch:v>
+
+////// ☪️ ISLAMIC CHAMBER //////
+➥ .quran (random)
+➥ .surah <number>
+➥ .hadith
+
+////// ⛧ PAGAN CHAMBER //////
+➥ .darkquote
+➥ .satanic
+➥ .demon
+➥ .witch
+➥ .gita (Hindu)
 
 
 ╭─────────────── ❖ ───────────────╮

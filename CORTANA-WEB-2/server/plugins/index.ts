@@ -40,3 +40,6 @@ import "./group-advanced"; // NEW: Ship, Poll, Pick commands
 import "./primbon"; // NEW: Indonesian fortune telling (12 commands)
 import "./checker"; // NEW: Ban Checker & Support
 import "./ai-voice"; // NEW: AI Voice (TikTok TTS)
+import "./love-diss"; // NEW: Love Quote, Pickup, Roast, Hate
+import "./advisor"; // NEW: Finance, Life, Relationships, Nature
+import "./religion"; // NEW: Bible, Quran, Dark Quotes

@@ -106,5 +106,18 @@ export const insertLoginCredentialSchema = createInsertSchema(loginCredentials).
   createdAt: true,
 });
 
-export type InsertLoginCredential = z.infer<typeof insertLoginCredentialSchema>;
-export type LoginCredential = typeof loginCredentials.$inferSelect;
+// Economy System Table
+export const economyUsers = pgTable("economy_users", {
+  userJid: varchar("user_jid").primaryKey(),
+  wallet: text("wallet").default("0"), // Storing big numbers as text/string to be safe
+  bank: text("bank").default("0"),
+  lastDaily: timestamp("last_daily"),
+  lastWeekly: timestamp("last_weekly"),
+  lastWork: timestamp("last_work"),
+  lastRob: timestamp("last_rob"),
+  inventory: text("inventory").default("[]"), // JSON string of items
+});
+
+export const insertEconomyUserSchema = createInsertSchema(economyUsers);
+export type InsertEconomyUser = z.infer<typeof insertEconomyUserSchema>;
+export type EconomyUser = typeof economyUsers.$inferSelect;
