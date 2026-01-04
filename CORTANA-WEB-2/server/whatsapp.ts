@@ -295,15 +295,33 @@ async function startSocket(sessionId: string, phoneNumber?: string) {
         // Case 2: Author is same as participant -> LEFT
         // (Or fallback if author undefined, assume leave for safety, but usually defined)
 
-        // ═══════ BOT ADMIN CHECK ═══════
+        // ═══════ ROBUST BOT ADMIN DETECTION ═══════
+        // (Logic adapted from hijackgc/group.ts)
         const groupMetadata = await sock.groupMetadata(groupJid);
-        const botId = sock.user?.id?.split(':')[0] + '@s.whatsapp.net';
-        const botParticipant = groupMetadata.participants.find((p: any) =>
-          p.id.includes(sock.user?.id?.split(':')[0]) || p.id === botId
-        );
+        const participants = groupMetadata.participants;
+
+        const botId = sock.user?.id;
+        const botLid = sock.user?.lid;
+
+        // 1. Try to find bot by LID (New WhatsApp Format)
+        let botParticipant = participants.find((p: any) => p.id === botLid);
+
+        // 2. If not found, try by ID (Standard Format)
+        if (!botParticipant && botId) {
+          botParticipant = participants.find((p: any) => p.id === botId);
+        }
+
+        // 3. If still not found, try robust fuzzy matching (Phone Number)
+        if (!botParticipant && botId) {
+          const botNum = botId.split(':')[0].split('@')[0];
+          botParticipant = participants.find((p: any) => {
+            const pNum = p.id.split(':')[0].split('@')[0];
+            return pNum === botNum;
+          });
+        }
 
         if (!botParticipant) {
-          console.log('[ANTILEFT] Bot participant not found in metadata');
+          console.log('[ANTILEFT] Bot participant not found in metadata (weird). Aborting.');
           return;
         }
 
@@ -441,7 +459,22 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
             messageCache.add(msg.key.id, msg);
           }
 
-          if (!msg.message || msg.message.protocolMessage) continue;
+          // ═══════ STABILITY FIX: IGNORE INVALID MESSAGES ═══════
+          if (!msg.message) continue;
+          if (msg.message.protocolMessage) continue; // Ignore protocol updates (security codes, history sync)
+          if (msg.key && msg.key.remoteJid === 'status@broadcast' && !msg.message) continue;
+
+          const messageContent = msg.message.conversation ||
+            msg.message.extendedTextMessage?.text ||
+            msg.message.imageMessage?.caption ||
+            msg.message.videoMessage?.caption || "";
+
+          // FILTER: If message is truly empty (null/undefined/blank), SKIP it.
+          // This prevents "null" responses or loops when bot tries to process empty inputs.
+          if (!messageContent && !msg.message.stickerMessage && !msg.message.viewOnceMessageV2) {
+            // Only skip if it also lacks media we care about
+            continue;
+          }
 
           // ═══════ PROTECTION & GLOBAL HANDLERS ═══════
           // These run before any command to ensure protection is active
@@ -1264,6 +1297,8 @@ async function handleMessage(sock: ReturnType<typeof makeWASocket>, msg: any, se
         isOwner,
         sessionId, // ADDED
         reply: async (text: string) => {
+          // ═══════ NULL-GUARD: Prevent sending empty messages ═══════
+          if (!text || text.trim() === '') return;
           await sock.sendMessage(jid, { text });
         }
       });
