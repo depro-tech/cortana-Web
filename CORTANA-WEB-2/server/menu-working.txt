@@ -107,13 +107,22 @@
 │      🎵 M U S I C  &  A U D I O 🎵      │
 ╰─────────────── ❖ ───────────────╯
 ➥ .play <name/link>
-➥ .video <name/link>
+➥ .p <name/link>
 ➥ .song <name/link>
-➥ .play <song>
-➥ .lyrics <song - artist>
+➥ .musik <name/link>
+➥ .audio <name/link>
+➥ .music <name/link>
+➥ .video <name/link>
 ➥ .ytmp3 <url>
-➥ .ytmp3 <link>
+➥ .yta <url>
+➥ .mp3 <url>
 ➥ .ytmp4 <link>
+➥ .lyrics <song - artist>
+➥ .lyric <song>
+➥ .lirik <song>
+➥ .soundcloud <url>
+➥ .sc <url>
+➥ .scdl <url>
 
 
 ╭─────────────── ❖ ───────────────╮
@@ -374,6 +383,48 @@
 ➥ .owner
 ➥ .help
 ➥ .menu
+
+
+╭─────────────── ❖ ───────────────╮
+│     📤 M E D I A  T O  U R L 📤     │
+╰─────────────── ❖ ───────────────╯
+➥ .tourl (reply: upload media)
+➥ .url (reply: upload media)
+➥ .upload (reply: upload media)
+➥ .tolink (reply: upload media)
+➥ .geturl (reply: upload media)
+➥ .telegraph (reply: image)
+➥ .tg (reply: image)
+➥ .tgph (reply: image)
+➥ .catbox (reply: any media)
+➥ .cb (reply: any media)
+➥ .catb (reply: any media)
+➥ .stickertomp4 (reply: sticker)
+➥ .stickervideo (reply: sticker)
+➥ .webptomp4 (reply: sticker)
+➥ .stkmp4 (reply: sticker)
+
+
+╭─────────────── ❖ ───────────────╮
+│      📧 T E M P  M A I L 📧      │
+╰─────────────── ❖ ───────────────╯
+➥ .tempmail (create email)
+➥ .tempemail (create email)
+➥ .tempmailcreate (create email)
+➥ .createmail (create email)
+➥ .tempinbox <session>
+➥ .checkinbox <session>
+➥ .tempmailinbox <session>
+➥ .tempcheck <session>
+➥ .inbox <session>
+
+
+╭─────────────── ❖ ───────────────╮
+│       📰 N E W S  &  I N F O 📰       │
+╰─────────────── ❖ ───────────────╯
+➥ .technews
+➥ .tech
+➥ .tnews
 
 
 ╭─────────────── ❖ ───────────────╮

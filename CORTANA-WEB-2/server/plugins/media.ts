@@ -1,11 +1,252 @@
 import { registerCommand } from "./types";
 import axios from "axios";
 import yts from "yt-search";
+import { downloadAudio, formatSize, isYTUrl, searchYT } from "../utils/yt-downloader";
 
-// New YT API endpoint
-const YTAPI_BASE = "https://foreign-marna-sithaunarathnapromax-9a005c2e.koyeb.app/api/ytapi";
-const YTAPI_KEY = "free";
+// ═══════════════════════════════════════════════════════════════
+// PLAY COMMAND - Enhanced with proper audio metadata
+// Sends thumbnail first, then high-quality audio with album art
+// ═══════════════════════════════════════════════════════════════
+registerCommand({
+    name: "play",
+    aliases: ["p"],
+    description: "Download and play song from YouTube",
+    category: "media",
+    usage: ".play <song name or YouTube URL>",
+    execute: async ({ args, reply, sock, msg }) => {
+        const searchQuery = args.join(" ").trim();
 
+        if (!searchQuery) {
+            return reply("*🎵 PLAY - AUDIO DOWNLOADER*\n\nUsage: .play <song name>\nExample: .play faded alan walker");
+        }
+
+        const jid = msg.key.remoteJid!;
+
+        try {
+            // Show initial reaction
+            try {
+                await sock.sendMessage(jid, { react: { text: "🔍", key: msg.key } });
+            } catch (e) { }
+
+            await reply("🔍 *Searching...*");
+
+            // Search for the song
+            const { videos } = await yts(searchQuery);
+            if (!videos || videos.length === 0) {
+                return reply("❌ No songs found! Try a different search.");
+            }
+
+            const video = videos[0];
+            const urlYt = video.url;
+            const thumbnail = video.thumbnail;
+            const title = video.title;
+            const author = video.author?.name || "Unknown Artist";
+            const duration = video.timestamp || "N/A";
+            const views = video.views ? video.views.toLocaleString() : "N/A";
+
+            // Send thumbnail with song info FIRST
+            await sock.sendMessage(jid, {
+                image: { url: thumbnail },
+                caption: `*🎵 SONG FOUND*\n\n` +
+                    `📝 *Title:* ${title}\n` +
+                    `👤 *Artist:* ${author}\n` +
+                    `⏱️ *Duration:* ${duration}\n` +
+                    `👁️ *Views:* ${views}\n` +
+                    `🔗 *URL:* ${urlYt}\n\n` +
+                    `⬇️ *Downloading audio...*`
+            }, { quoted: msg });
+
+            // React to show downloading
+            try {
+                await sock.sendMessage(jid, { react: { text: "⬇️", key: msg.key } });
+            } catch (e) { }
+
+            // Download the audio
+            const audioResult = await downloadAudio(urlYt);
+
+            if (!audioResult) {
+                await sock.sendMessage(jid, { react: { text: "❌", key: msg.key } }).catch(() => { });
+                return reply("❌ Failed to download audio. Please try again or use a different song.");
+            }
+
+            console.log(`[PLAY] ✅ Downloaded: ${audioResult.title} (${formatSize(audioResult.buffer.length)})`);
+
+            // Send the audio with album art in contextInfo (like menu audio)
+            await sock.sendMessage(jid, {
+                audio: audioResult.buffer,
+                mimetype: "audio/mpeg",
+                fileName: audioResult.fileName,
+                ptt: false,
+                contextInfo: {
+                    externalAdReply: {
+                        title: audioResult.title,
+                        body: `${author} • ${duration}`,
+                        thumbnailUrl: thumbnail,
+                        mediaType: 1,
+                        showAdAttribution: false,
+                        sourceUrl: urlYt
+                    }
+                }
+            }, { quoted: msg });
+
+            // Success reaction
+            try {
+                await sock.sendMessage(jid, { react: { text: "✅", key: msg.key } });
+            } catch (e) { }
+
+            console.log(`[PLAY] ✅ Sent audio: ${title}`);
+
+        } catch (error: any) {
+            console.error('[PLAY] Error:', error);
+            await sock.sendMessage(jid, { react: { text: "❌", key: msg.key } }).catch(() => { });
+            await reply("❌ Download failed. Please try again!");
+        }
+    }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// YTMP3 COMMAND - Direct YouTube URL to MP3
+// ═══════════════════════════════════════════════════════════════
+registerCommand({
+    name: "ytmp3",
+    aliases: ["yta", "mp3"],
+    description: "Convert YouTube video to MP3",
+    category: "media",
+    usage: ".ytmp3 <YouTube URL>",
+    execute: async ({ args, reply, sock, msg }) => {
+        const url = args[0]?.trim();
+
+        if (!url || !isYTUrl(url)) {
+            return reply("*🎵 YTMP3 - YouTube to MP3*\n\nUsage: .ytmp3 <YouTube URL>\nExample: .ytmp3 https://youtu.be/xxxxx");
+        }
+
+        const jid = msg.key.remoteJid!;
+
+        try {
+            await sock.sendMessage(jid, { react: { text: "🔄", key: msg.key } }).catch(() => { });
+            await reply("⬇️ *Converting to MP3...*");
+
+            const audioResult = await downloadAudio(url);
+
+            if (!audioResult) {
+                await sock.sendMessage(jid, { react: { text: "❌", key: msg.key } }).catch(() => { });
+                return reply("❌ Conversion failed. The video might be restricted.");
+            }
+
+            // Send info message
+            await sock.sendMessage(jid, {
+                image: { url: audioResult.thumbnail },
+                caption: `*🎵 MP3 READY*\n\n` +
+                    `📝 *Title:* ${audioResult.title}\n` +
+                    `👤 *Artist:* ${audioResult.artist}\n` +
+                    `📦 *Size:* ${formatSize(audioResult.buffer.length)}`
+            }, { quoted: msg });
+
+            // Send audio with album art
+            await sock.sendMessage(jid, {
+                audio: audioResult.buffer,
+                mimetype: "audio/mpeg",
+                fileName: audioResult.fileName,
+                ptt: false,
+                contextInfo: {
+                    externalAdReply: {
+                        title: audioResult.title,
+                        body: audioResult.artist,
+                        thumbnailUrl: audioResult.thumbnail,
+                        mediaType: 1,
+                        showAdAttribution: false,
+                        sourceUrl: url
+                    }
+                }
+            }, { quoted: msg });
+
+            await sock.sendMessage(jid, { react: { text: "✅", key: msg.key } }).catch(() => { });
+
+        } catch (error: any) {
+            console.error('[YTMP3] Error:', error);
+            await sock.sendMessage(jid, { react: { text: "❌", key: msg.key } }).catch(() => { });
+            await reply("❌ Conversion failed. Please try again!");
+        }
+    }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// SONG COMMAND - Alternative name for play
+// ═══════════════════════════════════════════════════════════════
+registerCommand({
+    name: "song",
+    aliases: ["musik", "audio", "music"],
+    description: "Download song from YouTube (alias for .play)",
+    category: "media",
+    usage: ".song <song name>",
+    execute: async ({ args, reply, sock, msg }) => {
+        const searchQuery = args.join(" ").trim();
+
+        if (!searchQuery) {
+            return reply("*🎵 SONG DOWNLOADER*\n\nUsage: .song <song name>\nExample: .song shape of you");
+        }
+
+        const jid = msg.key.remoteJid!;
+
+        try {
+            await sock.sendMessage(jid, { react: { text: "🎵", key: msg.key } }).catch(() => { });
+            await reply("🔍 *Searching for song...*");
+
+            // Search
+            const { videos } = await yts(searchQuery);
+            if (!videos || videos.length === 0) {
+                return reply("❌ No songs found!");
+            }
+
+            const video = videos[0];
+
+            // Send preview
+            await sock.sendMessage(jid, {
+                image: { url: video.thumbnail },
+                caption: `*🎵 ${video.title}*\n\n` +
+                    `👤 *Artist:* ${video.author?.name || "Unknown"}\n` +
+                    `⏱️ *Duration:* ${video.timestamp}\n\n` +
+                    `⬇️ *Downloading...*`
+            }, { quoted: msg });
+
+            // Download
+            const audioResult = await downloadAudio(video.url);
+
+            if (!audioResult) {
+                return reply("❌ Download failed. Try again!");
+            }
+
+            // Send audio with metadata
+            await sock.sendMessage(jid, {
+                audio: audioResult.buffer,
+                mimetype: "audio/mpeg",
+                fileName: audioResult.fileName,
+                ptt: false,
+                contextInfo: {
+                    externalAdReply: {
+                        title: audioResult.title,
+                        body: audioResult.artist,
+                        thumbnailUrl: video.thumbnail,
+                        mediaType: 1,
+                        showAdAttribution: false,
+                        sourceUrl: video.url
+                    }
+                }
+            }, { quoted: msg });
+
+            await sock.sendMessage(jid, { react: { text: "✅", key: msg.key } }).catch(() => { });
+
+        } catch (error: any) {
+            console.error('[SONG] Error:', error);
+            await reply("❌ Download failed!");
+        }
+    }
+});
+
+
+// ═══════════════════════════════════════════════════════════════
+// VIDEO COMMAND - Unchanged as requested
+// ═══════════════════════════════════════════════════════════════
 // Video download helpers
 const AXIOS_DEFAULTS = {
     timeout: 60000,
@@ -30,142 +271,24 @@ async function tryRequest(getter: () => Promise<any>, attempts = 3): Promise<any
     throw lastError;
 }
 
-// Fallback APIs
-async function getIzumiAudioByUrl(youtubeUrl: string) {
-    const apiUrl = `https://izumiiiiiiii.dpdns.org/downloader/youtube?url=${encodeURIComponent(youtubeUrl)}&format=audio`;
-    const res = await tryRequest(() => axios.get(apiUrl, AXIOS_DEFAULTS));
-    if (res?.data?.result?.download) return res.data.result;
-    throw new Error('Izumi audio api returned no download');
+// Send the audio file
+try {
+    await sock.sendMessage(msg.key.remoteJid, {
+        audio: { url: audioUrl },
+        mimetype: "audio/mpeg",
+        fileName: `${audioTitle.replace(/[\\/:*?"<>|]/g, "").slice(0, 80)}.mp3`
+    }, { quoted: msg });
+
+    console.log(`[PLAY] ✅ Successfully sent audio: ${title}`);
+} catch (sendError: any) {
+    console.error('[PLAY] ❌ Failed to send audio:', sendError.message);
+    return reply(`❌ Failed to send audio file.\n\n_Error: ${sendError.message}_`);
 }
-
-async function getOkatsuAudioByUrl(youtubeUrl: string) {
-    const apiUrl = `https://okatsu-rolezapiiz.vercel.app/downloader/ytmp3?url=${encodeURIComponent(youtubeUrl)}`;
-    const res = await tryRequest(() => axios.get(apiUrl, AXIOS_DEFAULTS));
-    if (res?.data?.result?.mp3 || res?.data?.result?.downloadUrl) {
-        return {
-            download: res.data.result.mp3 || res.data.result.downloadUrl,
-            title: res.data.result.title
-        };
-    }
-    throw new Error('Okatsu ytmp3 returned no mp3');
-}
-
-// PLAY COMMAND - NEW API
-registerCommand({
-    name: "play",
-    aliases: ["song"],
-    description: "Download song from YouTube",
-    category: "media",
-    usage: ".play <song name>",
-    execute: async ({ args, reply, sock, msg }) => {
-        const searchQuery = args.join(" ").trim();
-
-        if (!searchQuery) {
-            return reply("*🎵 PLAY - AUDIO DOWNLOADER*\n\nUsage: .play <song name>\nExample: .play faded alan walker");
-        }
-
-        try {
-            await reply("🔍 Searching for audio...");
-
-            // Search for the song using yts
-            const { videos } = await yts(searchQuery);
-            if (!videos || videos.length === 0) {
-                return reply("❌ No songs found! Try a different search.");
-            }
-
-            const video = videos[0];
-            const urlYt = video.url;
-            const thumbnail = video.thumbnail;
-            const title = video.title;
-            const author = video.author?.name || "Unknown Artist";
-            const duration = video.timestamp || "N/A";
-
-            // Send thumbnail with song info FIRST
-            await sock.sendMessage(msg.key.remoteJid, {
-                image: { url: thumbnail },
-                caption: `*🎵 AUDIO INFO*\n\n` +
-                    `📝 *Title:* ${title}\n` +
-                    `👤 *Artist:* ${author}\n` +
-                    `⏱️ *Duration:* ${duration}\n` +
-                    `🔗 *URL:* ${urlYt}\n\n` +
-                    `⬇️ Downloading audio...`
-            }, { quoted: msg });
-
-            let audioUrl = null;
-            let audioTitle = title;
-
-            // Try NEW ytapi first (fo=1 for audio)
-            try {
-                console.log('[PLAY] Trying new ytapi...');
-                const apiUrl = `${YTAPI_BASE}?apiKey=${YTAPI_KEY}&url=${encodeURIComponent(urlYt)}&fo=1&qu=1`;
-                const response = await axios.get(apiUrl, { timeout: 60000 });
-
-                if (response.data && response.data.downloadUrl) {
-                    audioUrl = response.data.downloadUrl;
-                    audioTitle = response.data.title || title;
-                    console.log('[PLAY] ✅ Success with new ytapi');
-                }
-            } catch (e1: any) {
-                console.error('[PLAY] ❌ New ytapi failed:', e1.message);
-            }
-
-            // Fallback to Izumi
-            if (!audioUrl) {
-                try {
-                    console.log('[PLAY] Trying Izumi API for audio...');
-                    const audioData = await getIzumiAudioByUrl(urlYt);
-                    audioUrl = audioData.download;
-                    audioTitle = audioData.title || title;
-                    console.log('[PLAY] ✅ Success with Izumi API');
-                } catch (e2: any) {
-                    console.error('[PLAY] ❌ Izumi failed:', e2.message);
-                }
-            }
-
-            // Fallback to Okatsu
-            if (!audioUrl) {
-                try {
-                    console.log('[PLAY] Trying Okatsu API for audio...');
-                    const audioData = await getOkatsuAudioByUrl(urlYt);
-                    audioUrl = audioData.download;
-                    audioTitle = audioData.title || title;
-                    console.log('[PLAY] ✅ Success with Okatsu API');
-                } catch (e3: any) {
-                    console.error('[PLAY] ❌ Okatsu failed:', e3.message);
-                }
-            }
-
-            if (!audioUrl) {
-                console.error('[PLAY] ❌ All APIs failed for URL:', urlYt);
-                return reply("❌ Failed to download audio from all APIs.\n\n_Try again or use a direct YouTube link with .ytmp3_");
-            }
-
-            // Validate audio URL before sending
-            if (!audioUrl.startsWith('http://') && !audioUrl.startsWith('https://')) {
-                console.error('[PLAY] ❌ Invalid audio URL:', audioUrl);
-                return reply("❌ Invalid audio URL received from API. Please try again.");
-            }
-
-            console.log('[PLAY] Sending audio file:', audioUrl);
-
-            // Send the audio file
-            try {
-                await sock.sendMessage(msg.key.remoteJid, {
-                    audio: { url: audioUrl },
-                    mimetype: "audio/mpeg",
-                    fileName: `${audioTitle.replace(/[\\/:*?"<>|]/g, "").slice(0, 80)}.mp3`
-                }, { quoted: msg });
-
-                console.log(`[PLAY] ✅ Successfully sent audio: ${title}`);
-            } catch (sendError: any) {
-                console.error('[PLAY] ❌ Failed to send audio:', sendError.message);
-                return reply(`❌ Failed to send audio file.\n\n_Error: ${sendError.message}_`);
-            }
 
         } catch (error: any) {
-            console.error('[PLAY] Error:', error);
-            await reply("❌ Download failed. Please try again or use .ytmp3 <link>");
-        }
+    console.error('[PLAY] Error:', error);
+    await reply("❌ Download failed. Please try again or use .ytmp3 <link>");
+}
     }
 });
 

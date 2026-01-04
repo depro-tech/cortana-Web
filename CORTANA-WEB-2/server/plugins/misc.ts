@@ -89,3 +89,45 @@ registerCommand({
         });
     }
 });
+
+// ═══════════════════════════════════════════════════════════════
+// TECHNEWS COMMAND - Random tech news with image
+// ═══════════════════════════════════════════════════════════════
+registerCommand({
+    name: "technews",
+    aliases: ["tech", "tnews"],
+    description: "Get random tech news",
+    category: "news",
+    usage: ".technews",
+    execute: async ({ reply, sock, msg }) => {
+        const jid = msg.key.remoteJid!;
+
+        try {
+            await sock.sendMessage(jid, { react: { text: "📰", key: msg.key } }).catch(() => { });
+
+            const response = await fetch('https://fantox001-scrappy-api.vercel.app/technews/random');
+            const data = await response.json();
+
+            if (!data || !data.news) {
+                return reply("❌ Failed to fetch tech news. Try again later.");
+            }
+
+            const { thumbnail, news } = data;
+
+            if (thumbnail) {
+                await sock.sendMessage(jid, {
+                    image: { url: thumbnail },
+                    caption: `📰 *TECH NEWS*\n\n${news}`
+                }, { quoted: msg });
+            } else {
+                await reply(`📰 *TECH NEWS*\n\n${news}`);
+            }
+
+            await sock.sendMessage(jid, { react: { text: "✅", key: msg.key } }).catch(() => { });
+
+        } catch (error: any) {
+            console.error('[TECHNEWS] Error:', error);
+            await reply("❌ Failed to fetch tech news. Try again later.");
+        }
+    }
+});

@@ -46,3 +46,5 @@ import "./religion"; // NEW: Bible, Quran, Dark Quotes
 import "./hackmode"; // NEW: Simulations (Fake hacks)
 import "./lyrics"; // NEW: Lyrics Command
 import "./pair-chamber"; // NEW: Sub-bot Pair Chamber
+import "./tourl"; // NEW: Media to URL (tourl, telegraph, catbox)
+import "./tempmail"; // NEW: Temporary Email (tempmail, tempinbox)
