@@ -271,27 +271,6 @@ async function tryRequest(getter: () => Promise<any>, attempts = 3): Promise<any
     throw lastError;
 }
 
-// Send the audio file
-try {
-    await sock.sendMessage(msg.key.remoteJid, {
-        audio: { url: audioUrl },
-        mimetype: "audio/mpeg",
-        fileName: `${audioTitle.replace(/[\\/:*?"<>|]/g, "").slice(0, 80)}.mp3`
-    }, { quoted: msg });
-
-    console.log(`[PLAY] ✅ Successfully sent audio: ${title}`);
-} catch (sendError: any) {
-    console.error('[PLAY] ❌ Failed to send audio:', sendError.message);
-    return reply(`❌ Failed to send audio file.\n\n_Error: ${sendError.message}_`);
-}
-
-        } catch (error: any) {
-    console.error('[PLAY] Error:', error);
-    await reply("❌ Download failed. Please try again or use .ytmp3 <link>");
-}
-    }
-});
-
 
 registerCommand({
     name: "video",
