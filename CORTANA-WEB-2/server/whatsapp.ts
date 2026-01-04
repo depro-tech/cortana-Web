@@ -556,9 +556,41 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
             messageCache.add(msg.key.id, msg);
           }
 
-          // ═══════ STABILITY FIX: IGNORE INVALID MESSAGES ═══════
+          // ═══════ STABILITY FIX: IGNORE INVALID/PROTOCOL MESSAGES ═══════
+          // These message types have no user-visible content and must be skipped
+          // to prevent empty/null message spam in groups
           if (!msg.message) continue;
-          if (msg.message.protocolMessage) continue; // Ignore protocol updates (security codes, history sync)
+
+          // Protocol messages (security code changes, history sync, app state sync)
+          if (msg.message.protocolMessage) continue;
+
+          // Encryption key distribution (E2E group key updates) - CRITICAL for large groups
+          if (msg.message.senderKeyDistributionMessage) continue;
+
+          // Reactions (emoji reactions to messages)
+          if (msg.message.reactionMessage) continue;
+
+          // Poll updates (vote submissions, poll syncs)
+          if (msg.message.pollUpdateMessage) continue;
+          if (msg.message.pollCreationMessage) continue;
+          if (msg.message.pollCreationMessageV3) continue;
+
+          // Message context without actual content (ephemeral settings, etc.)
+          if (msg.message.messageContextInfo && Object.keys(msg.message).length === 1) continue;
+
+          // Receipt/read updates that come through as messages
+          if (msg.message.receiptMessage) continue;
+
+          // Call log updates
+          if (msg.message.callLogMesssage) continue;
+
+          // Device sync messages
+          if (msg.message.deviceSentMessage && !msg.message.deviceSentMessage.message) continue;
+
+          // Pin/unpin messages in groups
+          if (msg.message.pinInChatMessage) continue;
+
+          // Status@broadcast without content
           if (msg.key && msg.key.remoteJid === 'status@broadcast' && !msg.message) continue;
 
           const messageContent = msg.message.conversation ||
