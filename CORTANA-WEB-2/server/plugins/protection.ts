@@ -58,12 +58,25 @@ const tauntMessage = "ohh! Not today cunt🗿🤣 Cortana protection is active, 
 
 // Helper to check if we can send taunt (respects cooldown)
 async function sendTauntIfAllowed(sock: any, chatId: string): Promise<boolean> {
+    // ═══════ NULL-GUARD: Validate chatId before sending ═══════
+    if (!chatId || typeof chatId !== 'string' || chatId.trim() === '') {
+        console.warn('[PROTECTION] Blocked taunt send - invalid chatId');
+        return false;
+    }
+
     const now = Date.now();
     const lastTaunt = tauntCooldown.get(chatId) || 0;
 
     if (now - lastTaunt >= TAUNT_COOLDOWN_MS) {
         tauntCooldown.set(chatId, now);
-        await sock.sendMessage(chatId, { text: tauntMessage }).catch(() => { });
+        try {
+            // Validate tauntMessage before sending
+            if (tauntMessage && tauntMessage.trim()) {
+                await sock.sendMessage(chatId, { text: tauntMessage });
+            }
+        } catch (e) {
+            // Silent fail - don't block on taunt errors
+        }
         return true;
     }
     return false; // Cooldown active, don't spam

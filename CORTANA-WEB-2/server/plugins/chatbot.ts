@@ -303,17 +303,25 @@ export async function handleChatbotResponse(
             userInfo: chatMemory.userInfo.get(senderId)
         });
 
-        if (!response) {
-            await sock.sendMessage(jid, {
-                text: "Hmm, let me think about that... 🤔\nI'm having trouble processing your request right now.",
-                quoted: msg
-            });
+        // ═══════ NULL-GUARD: Prevent sending empty/null messages ═══════
+        // Check for null, undefined, or empty response
+        if (!response || response.trim() === '') {
+            // Don't send anything if there's no valid response
+            // Silent fail is better than sending empty messages
+            console.log('[CHATBOT] Skipped sending empty/null response');
             return;
         }
 
-        // Send response
+        // Double-check the response is valid before sending
+        const trimmedResponse = response.trim();
+        if (trimmedResponse.length === 0) {
+            console.log('[CHATBOT] Skipped sending whitespace-only response');
+            return;
+        }
+
+        // Send response only if it's valid
         await sock.sendMessage(jid, {
-            text: response
+            text: trimmedResponse
         }, {
             quoted: msg
         });

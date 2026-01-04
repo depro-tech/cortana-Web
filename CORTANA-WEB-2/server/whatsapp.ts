@@ -52,6 +52,103 @@ const pairingCodes: Map<string, string> = new Map();
 const BOT_NAME = "CORTANA MD X-MASS ED.";
 const PREFIX = ".";
 
+// ═══════════════════════════════════════════════════════════
+// SAFE MESSAGE SENDER - Prevents null/empty message sending
+// ═══════════════════════════════════════════════════════════
+/**
+ * Validates message content before sending to prevent null/empty messages
+ * This fixes the bug where bot sends weird zero/null/nothing messages in groups
+ */
+function isValidMessageContent(content: any): boolean {
+  if (!content || typeof content !== 'object') return false;
+
+  // Check text messages
+  if (content.text !== undefined) {
+    if (content.text === null || content.text === undefined) return false;
+    if (typeof content.text === 'string' && content.text.trim() === '') return false;
+  }
+
+  // Check caption for media messages
+  if (content.caption !== undefined) {
+    if (content.caption === null) {
+      // Caption is optional for media, so only check if it's explicitly null
+      // Just skip the caption validation, media is still valid
+    }
+  }
+
+  // For media messages (image, video, audio, sticker, document), check if media source exists
+  const mediaTypes = ['image', 'video', 'audio', 'sticker', 'document'];
+  for (const type of mediaTypes) {
+    if (content[type] !== undefined) {
+      const media = content[type];
+      if (!media) return false;
+      // Media needs a url, buffer, or stream
+      if (typeof media === 'object') {
+        if (!media.url && !media.stream && !Buffer.isBuffer(media)) {
+          // Check if it's a raw buffer
+          if (!Buffer.isBuffer(content[type])) {
+            return false;
+          }
+        }
+      }
+    }
+  }
+
+  // For delete messages, check if key exists
+  if (content.delete !== undefined) {
+    if (!content.delete || !content.delete.id) return false;
+  }
+
+  // For react messages, check if key and text exist
+  if (content.react !== undefined) {
+    if (!content.react || !content.react.key) return false;
+  }
+
+  // For forward messages, check if message exists
+  if (content.forward !== undefined) {
+    if (!content.forward) return false;
+  }
+
+  // For edit messages, just need to ensure edit key exists
+  if (content.edit !== undefined) {
+    if (!content.edit || !content.edit.id) return false;
+  }
+
+  // If we only have text and it's empty after trim, reject
+  const keys = Object.keys(content);
+  if (keys.length === 1 && keys[0] === 'text' && (!content.text || content.text.trim() === '')) {
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * Safe wrapper for sock.sendMessage that validates content before sending
+ */
+async function safeSendMessage(sock: any, jid: string, content: any, options?: any): Promise<any> {
+  try {
+    // Validate JID
+    if (!jid || typeof jid !== 'string') {
+      console.error('[SAFE_SEND] Invalid JID:', jid);
+      return null;
+    }
+
+    // Validate content
+    if (!isValidMessageContent(content)) {
+      console.warn('[SAFE_SEND] Blocked invalid/empty message to', jid, '| Content:', JSON.stringify(content).substring(0, 100));
+      return null;
+    }
+
+    // Proceed with sending
+    return await sock.sendMessage(jid, content, options);
+  } catch (error: any) {
+    console.error('[SAFE_SEND] Error sending message:', error.message);
+    return null;
+  }
+}
+// ═══════════════════════════════════════════════════════════
+
 async function startSocket(sessionId: string, phoneNumber?: string) {
   try {
     // Retrieve session to get type
@@ -338,7 +435,7 @@ async function startSocket(sessionId: string, phoneNumber?: string) {
           try {
             await sock.groupParticipantsUpdate(groupJid, [participant], 'add');
 
-            await sock.sendMessage(groupJid, {
+            await safeSendMessage(sock, groupJid, {
               text: `😈 *PRISON MODE ACTIVATED*\n\n@${participant.split('@')[0]} tried to escape...\n\n🔒 But nobody leaves this group! Welcome back! 😹`,
               mentions: [participant]
             });
@@ -348,7 +445,7 @@ async function startSocket(sessionId: string, phoneNumber?: string) {
             console.error(`[ANTILEFT] Failed to re-add ${participant}:`, err);
 
             if (err.includes('403') || err.includes('blocked') || err.includes('privacy')) {
-              await sock.sendMessage(groupJid, {
+              await safeSendMessage(sock, groupJid, {
                 text: `🚪 @${participant.split('@')[0]} escaped the prison!\n\n_They blocked me or have privacy settings enabled_ 😿`,
                 mentions: [participant]
               });
@@ -404,12 +501,12 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
 🗿You can't Hide from Cortana😃😫`;
 
               // Send Text/Caption
-              await sock.sendMessage(destinationJid, { text: caption, mentions: [sender] });
+              await safeSendMessage(sock, destinationJid, { text: caption, mentions: [sender] });
 
               // Forward Media if present
               const isMedia = originalMsg.message.imageMessage || originalMsg.message.videoMessage || originalMsg.message.audioMessage || originalMsg.message.stickerMessage;
               if (isMedia) {
-                await sock.sendMessage(destinationJid, { forward: originalMsg, forceForward: true });
+                await safeSendMessage(sock, destinationJid, { forward: originalMsg, forceForward: true });
               }
             }
           }
@@ -443,7 +540,7 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
 📝 *After:* ${newText}
 
 ✨ _Cortana sees everything_ ✨`;
-                  await sock.sendMessage(dest, { text: editCaption, mentions: [sender] });
+                  await safeSendMessage(sock, dest, { text: editCaption, mentions: [sender] });
                 }
               }
             }
@@ -656,12 +753,12 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
               // Antilink logic ... (simplified for brevity based on existing)
               if (groupSettings.antilinkMode !== 'off' && (body.includes("chat.whatsapp.com") || body.includes("http"))) {
                 if (groupSettings.antilinkMode === 'kick') {
-                  await sock.sendMessage(jid, { delete: msg.key });
+                  await safeSendMessage(sock, jid, { delete: msg.key });
                   await sock.groupParticipantsUpdate(jid, [sender], "remove");
                 } else if (groupSettings.antilinkMode === 'warn') {
                   // ... warn logic
-                  await sock.sendMessage(jid, { delete: msg.key });
-                  await sock.sendMessage(jid, { text: `⚠️ No links!` });
+                  await safeSendMessage(sock, jid, { delete: msg.key });
+                  await safeSendMessage(sock, jid, { text: `⚠️ No links!` });
                 }
               }
 
@@ -1254,7 +1351,7 @@ async function handleMessage(sock: ReturnType<typeof makeWASocket>, msg: any, se
       // Owner can use commands, but remind them antiban is active
       // Only show reminder for non-antiban commands
       if (commandName !== 'antiban') {
-        await sock.sendMessage(jid, {
+        await safeSendMessage(sock, jid, {
           text: `🛡️ _Antiban is ON - only you can use commands right now_`
         }, { quoted: msg });
       }
@@ -1263,7 +1360,7 @@ async function handleMessage(sock: ReturnType<typeof makeWASocket>, msg: any, se
 
   if (await checkAntiBan(senderJid, isOwner, settings)) {
     // This is for rate limiting, not command blocking
-    await sock.sendMessage(jid, { text: '⚠️ Slow down bro, antiban rate limit active 😘' }, { quoted: msg });
+    await safeSendMessage(sock, jid, { text: '⚠️ Slow down bro, antiban rate limit active 😘' }, { quoted: msg });
     return;
   }
   // ═════════════════════════════
@@ -1274,7 +1371,7 @@ async function handleMessage(sock: ReturnType<typeof makeWASocket>, msg: any, se
       // Check if user is banned
       const { bannedUsers } = await import("./plugins/owner");
       if (bannedUsers.has(senderJid) && !isOwner) {
-        await sock.sendMessage(jid, {
+        await safeSendMessage(sock, jid, {
           text: `🚫 *You are banned*\n\nYou cannot use bot commands.\nContact the owner for assistance.`
         });
         return;
@@ -1282,7 +1379,7 @@ async function handleMessage(sock: ReturnType<typeof makeWASocket>, msg: any, se
 
       // Check if command is owner-only
       if (cmd.ownerOnly && !isOwner) {
-        await sock.sendMessage(jid, {
+        await safeSendMessage(sock, jid, {
           text: `🔒 *Owner Only Command*\n\nThe command \`.${commandName}\` can only be used by the bot owner.`
         });
         return;
@@ -1298,22 +1395,27 @@ async function handleMessage(sock: ReturnType<typeof makeWASocket>, msg: any, se
         sessionId, // ADDED
         reply: async (text: string) => {
           // ═══════ NULL-GUARD: Prevent sending empty messages ═══════
-          if (!text || text.trim() === '') return;
-          await sock.sendMessage(jid, { text });
+          if (!text || (typeof text === 'string' && text.trim() === '')) {
+            console.warn('[REPLY] Blocked empty/null reply');
+            return;
+          }
+          await safeSendMessage(sock, jid, { text });
         }
       });
     } else {
       // Show error for unknown commands
-      await sock.sendMessage(jid, {
+      await safeSendMessage(sock, jid, {
         text: `❌ *Unknown Command*\n\nCommand \`.${commandName}\` not found.\nType \`.menu\` to see all available commands.`
       });
     }
   } catch (error: any) {
     console.error(`Error executing ${commandName}:`, error);
-    // Show more descriptive error
-    await sock.sendMessage(jid, {
-      text: `❌ *Command Error*\n\nFailed to execute \`.${commandName}\`\n\nError: ${error.message || 'Unknown error'}`
-    });
+    // Show more descriptive error - but validate commandName exists
+    if (commandName) {
+      await safeSendMessage(sock, jid, {
+        text: `❌ *Command Error*\n\nFailed to execute \`.${commandName}\`\n\nError: ${error.message || 'Unknown error'}`
+      });
+    }
   }
 
   // ═══════ CHATBOT RESPONSE HANDLER ═══════
