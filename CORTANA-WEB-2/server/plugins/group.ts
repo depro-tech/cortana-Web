@@ -218,13 +218,19 @@ registerCommand({
 
         let target = args[0] ? args[0].replace(/[^0-9]/g, '') + '@s.whatsapp.net' : undefined;
 
-        // Handle mentions
+        // 1. Handle Mentions
         const mentions = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid;
         if (mentions && mentions.length > 0) {
             target = mentions[0];
         }
 
-        if (!target) return reply("❌ Provide user number or mention to kick");
+        // 2. Handle Quoted Message (Reply)
+        const quoted = msg.message?.extendedTextMessage?.contextInfo?.participant;
+        if (quoted) {
+            target = quoted;
+        }
+
+        if (!target) return reply("❌ Provide user number, mention, or reply to a message to kick");
 
         await sock.groupParticipantsUpdate(jid, [target], "remove");
         await reply(`✅ Kicked user`);

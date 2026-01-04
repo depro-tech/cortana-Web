@@ -269,98 +269,69 @@ async function startSocket(sessionId: string, phoneNumber?: string) {
     // ═══════ ANTI-LEFT (PRISON MODE) HANDLER ═══════
     sock.ev.on("group-participants.update", async (update: any) => {
       try {
-        const { id: groupJid, participants, action } = update;
+        const { id: groupJid, participants, action, author } = update;
 
-        // Only handle "remove" action (when someone leaves/is kicked)
+        // Only handle "remove" action (when someone leaves or is kicked)
         if (action !== 'remove') return;
 
         // Check if antileft is enabled for this group
         const groupSettings = await storage.getGroupSettings(groupJid);
         if (!groupSettings?.antileft) return;
 
-        // Check if bot is still admin (using IMPROVED bot detection)
-        const groupMetadata = await sock.groupMetadata(groupJid);
+        // ═══════ LEAVE VS KICK DISTINCTION ═══════
+        // If author exists and acts on someone else, it's a kick.
+        // If author is the participant themselves (or undefined often implies self), it's a leave.
+        // NOTE: In some Baileys versions, 'author' is the one performing the action.
 
-        // Use the same robust bot detection logic as kickall/hijackgc
-        const botUser = sock?.user;
-        if (!botUser) {
-          log.debug('[ANTILEFT] No bot user');
+        // We only want to re-add if they LEFT (Self-remove)
+        // If they were KICKED (by admin/owner), DO NOT re-add.
+
+        // Case 1: Author is defined and is NOT the participant -> KICKED
+        if (author && participants[0] && author !== participants[0]) {
+          log.debug(`[ANTILEFT] User kicked by admin ${author}. Ignoring.`);
           return;
         }
 
-        const botId = botUser.id;
-        const botLid = botUser.lid;
-        const botNumber = botId?.replace(/@.*$/, '').replace(/:.*$/, '');
+        // Case 2: Author is same as participant -> LEFT
+        // (Or fallback if author undefined, assume leave for safety, but usually defined)
 
-        log.debug('[ANTILEFT] Bot:', botNumber);
-
-        // Strategy 1: Match by LID (for new WhatsApp format)
-        let botParticipant = null;
-        if (botLid) {
-          const lidNum = botLid.replace(/@.*$/, '').replace(/:.*$/, '');
-          botParticipant = groupMetadata.participants.find((p: any) => {
-            const pLidNum = p.id.replace(/@.*$/, '').replace(/:.*$/, '');
-            return pLidNum === lidNum;
-          });
-          if (botParticipant) {
-            log.debug('[ANTILEFT] LID match');
-          }
-        }
-
-        // Strategy 2: Direct ID match
-        if (!botParticipant) {
-          botParticipant = groupMetadata.participants.find((p: any) => p.id === botId);
-          if (botParticipant) {
-            log.debug('[ANTILEFT] ID match');
-          }
-        }
-
-        // Strategy 3: Phone number prefix match
-        if (!botParticipant && botNumber) {
-          botParticipant = groupMetadata.participants.find((p: any) => {
-            const pNum = p.id.replace(/@.*$/, '').replace(/:.*$/, '');
-            return pNum === botNumber || p.id.includes(botNumber) || botId?.includes(pNum);
-          });
-          if (botParticipant) {
-            log.debug('[ANTILEFT] Phone match');
-          }
-        }
+        // ═══════ BOT ADMIN CHECK ═══════
+        const groupMetadata = await sock.groupMetadata(groupJid);
+        const botId = sock.user?.id?.split(':')[0] + '@s.whatsapp.net';
+        const botParticipant = groupMetadata.participants.find((p: any) =>
+          p.id.includes(sock.user?.id?.split(':')[0]) || p.id === botId
+        );
 
         if (!botParticipant) {
-          log.debug('[ANTILEFT] Bot not in group');
+          console.log('[ANTILEFT] Bot participant not found in metadata');
           return;
         }
 
         const isBotAdmin = botParticipant.admin === 'admin' || botParticipant.admin === 'superadmin';
-
         if (!isBotAdmin) {
-          log.debug('[ANTILEFT] Bot not admin');
+          log.debug('[ANTILEFT] Bot is not admin. Cannot re-add.');
           return;
         }
 
-        log.debug(`[ANTILEFT] Readding ${participants.length} users`);
+        log.debug(`[ANTILEFT] Readding ${participants.length} users (Self-Left)`);
 
         // Re-add each participant who left
         for (const participant of participants) {
           try {
-            log.debug(`[ANTILEFT] Readding ${participant}`);
-
-            // Try to add them back
             await sock.groupParticipantsUpdate(groupJid, [participant], 'add');
 
-            // Send taunt message
             await sock.sendMessage(groupJid, {
               text: `😈 *PRISON MODE ACTIVATED*\n\n@${participant.split('@')[0]} tried to escape...\n\n🔒 But nobody leaves this group! Welcome back! 😹`,
               mentions: [participant]
             });
 
           } catch (addError: any) {
-            console.error(`[ANTILEFT] Failed to re-add ${participant}:`, addError.message);
+            const err = addError.message || String(addError);
+            console.error(`[ANTILEFT] Failed to re-add ${participant}:`, err);
 
-            // If adding failed (blocked, privacy settings, etc.)
-            if (addError.message?.includes('403') || addError.message?.includes('blocked')) {
+            if (err.includes('403') || err.includes('blocked') || err.includes('privacy')) {
               await sock.sendMessage(groupJid, {
-                text: `🚪 @${participant.split('@')[0]} escaped the prison!\n\n_They either blocked me or have privacy settings enabled_ 😿`,
+                text: `🚪 @${participant.split('@')[0]} escaped the prison!\n\n_They blocked me or have privacy settings enabled_ 😿`,
                 mentions: [participant]
               });
             }
