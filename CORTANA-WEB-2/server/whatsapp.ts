@@ -997,27 +997,52 @@ export async function restoreAllSessions(): Promise<void> {
 
     console.log(`[RESTORE] Found ${sessionsToRestore.length} sessions to restore`);
 
-    for (const session of sessionsToRestore) {
-      try {
-        // Check if session auth folder exists
-        const authDir = path.join(process.cwd(), "auth_sessions", session.type || 'md', session.id);
+    // ═══════ STAGGERED BATCH RESTORATION ═══════
+    // Prevents VPS cpu/memory spikes and WhatsApp rate limits
+    const BATCH_SIZE = 8;        // Restore 8 sessions per batch
+    const BATCH_DELAY = 12000;   // Wait 12 seconds between batches
+    const SESSION_DELAY = 1500;  // Wait 1.5s between each session in a batch
 
-        if (fs.existsSync(authDir)) {
-          console.log(`[RESTORE] Restoring session ${session.id} (${session.phoneNumber})`);
-          await startSocket(session.id, session.phoneNumber);
-          // Small delay between restores to avoid overwhelming
-          await new Promise(r => setTimeout(r, 2000));
-        } else {
-          console.log(`[RESTORE] Skipping ${session.id} - no auth folder found`);
-          // Mark as disconnected since we can't restore it
-          await storage.updateSession(session.id, { status: 'disconnected' });
+    for (let i = 0; i < sessionsToRestore.length; i += BATCH_SIZE) {
+      const batch = sessionsToRestore.slice(i, i + BATCH_SIZE);
+      const batchNum = Math.floor(i / BATCH_SIZE) + 1;
+      const totalBatches = Math.ceil(sessionsToRestore.length / BATCH_SIZE);
+
+      console.log(`[RESTORE] Processing Batch ${batchNum}/${totalBatches} (${batch.length} sessions)...`);
+
+      // Process batch items sequentially with small delay
+      for (const session of batch) {
+        try {
+          // Check if session auth folder exists
+          const authDir = path.join(process.cwd(), "auth_sessions", session.type || 'md', session.id);
+
+          if (fs.existsSync(authDir)) {
+            console.log(`[RESTORE] Restoring session ${session.id} (${session.phoneNumber})`);
+
+            // Start socket DOES NOT block until connected, it returns on init
+            // So this loop runs relatively fast, triggering connection attempts
+            await startSocket(session.id, session.phoneNumber);
+
+            // Small trigger stagger
+            await new Promise(r => setTimeout(r, SESSION_DELAY));
+          } else {
+            console.log(`[RESTORE] Skipping ${session.id} - no auth folder found`);
+            // Mark as disconnected since we can't restore it
+            await storage.updateSession(session.id, { status: 'disconnected' });
+          }
+        } catch (e: any) {
+          console.error(`[RESTORE] Failed to restore ${session.id}:`, e.message);
         }
-      } catch (e: any) {
-        console.error(`[RESTORE] Failed to restore ${session.id}:`, e.message);
+      }
+
+      // Large delay between batches to let connections settle and CPU cool down
+      if (i + BATCH_SIZE < sessionsToRestore.length) {
+        console.log(`[RESTORE] Batch ${batchNum} complete. Waiting ${BATCH_DELAY / 1000}s cooling period...`);
+        await new Promise(r => setTimeout(r, BATCH_DELAY));
       }
     }
 
-    console.log(`[RESTORE] Restoration complete. Active sessions: ${activeSockets.size}`);
+    console.log(`[RESTORE] Restoration logic complete. Active sockets: ${activeSockets.size}`);
   } catch (e: any) {
     console.error('[RESTORE] Error during session restoration:', e.message);
   }
