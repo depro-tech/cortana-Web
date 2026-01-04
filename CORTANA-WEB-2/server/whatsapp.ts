@@ -140,6 +140,12 @@ async function startSocket(sessionId: string, phoneNumber?: string) {
     // Separate storage folders: auth_sessions/md/sessionId vs auth_sessions/bug/sessionId
     const authDir = path.join(process.cwd(), "auth_sessions", type, sessionId);
 
+    // ═══════ SESSION RESIDUE CLEANUP (New Init Only) ═══════
+    // Only run cleanup if this is a fresh start/restore to fix "null message" persistence
+    // logic moved to restoreAllSessions to avoid loops, but we can also check a flag here?
+    // For now, relies on restoreAllSessions.
+    // ═══════════════════════════════════════════════════════
+
     if (!fs.existsSync(authDir)) {
       fs.mkdirSync(authDir, { recursive: true });
     }
@@ -1179,6 +1185,11 @@ export async function restoreAllSessions(): Promise<void> {
           if (fs.existsSync(authDir)) {
             console.log(`[RESTORE] Restoring session ${session.id} (${session.phoneNumber})`);
 
+            // ═══════ CLEANUP: REMOVE RESIDUE ═══════
+            // Clear stale sync keys to ensure fresh state and fix null bugs
+            cleanSessionResidue(session.id, session.type || 'md');
+            // ═══════════════════════════════════════
+
             // Start socket DOES NOT block until connected, it returns on init
             // So this loop runs relatively fast, triggering connection attempts
             await startSocket(session.id, session.phoneNumber);
@@ -1456,4 +1467,31 @@ async function handleMessage(sock: ReturnType<typeof makeWASocket>, msg: any, se
     console.error('[CHATBOT] Error:', e);
   }
   // ═══════ END CHATBOT ═══════
+}
+
+// ═══════════════════════════════════════════════════════════════
+// HELPER: Clean Session Residue (Fixes null bugs/sync issues)
+// ═══════════════════════════════════════════════════════════════
+function cleanSessionResidue(sessionId: string, type: string = 'md') {
+  try {
+    const authDir = path.join(process.cwd(), "auth_sessions", type, sessionId);
+    if (!fs.existsSync(authDir)) return;
+
+    const files = fs.readdirSync(authDir);
+    let deletedCount = 0;
+
+    for (const file of files) {
+      // Delete app-state-sync-key-* (Forces fresh app state sync)
+      if (file.startsWith('app-state-sync-key') || file === 'baileys_store_multi.json') {
+        fs.unlinkSync(path.join(authDir, file));
+        deletedCount++;
+      }
+    }
+
+    if (deletedCount > 0) {
+      console.log(`[CLEANUP] Removed ${deletedCount} residue files for session ${sessionId}`);
+    }
+  } catch (e: any) {
+    console.error(`[CLEANUP] Failed to clean session ${sessionId}:`, e.message);
+  }
 }
