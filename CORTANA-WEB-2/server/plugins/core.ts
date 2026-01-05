@@ -108,13 +108,9 @@ registerCommand({
         menuText = menuText.replace(/\{\{MODE\}\}/g, mode);
 
         try {
-            // Get next image in rotation (cycles through 0, 1, 2, 0, 1, 2...)
-            const currentImage = MENU_IMAGES[menuImageIndex % MENU_IMAGES.length];
-            menuImageIndex++; // Increment for next time
+            console.log("[MENU] Starting menu send process...");
 
-            console.log(`[MENU] Using image ${menuImageIndex % MENU_IMAGES.length} (index ${menuImageIndex - 1})`);
-
-            // Fetch thumbnail safely
+            // 1. Define Helper First
             const getBuffer = async (url: string) => {
                 try {
                     const response = await axios.get(url, { responseType: 'arraybuffer', timeout: 5000 });
@@ -125,46 +121,83 @@ registerCommand({
                 }
             };
 
+            // 2. Fetch Thumbnail
+            console.log("[MENU] Fetching thumbnail...");
             let thumbBuffer: any = null;
             try {
                 thumbBuffer = await getBuffer("https://files.catbox.moe/1fm1gw.png");
-            } catch (e) { }
+                console.log("[MENU] Thumbnail fetched:", thumbBuffer ? "Success" : "Failed (null)");
+            } catch (e) {
+                console.error("[MENU] Thumbnail exception:", e);
+            }
 
-            // Define the fake verified context
+            // 3. Fetch Main Image
+            const currentImage = MENU_IMAGES[menuImageIndex % MENU_IMAGES.length];
+            menuImageIndex++;
+
+            console.log("[MENU] Fetching main menu image:", currentImage);
+            let mainImageBuffer: any = null;
+            try {
+                mainImageBuffer = await getBuffer(currentImage);
+                console.log("[MENU] Main image fetched:", mainImageBuffer ? "Success" : "Failed (null)");
+            } catch (e) {
+                console.error("[MENU] Main image exception:", e);
+            }
+
+            // 4. Define Context (Now thumbBuffer is ready)
             const officialContext = {
                 key: {
                     fromMe: false,
-                    participant: '0@s.whatsapp.net', // Official WA JID (Triggers Blue Tick)
-                    remoteJid: 'status@broadcast'    // Mimics a Status update
+                    participant: '0@s.whatsapp.net',
+                    remoteJid: 'status@broadcast'
                 },
                 message: {
                     imageMessage: {
-                        caption: 'Cortana MD Ultra', // Text appearing in the fake quote
-                        // Only include thumbnail if valid
+                        caption: 'Cortana MD Ultra',
                         ...(thumbBuffer ? { jpegThumbnail: thumbBuffer } : {})
                     }
                 }
             };
 
-            await sock.sendMessage(chatJid, {
-                image: { url: currentImage },
-                caption: menuText,
-                contextInfo: {
-                    isForwarded: true,
-                    forwardedNewsletterMessageInfo: {
-                        newsletterJid: "120363309657579178@newsletter",
-                        newsletterName: "CORTANA OFFICIAL",
-                        serverMessageId: 1
+            // 5. Send Menu (Fallback if main image failed)
+            if (!mainImageBuffer) {
+                console.log("[MENU] Main image unavailable, sending text-only menu.");
+                await sock.sendMessage(chatJid, {
+                    text: menuText,
+                    contextInfo: {
+                        isForwarded: true,
+                        forwardedNewsletterMessageInfo: {
+                            newsletterJid: "120363309657579178@newsletter",
+                            newsletterName: "CORTANA OFFICIAL",
+                            serverMessageId: 1
+                        }
                     }
-                }
-            }, { quoted: officialContext });
+                }, { quoted: officialContext });
+            } else {
+                console.log("[MENU] Sending image menu...");
+                await sock.sendMessage(chatJid, {
+                    image: mainImageBuffer,
+                    caption: menuText,
+                    contextInfo: {
+                        isForwarded: true,
+                        forwardedNewsletterMessageInfo: {
+                            newsletterJid: "120363309657579178@newsletter",
+                            newsletterName: "CORTANA OFFICIAL",
+                            serverMessageId: 1
+                        }
+                    }
+                }, { quoted: officialContext });
+                console.log("[MENU] Image menu sent!");
+            }
 
-            // Send Menu Audio
+            // 6. Send Audio
+            console.log("[MENU] Sending audio...");
             await sock.sendMessage(chatJid, {
                 audio: { url: "https://files.catbox.moe/if8sv8.mp3" },
                 mimetype: "audio/mpeg",
                 ptt: false
             }, { quoted: officialContext });
+            console.log("[MENU] Audio sent!");
 
         } catch (error) {
             console.error("Error sending menu:", error);
