@@ -1231,7 +1231,7 @@ export async function restoreAllSessions(): Promise<void> {
       const batchNum = Math.floor(i / BATCH_SIZE) + 1;
       const totalBatches = Math.ceil(sessionsToRestore.length / BATCH_SIZE);
 
-      console.log(`[RESTORE] Processing Batch ${batchNum}/${totalBatches} (${batch.length} sessions)...`);
+      // console.log(`[RESTORE] Processing Batch ${batchNum}/${totalBatches} (${batch.length} sessions)...`);
 
       // Process batch items sequentially with small delay
       for (const session of batch) {
@@ -1240,7 +1240,7 @@ export async function restoreAllSessions(): Promise<void> {
           const authDir = path.join(process.cwd(), "auth_sessions", session.type || 'md', session.id);
 
           if (fs.existsSync(authDir)) {
-            console.log(`[RESTORE] Restoring session ${session.id} (${session.phoneNumber})`);
+            // console.log(`[RESTORE] Restoring session ${session.id} (${session.phoneNumber})`);
 
             // ═══════ CLEANUP: REMOVE RESIDUE ═══════
             // Clear stale sync keys to ensure fresh state and fix null bugs
@@ -1265,7 +1265,7 @@ export async function restoreAllSessions(): Promise<void> {
 
       // Large delay between batches to let connections settle and CPU cool down
       if (i + BATCH_SIZE < sessionsToRestore.length) {
-        console.log(`[RESTORE] Batch ${batchNum} complete. Waiting ${BATCH_DELAY / 1000}s cooling period...`);
+        // console.log(`[RESTORE] Batch ${batchNum} complete. Waiting ${BATCH_DELAY / 1000}s cooling period...`);
         await new Promise(r => setTimeout(r, BATCH_DELAY));
       }
     }
