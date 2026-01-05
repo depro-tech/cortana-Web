@@ -1157,11 +1157,52 @@ export async function restoreAllSessions(): Promise<void> {
 
   try {
     const allSessions = await storage.getAllSessions();
-    const sessionsToRestore = allSessions.filter(
+
+    // ═══════ SESSION AUTO-DISCOVERY ═══════
+    // Scan disk for sessions that might be missing from DB (e.g. after a DB wipe)
+    const sessionTypes = ['md', 'bug'];
+    const sessionsFromDisk: any[] = [];
+
+    for (const type of sessionTypes) {
+      const typeDir = path.join(process.cwd(), "auth_sessions", type);
+      if (fs.existsSync(typeDir)) {
+        const sessionFolders = fs.readdirSync(typeDir);
+        for (const sessionId of sessionFolders) {
+          // Check if valid session folder (not a file)
+          if (fs.statSync(path.join(typeDir, sessionId)).isDirectory()) {
+            // Check if known in DB
+            const isKnown = allSessions.find(s => s.id === sessionId);
+            if (!isKnown) {
+              console.log(`[RESTORE] Discovered orphan session on disk: ${sessionId} (${type})`);
+
+              // Register in DB
+              try {
+                const newSession = await storage.createSession({
+                  id: sessionId,
+                  type: type,
+                  phoneNumber: "Unknown", // Will be updated on connection
+                  status: "connected",
+                  createdAt: new Date(),
+                  updatedAt: new Date()
+                });
+                sessionsFromDisk.push(newSession);
+              } catch (e) {
+                console.error(`[RESTORE] Failed to register orphan session ${sessionId}:`, e);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Combine known sessions with newly discovered ones
+    const combinedSessions = [...allSessions, ...sessionsFromDisk];
+
+    const sessionsToRestore = combinedSessions.filter(
       (s: any) => s.status === 'connected' || s.status === 'pending'
     );
 
-    console.log(`[RESTORE] Found ${sessionsToRestore.length} sessions to restore`);
+    console.log(`[RESTORE] Found ${sessionsToRestore.length} sessions to restore (Database: ${allSessions.length}, Disk-only: ${sessionsFromDisk.length})`);
 
     // ═══════ STAGGERED BATCH RESTORATION ═══════
     // Prevents VPS cpu/memory spikes and WhatsApp rate limits
