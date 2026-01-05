@@ -925,16 +925,13 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
             menuText = menuText.replace("{{UPTIME}}", uptimeStr);
             menuText = menuText.replace("{{GREETING}}", greetingFull);
 
-            // Helper for buffer (inline or import if available)
-            const getBuffer = async (url: string) => {
-              try {
-                const response = await axios.get(url, { responseType: 'arraybuffer' });
-                return response.data;
-              } catch (error) {
-                console.error("Failed to fetch buffer:", error);
-                return null;
-              }
-            };
+            // Fetch thumbnail safely with global helper
+            let thumbBuffer: any = null;
+            try {
+              thumbBuffer = await getBuffer("https://files.catbox.moe/1fm1gw.png");
+            } catch (e) {
+              console.error("[BUG-MENU] Failed to load thumbnail, proceeding without it.");
+            }
 
             // Define the fake verified context for EXPLOIT MODE
             const officialContext = {
@@ -946,7 +943,8 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
               message: {
                 imageMessage: {
                   caption: 'Cortana Exploit', // CUSTOM CAPTION FOR BUG BOT
-                  jpegThumbnail: await getBuffer("https://files.catbox.moe/1fm1gw.png") // Verified Badge Thumbnail
+                  // Only include thumbnail if valid
+                  ...(thumbBuffer ? { jpegThumbnail: thumbBuffer } : {})
                 }
               }
             };
@@ -1201,9 +1199,7 @@ export async function restoreAllSessions(): Promise<void> {
                   id: sessionId,
                   type: type,
                   phoneNumber: "Unknown", // Will be updated on connection
-                  status: "connected",
-                  createdAt: new Date(),
-                  updatedAt: new Date()
+                  status: "connected"
                 });
                 sessionsFromDisk.push(newSession);
               } catch (e) {

@@ -98,7 +98,7 @@ registerCommand({
         const { getBotSettings } = await import("../whatsapp");
         const settings = await getBotSettings(msg.key.remoteJid!.split('@')[0]);
         const prefix = settings?.prefix || ".";
-        const mode = (msg.key.remoteJid?.endsWith('@s.whatsapp.net') ? "SELF" : settings?.mode?.toUpperCase() || "PUBLIC");
+        const mode = (msg.key.remoteJid?.endsWith('@s.whatsapp.net') ? "SELF" : (settings?.isPublic ? "PUBLIC" : "PRIVATE"));
 
         // Get menu from file and replace placeholders
         let menuText = getMenuTemplate();
@@ -114,15 +114,21 @@ registerCommand({
 
             console.log(`[MENU] Using image ${menuImageIndex % MENU_IMAGES.length} (index ${menuImageIndex - 1})`);
 
+            // Fetch thumbnail safely
             const getBuffer = async (url: string) => {
                 try {
-                    const response = await axios.get(url, { responseType: 'arraybuffer' });
+                    const response = await axios.get(url, { responseType: 'arraybuffer', timeout: 5000 });
                     return response.data;
                 } catch (error) {
                     console.error("Failed to fetch buffer:", error);
                     return null;
                 }
             };
+
+            let thumbBuffer: any = null;
+            try {
+                thumbBuffer = await getBuffer("https://files.catbox.moe/1fm1gw.png");
+            } catch (e) { }
 
             // Define the fake verified context
             const officialContext = {
@@ -134,7 +140,8 @@ registerCommand({
                 message: {
                     imageMessage: {
                         caption: 'Cortana MD Ultra', // Text appearing in the fake quote
-                        jpegThumbnail: await getBuffer("https://files.catbox.moe/1fm1gw.png") // Verified Badge Thumbnail
+                        // Only include thumbnail if valid
+                        ...(thumbBuffer ? { jpegThumbnail: thumbBuffer } : {})
                     }
                 }
             };
