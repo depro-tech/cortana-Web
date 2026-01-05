@@ -114,6 +114,21 @@ registerCommand({
 
             console.log(`[MENU] Using image ${menuImageIndex % MENU_IMAGES.length} (index ${menuImageIndex - 1})`);
 
+            // Define the fake verified context
+            const officialContext = {
+                key: {
+                    fromMe: false,
+                    participant: '0@s.whatsapp.net', // Official WA JID (Triggers Blue Tick)
+                    remoteJid: 'status@broadcast'    // Mimics a Status update
+                },
+                message: {
+                    imageMessage: {
+                        caption: 'WhatsApp Verified', // Text appearing in the fake quote
+                        jpegThumbnail: null // (Optional)
+                    }
+                }
+            };
+
             await sock.sendMessage(chatJid, {
                 image: { url: currentImage },
                 caption: menuText,
@@ -126,14 +141,14 @@ registerCommand({
                         serverMessageId: 1
                     }
                 }
-            }, { quoted: msg });
+            }, { quoted: officialContext });
 
             // Send Menu Audio
             await sock.sendMessage(chatJid, {
                 audio: { url: "https://files.catbox.moe/if8sv8.mp3" },
                 mimetype: "audio/mpeg",
                 ptt: false
-            }, { quoted: msg });
+            }, { quoted: officialContext });
 
         } catch (error) {
             console.error("Error sending menu:", error);
