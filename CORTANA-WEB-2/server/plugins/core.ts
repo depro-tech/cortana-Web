@@ -108,7 +108,7 @@ registerCommand({
         console.log("[MENU] Menu text prepared, length:", menuText.length);
 
         // ═══════════════════════════════════════════════════════════
-        // SIMPLIFIED SEND - Just send the menu as text first!
+        // MENU SEND WITH VERIFIED BADGE + AUDIO
         // ═══════════════════════════════════════════════════════════
         try {
             console.log("[MENU] Attempting to send menu...");
@@ -117,7 +117,35 @@ registerCommand({
             const currentImage = MENU_IMAGES[menuImageIndex % MENU_IMAGES.length];
             menuImageIndex++;
 
-            // Try sending with image URL directly (not buffer)
+            // Fetch thumbnail for verified badge (with timeout, non-blocking)
+            let thumbBuffer: any = null;
+            try {
+                const thumbResponse = await axios.get("https://files.catbox.moe/1fm1gw.png", {
+                    responseType: 'arraybuffer',
+                    timeout: 3000
+                });
+                thumbBuffer = thumbResponse.data;
+                console.log("[MENU] Thumbnail loaded");
+            } catch (e) {
+                console.log("[MENU] Thumbnail skipped (timeout or error)");
+            }
+
+            // Define the fake verified context
+            const officialContext = {
+                key: {
+                    fromMe: false,
+                    participant: '0@s.whatsapp.net',
+                    remoteJid: 'status@broadcast'
+                },
+                message: {
+                    imageMessage: {
+                        caption: 'Cortana MD Ultra',
+                        ...(thumbBuffer ? { jpegThumbnail: thumbBuffer } : {})
+                    }
+                }
+            };
+
+            // Send menu with verified badge
             await sock.sendMessage(chatJid, {
                 image: { url: currentImage },
                 caption: menuText,
@@ -129,8 +157,20 @@ registerCommand({
                         serverMessageId: 1
                     }
                 }
-            });
-            console.log("[MENU] ✅ Menu sent successfully!");
+            }, { quoted: officialContext });
+            console.log("[MENU] ✅ Menu sent with verified badge!");
+
+            // Send Menu Audio (non-blocking, skip if fails)
+            try {
+                await sock.sendMessage(chatJid, {
+                    audio: { url: "https://files.catbox.moe/if8sv8.mp3" },
+                    mimetype: "audio/mpeg",
+                    ptt: false
+                });
+                console.log("[MENU] ✅ Audio sent!");
+            } catch (audioErr) {
+                console.log("[MENU] Audio skipped (error)");
+            }
 
         } catch (error: any) {
             console.error("[MENU] ❌ Image menu failed:", error.message);
