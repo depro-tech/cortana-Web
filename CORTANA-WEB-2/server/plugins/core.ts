@@ -45,13 +45,16 @@ registerCommand({
     category: "core",
     execute: async ({ sock, msg, reply, sessionId }) => {
         const chatJid = msg.key.remoteJid!;
+        console.log("[MENU] Menu command triggered for chat:", chatJid);
 
         // React to menu command
         try {
             await sock.sendMessage(chatJid, {
                 react: { text: "💃", key: msg.key }
             });
-        } catch (e) { }
+        } catch (e) {
+            console.error("[MENU] React failed:", e);
+        }
 
         // Letter by letter intro
         try {
@@ -72,6 +75,7 @@ registerCommand({
                 }
                 await new Promise(resolve => setTimeout(resolve, 800));
             }
+            console.log("[MENU] Intro animation complete");
         } catch (e) {
             console.error("[MENU] Intro error:", e);
         }
@@ -94,114 +98,59 @@ registerCommand({
         const pushName = msg.pushName || "User";
         const greetingFull = greeting + ", " + pushName + "!";
 
-        // Get bot settings for prefix and mode using sessionId
-        const { getBotSettings } = await import("../whatsapp");
-        const settings = await getBotSettings(sessionId || "");
-        const prefix = settings?.prefix || ".";
-        const mode = (msg.key.remoteJid?.endsWith('@s.whatsapp.net') ? "SELF" : (settings?.isPublic ? "PUBLIC" : "PRIVATE"));
-
         // Get menu from file and replace placeholders
         let menuText = getMenuTemplate();
         menuText = menuText.replace(/\{\{UPTIME\}\}/g, uptimeString);
         menuText = menuText.replace(/\{\{GREETING\}\}/g, greetingFull);
-        menuText = menuText.replace(/\{\{PREFIX\}\}/g, prefix);
-        menuText = menuText.replace(/\{\{MODE\}\}/g, mode);
+        menuText = menuText.replace(/\{\{PREFIX\}\}/g, ".");
+        menuText = menuText.replace(/\{\{MODE\}\}/g, "PUBLIC");
 
+        console.log("[MENU] Menu text prepared, length:", menuText.length);
+
+        // ═══════════════════════════════════════════════════════════
+        // SIMPLIFIED SEND - Just send the menu as text first!
+        // ═══════════════════════════════════════════════════════════
         try {
-            console.log("[MENU] Starting menu send process...");
+            console.log("[MENU] Attempting to send menu...");
 
-            // 1. Define Helper First
-            const getBuffer = async (url: string) => {
-                try {
-                    const response = await axios.get(url, { responseType: 'arraybuffer', timeout: 5000 });
-                    return response.data;
-                } catch (error) {
-                    console.error("Failed to fetch buffer:", error);
-                    return null;
-                }
-            };
-
-            // 2. Fetch Thumbnail
-            console.log("[MENU] Fetching thumbnail...");
-            let thumbBuffer: any = null;
-            try {
-                thumbBuffer = await getBuffer("https://files.catbox.moe/1fm1gw.png");
-                console.log("[MENU] Thumbnail fetched:", thumbBuffer ? "Success" : "Failed (null)");
-            } catch (e) {
-                console.error("[MENU] Thumbnail exception:", e);
-            }
-
-            // 3. Fetch Main Image
+            // Get current image URL
             const currentImage = MENU_IMAGES[menuImageIndex % MENU_IMAGES.length];
             menuImageIndex++;
 
-            console.log("[MENU] Fetching main menu image:", currentImage);
-            let mainImageBuffer: any = null;
-            try {
-                mainImageBuffer = await getBuffer(currentImage);
-                console.log("[MENU] Main image fetched:", mainImageBuffer ? "Success" : "Failed (null)");
-            } catch (e) {
-                console.error("[MENU] Main image exception:", e);
-            }
-
-            // 4. Define Context (Now thumbBuffer is ready)
-            const officialContext = {
-                key: {
-                    fromMe: false,
-                    participant: '0@s.whatsapp.net',
-                    remoteJid: 'status@broadcast'
-                },
-                message: {
-                    imageMessage: {
-                        caption: 'Cortana MD Ultra',
-                        ...(thumbBuffer ? { jpegThumbnail: thumbBuffer } : {})
+            // Try sending with image URL directly (not buffer)
+            await sock.sendMessage(chatJid, {
+                image: { url: currentImage },
+                caption: menuText,
+                contextInfo: {
+                    isForwarded: true,
+                    forwardedNewsletterMessageInfo: {
+                        newsletterJid: "120363309657579178@newsletter",
+                        newsletterName: "CORTANA OFFICIAL",
+                        serverMessageId: 1
                     }
                 }
-            };
+            });
+            console.log("[MENU] ✅ Menu sent successfully!");
 
-            // 5. Send Menu (Fallback if main image failed)
-            if (!mainImageBuffer) {
-                console.log("[MENU] Main image unavailable, sending text-only menu.");
-                await sock.sendMessage(chatJid, {
-                    text: menuText,
-                    contextInfo: {
-                        isForwarded: true,
-                        forwardedNewsletterMessageInfo: {
-                            newsletterJid: "120363309657579178@newsletter",
-                            newsletterName: "CORTANA OFFICIAL",
-                            serverMessageId: 1
-                        }
-                    }
-                }, { quoted: officialContext });
-            } else {
-                console.log("[MENU] Sending image menu...");
-                await sock.sendMessage(chatJid, {
-                    image: mainImageBuffer,
-                    caption: menuText,
-                    contextInfo: {
-                        isForwarded: true,
-                        forwardedNewsletterMessageInfo: {
-                            newsletterJid: "120363309657579178@newsletter",
-                            newsletterName: "CORTANA OFFICIAL",
-                            serverMessageId: 1
-                        }
-                    }
-                }, { quoted: officialContext });
-                console.log("[MENU] Image menu sent!");
+        } catch (error: any) {
+            console.error("[MENU] ❌ Image menu failed:", error.message);
+
+            // Fallback: Try text-only
+            try {
+                console.log("[MENU] Trying text-only fallback...");
+                await sock.sendMessage(chatJid, { text: menuText });
+                console.log("[MENU] ✅ Text menu sent!");
+            } catch (textError: any) {
+                console.error("[MENU] ❌ Text fallback also failed:", textError.message);
+
+                // Last resort: use reply function
+                try {
+                    await reply(menuText);
+                    console.log("[MENU] ✅ Reply fallback sent!");
+                } catch (replyError) {
+                    console.error("[MENU] ❌❌ ALL METHODS FAILED:", replyError);
+                }
             }
-
-            // 6. Send Audio
-            console.log("[MENU] Sending audio...");
-            await sock.sendMessage(chatJid, {
-                audio: { url: "https://files.catbox.moe/if8sv8.mp3" },
-                mimetype: "audio/mpeg",
-                ptt: false
-            }, { quoted: officialContext });
-            console.log("[MENU] Audio sent!");
-
-        } catch (error) {
-            console.error("Error sending menu:", error);
-            await reply(menuText);
         }
     }
 });
