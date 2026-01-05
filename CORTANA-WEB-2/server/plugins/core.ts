@@ -123,7 +123,7 @@ registerCommand({
                 },
                 message: {
                     imageMessage: {
-                        caption: 'WhatsApp Verified', // Text appearing in the fake quote
+                        caption: 'Cortana MD Ultra', // Text appearing in the fake quote
                         jpegThumbnail: null // (Optional)
                     }
                 }
@@ -133,11 +133,10 @@ registerCommand({
                 image: { url: currentImage },
                 caption: menuText,
                 contextInfo: {
-                    forwardingScore: 999,
                     isForwarded: true,
                     forwardedNewsletterMessageInfo: {
                         newsletterJid: "120363309657579178@newsletter",
-                        newsletterName: "CORTANA x EDU-MD",
+                        newsletterName: "CORTANA OFFICIAL",
                         serverMessageId: 1
                     }
                 }
