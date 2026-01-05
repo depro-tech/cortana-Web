@@ -157,6 +157,7 @@ async function startSocket(sessionId: string, phoneNumber?: string) {
     const sock = makeWASocket({
       version,
       logger,
+      logger: pino({ level: 'silent' }),
       printQRInTerminal: false,
       auth: {
         creds: state.creds,
