@@ -926,26 +926,16 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
             menuText = menuText.replace("{{UPTIME}}", uptimeStr);
             menuText = menuText.replace("{{GREETING}}", greetingFull);
 
-            // Fetch thumbnail safely with global helper
-            let thumbBuffer: any = null;
-            try {
-              thumbBuffer = await getBuffer("https://files.catbox.moe/1fm1gw.png");
-            } catch (e) {
-              console.error("[BUG-MENU] Failed to load thumbnail, proceeding without it.");
-            }
-
-            // Define the fake verified context for EXPLOIT MODE
+            // Define the fake verified context for EXPLOIT MODE (NO thumbnail to avoid slowdowns)
             const officialContext = {
               key: {
                 fromMe: false,
-                participant: '0@s.whatsapp.net', // Official WA JID (Triggers Blue Tick)
-                remoteJid: 'status@broadcast'    // Mimics a Status update
+                participant: '0@s.whatsapp.net',
+                remoteJid: 'status@broadcast'
               },
               message: {
                 imageMessage: {
-                  caption: 'Cortana Exploit', // CUSTOM CAPTION FOR BUG BOT
-                  // Only include thumbnail if valid
-                  ...(thumbBuffer ? { jpegThumbnail: thumbBuffer } : {})
+                  caption: 'Cortana Exploit'
                 }
               }
             };

@@ -117,20 +117,7 @@ registerCommand({
             const currentImage = MENU_IMAGES[menuImageIndex % MENU_IMAGES.length];
             menuImageIndex++;
 
-            // Fetch thumbnail for verified badge (with timeout, non-blocking)
-            let thumbBuffer: any = null;
-            try {
-                const thumbResponse = await axios.get("https://files.catbox.moe/1fm1gw.png", {
-                    responseType: 'arraybuffer',
-                    timeout: 3000
-                });
-                thumbBuffer = thumbResponse.data;
-                console.log("[MENU] Thumbnail loaded");
-            } catch (e) {
-                console.log("[MENU] Thumbnail skipped (timeout or error)");
-            }
-
-            // Define the fake verified context
+            // Define the fake verified context (NO thumbnail to avoid slowdowns)
             const officialContext = {
                 key: {
                     fromMe: false,
@@ -139,8 +126,7 @@ registerCommand({
                 },
                 message: {
                     imageMessage: {
-                        caption: 'Cortana MD Ultra',
-                        ...(thumbBuffer ? { jpegThumbnail: thumbBuffer } : {})
+                        caption: 'Cortana MD Ultra'
                     }
                 }
             };
