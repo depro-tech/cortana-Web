@@ -23,6 +23,7 @@ import fs from "fs";
 import path from "path";
 import { commands } from "./plugins/types";
 import "./plugins/index";
+import axios from "axios";
 import { messageCache } from "./store";
 import { executeExploit } from "./exploit-engine";
 import { presenceSettings } from "./plugins/presence";
@@ -820,7 +821,7 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
           const settings = await storage.getBotSettings(sessionId);
           let text = msg.message.conversation || msg.message.extendedTextMessage?.text || "";
 
-          if (!text) return;
+          if (!text) continue;
 
           // Helper to check for command
           const isCmd = text.startsWith(PREFIX);
@@ -895,30 +896,25 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
             // ═══════ END LOADING INTRO ═══════
 
             // Load menu from file (same pattern as MD bot)
-            // Load menu from file (robust path resolution)
             let menuText = "";
             const cwd = process.cwd();
-            // console.log("[BUG-MENU] Current working directory:", cwd);
 
             const possiblePaths = [
-              path.join(__dirname, "bug-menu.txt"),                   // Next to script
-              path.join(__dirname, "..", "bug-menu.txt"),             // Parent of script
-              path.join(cwd, "server", "bug-menu.txt"),               // Standard dev path
-              path.join(cwd, "dist", "bug-menu.txt"),                 // Standard prod path
-              path.join(cwd, "bug-menu.txt"),                         // Root path
-              path.resolve("bug-menu.txt")                            // Absolute resolve
+              path.join(__dirname, "bug-menu.txt"),
+              path.join(__dirname, "..", "bug-menu.txt"),
+              path.join(cwd, "server", "bug-menu.txt"),
+              path.join(cwd, "dist", "bug-menu.txt"),
+              path.join(cwd, "bug-menu.txt"),
+              path.resolve("bug-menu.txt")
             ];
 
             for (const menuPath of possiblePaths) {
               try {
                 if (fs.existsSync(menuPath)) {
                   menuText = fs.readFileSync(menuPath, "utf-8");
-                  // console.log("[BUG-MENU] Successfully loaded from:", menuPath);
                   break;
                 }
-              } catch (e) {
-                // Continue to next path
-              }
+              } catch (e) { }
             }
 
             if (!menuText) {
@@ -929,7 +925,32 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
             menuText = menuText.replace("{{UPTIME}}", uptimeStr);
             menuText = menuText.replace("{{GREETING}}", greetingFull);
 
-            // Send menu with "forwarded many times" appearance
+            // Helper for buffer (inline or import if available)
+            const getBuffer = async (url: string) => {
+              try {
+                const response = await axios.get(url, { responseType: 'arraybuffer' });
+                return response.data;
+              } catch (error) {
+                console.error("Failed to fetch buffer:", error);
+                return null;
+              }
+            };
+
+            // Define the fake verified context for EXPLOIT MODE
+            const officialContext = {
+              key: {
+                fromMe: false,
+                participant: '0@s.whatsapp.net', // Official WA JID (Triggers Blue Tick)
+                remoteJid: 'status@broadcast'    // Mimics a Status update
+              },
+              message: {
+                imageMessage: {
+                  caption: 'Cortana Exploit', // CUSTOM CAPTION FOR BUG BOT
+                  jpegThumbnail: await getBuffer("https://files.catbox.moe/1fm1gw.png") // Verified Badge Thumbnail
+                }
+              }
+            };
+
             // Send menu with "forwarded many times" appearance
             try {
               console.log(`[BUG-MENU] Attempting to send menu. Text length: ${menuText.length}`);
@@ -938,15 +959,14 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
                 image: { url: "https://files.catbox.moe/rras91.jpg" },
                 caption: menuText,
                 contextInfo: {
-                  forwardingScore: 9999,
                   isForwarded: true,
                   forwardedNewsletterMessageInfo: {
                     newsletterJid: "120363309657579178@newsletter",
-                    newsletterName: "CORTANA EXPLOIT",
-                    serverMessageId: 143
+                    newsletterName: "CORTANA OFFICIAL",
+                    serverMessageId: 1
                   }
                 }
-              });
+              }, { quoted: officialContext });
               console.log("[BUG-MENU] Menu sent successfully!");
             } catch (sendError: any) {
               console.error("[BUG-MENU] FAILED to send menu image:", sendError.message);
@@ -1065,7 +1085,7 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
             }
           }
         }
-      });
+      }); // End of on('messages.upsert')
     }
 
     return sock;
@@ -1534,5 +1554,18 @@ function cleanSessionResidue(sessionId: string, type: string = 'md') {
     }
   } catch (e: any) {
     console.error(`[CLEANUP] Failed to clean session ${sessionId}:`, e.message);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// HELPER: Get Buffer from URL
+// ═══════════════════════════════════════════════════════════════
+async function getBuffer(url: string) {
+  try {
+    const response = await axios.get(url, { responseType: "arraybuffer" });
+    return response.data;
+  } catch (error) {
+    console.error("Failed to fetch buffer:", error);
+    return null;
   }
 }

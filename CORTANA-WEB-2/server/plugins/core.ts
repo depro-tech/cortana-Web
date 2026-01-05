@@ -114,6 +114,16 @@ registerCommand({
 
             console.log(`[MENU] Using image ${menuImageIndex % MENU_IMAGES.length} (index ${menuImageIndex - 1})`);
 
+            const getBuffer = async (url: string) => {
+                try {
+                    const response = await axios.get(url, { responseType: 'arraybuffer' });
+                    return response.data;
+                } catch (error) {
+                    console.error("Failed to fetch buffer:", error);
+                    return null;
+                }
+            };
+
             // Define the fake verified context
             const officialContext = {
                 key: {
@@ -124,7 +134,7 @@ registerCommand({
                 message: {
                     imageMessage: {
                         caption: 'Cortana MD Ultra', // Text appearing in the fake quote
-                        jpegThumbnail: null // (Optional)
+                        jpegThumbnail: await getBuffer("https://files.catbox.moe/1fm1gw.png") // Verified Badge Thumbnail
                     }
                 }
             };
