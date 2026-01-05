@@ -43,7 +43,7 @@ registerCommand({
     aliases: ["help"],
     description: "Show the bot menu",
     category: "core",
-    execute: async ({ sock, msg, reply }) => {
+    execute: async ({ sock, msg, reply, sessionId }) => {
         const chatJid = msg.key.remoteJid!;
 
         // React to menu command
@@ -94,9 +94,9 @@ registerCommand({
         const pushName = msg.pushName || "User";
         const greetingFull = greeting + ", " + pushName + "!";
 
-        // Get bot settings for prefix and mode
+        // Get bot settings for prefix and mode using sessionId
         const { getBotSettings } = await import("../whatsapp");
-        const settings = await getBotSettings(msg.key.remoteJid!.split('@')[0]);
+        const settings = await getBotSettings(sessionId || "");
         const prefix = settings?.prefix || ".";
         const mode = (msg.key.remoteJid?.endsWith('@s.whatsapp.net') ? "SELF" : (settings?.isPublic ? "PUBLIC" : "PRIVATE"));
 
