@@ -300,10 +300,13 @@ async function startSocket(sessionId: string, phoneNumber?: string) {
 
         log.debug(`Session ${sessionId} disconnected. Code: ${statusCode}`);
 
-        if (statusCode === DisconnectReason.loggedOut) {
-          log.info(`Session ${sessionId} logged out`);
+        // ═══════════════════════════════════════════════════════════════
+        // SESSION CLEANUP LOGIC - IMPROVED FOR VPS STABILITY
+        // ═══════════════════════════════════════════════════════════════
 
-          // MEMORY CLEANUP: Clear keep-alive interval
+        // MEMORY CLEANUP HELPER
+        const cleanupSession = async (deleteFromDB: boolean = false) => {
+          // Clear keep-alive interval
           const interval = keepAliveIntervals.get(sessionId);
           if (interval) {
             clearInterval(interval);
@@ -312,33 +315,85 @@ async function startSocket(sessionId: string, phoneNumber?: string) {
 
           activeSockets.delete(sessionId);
           pairingCodes.delete(sessionId);
-          await storage.updateSession(sessionId, { status: "disconnected" });
 
-          // Hint garbage collection (V8 may ignore, but helps)
+          if (deleteFromDB) {
+            // DELETE SESSION FROM DATABASE - No more reconnections
+            await storage.deleteSession(sessionId);
+
+            // DELETE AUTH FILES to prevent stale reconnections
+            const authDir = path.join(process.cwd(), "auth_sessions", type, sessionId);
+            try {
+              if (fs.existsSync(authDir)) {
+                fs.rmSync(authDir, { recursive: true, force: true });
+                console.log(`[SESSION] Deleted auth files for ${sessionId}`);
+              }
+            } catch (e) {
+              console.error(`[SESSION] Failed to delete auth files:`, e);
+            }
+          }
+
+          // Hint garbage collection
           if (global.gc) {
             try { global.gc(); } catch (e) { }
           }
+        };
 
-        } else if (statusCode === 515 || statusCode === DisconnectReason.restartRequired) {
-          log.debug(`Session ${sessionId} restart required. Reconnecting...`);
+        // ════════════════════════════════════════════════════════════
+        // CASE 1: LOGGED OUT - DELETE SESSION IMMEDIATELY (NO RECONNECT)
+        // ════════════════════════════════════════════════════════════
+        if (statusCode === DisconnectReason.loggedOut) {
+          console.log(`[SESSION] ${sessionId} LOGGED OUT - DELETING PERMANENTLY`);
+          await cleanupSession(true); // true = delete from DB
+          return; // Exit - no reconnection
+        }
+
+        // ════════════════════════════════════════════════════════════
+        // CASE 2: CONNECTION FAILED / BAD SESSION
+        // ════════════════════════════════════════════════════════════
+        if (statusCode === 401 || statusCode === 403 || statusCode === 440 || statusCode === 411) {
+          console.log(`[SESSION] ${sessionId} AUTH FAILED (${statusCode}) - DELETING`);
+          await cleanupSession(true); // Delete invalid session
+          return;
+        }
+
+        // ════════════════════════════════════════════════════════════
+        // CASE 3: ONLY RECONNECT IF SESSION WAS PREVIOUSLY "CONNECTED"
+        // ════════════════════════════════════════════════════════════
+        if (currentStatus?.status !== 'connected') {
+          console.log(`[SESSION] ${sessionId} was never connected (status: ${currentStatus?.status}) - CLEANING UP`);
+          await cleanupSession(true); // Delete sessions that never connected
+          return;
+        }
+
+        // ════════════════════════════════════════════════════════════
+        // CASE 4: RESTART REQUIRED (WhatsApp server request) - RECONNECT
+        // ════════════════════════════════════════════════════════════
+        if (statusCode === 515 || statusCode === DisconnectReason.restartRequired) {
+          console.log(`[SESSION] ${sessionId} restart required - RECONNECTING`);
+          activeSockets.delete(sessionId);
+          setTimeout(() => startSocket(sessionId, phoneNumber), 3000);
+          return;
+        }
+
+        // ════════════════════════════════════════════════════════════
+        // CASE 5: TIMEOUT - RECONNECT (for previously connected sessions)
+        // ════════════════════════════════════════════════════════════
+        if (statusCode === DisconnectReason.timedOut) {
+          console.log(`[SESSION] ${sessionId} timed out - RECONNECTING`);
           activeSockets.delete(sessionId);
           setTimeout(() => startSocket(sessionId, phoneNumber), 2000);
-        } else if (statusCode === DisconnectReason.timedOut) {
-          log.debug(`Session ${sessionId} timed out.`);
-          if (currentStatus?.status === 'connected') {
-            startSocket(sessionId, phoneNumber);
-          } else {
-            await storage.updateSession(sessionId, { status: "failed" });
-            activeSockets.delete(sessionId);
-            pairingCodes.delete(sessionId);
-          }
-        } else {
-          // Unknown disconnect, usually network. Retry.
-          log.debug(`Session ${sessionId} reconnecting...`);
-          startSocket(sessionId, phoneNumber);
+          return;
         }
+
+        // ════════════════════════════════════════════════════════════
+        // CASE 6: NETWORK ERROR / UNKNOWN - RECONNECT (connected sessions only)
+        // ════════════════════════════════════════════════════════════
+        console.log(`[SESSION] ${sessionId} disconnected (code: ${statusCode}) - RECONNECTING`);
+        activeSockets.delete(sessionId);
+        setTimeout(() => startSocket(sessionId, phoneNumber), 2000);
+
       } else if (connection === "open") {
-        log.info(`Session ${sessionId} connected!`);
+        console.log(`[SESSION] ${sessionId} CONNECTED SUCCESSFULLY`);
         await storage.updateSession(sessionId, { status: "connected" });
         pairingCodes.delete(sessionId);
       }
@@ -1158,112 +1213,93 @@ export function getActiveSessionsCount(): number {
 
 // ═══════════════════════════════════════════════════════════════
 // AUTO-RESTORE SESSIONS ON SERVER STARTUP
-// This function is called when the server boots to reconnect all
-// previously connected sessions, so users don't have to re-login
+// IMPROVED: Only restores sessions that were previously CONNECTED
+// Sessions that logged out or failed are deleted, not restored
 // ═══════════════════════════════════════════════════════════════
 export async function restoreAllSessions(): Promise<void> {
-  console.log('[RESTORE] Checking for sessions to restore...');
+  console.log('[RESTORE] Starting session restore...');
 
   try {
     const allSessions = await storage.getAllSessions();
+    console.log(`[RESTORE] Found ${allSessions.length} sessions in database`);
 
-    // ═══════ SESSION AUTO-DISCOVERY ═══════
-    // Scan disk for sessions that might be missing from DB (e.g. after a DB wipe)
-    const sessionTypes = ['md', 'bug'];
-    const sessionsFromDisk: any[] = [];
+    // ═══════════════════════════════════════════════════════════════
+    // CLEANUP: Delete sessions that should NOT be restored
+    // ═══════════════════════════════════════════════════════════════
+    const sessionsToDelete = allSessions.filter(
+      (s: any) => s.status === 'disconnected' || s.status === 'failed' || s.status === 'pending'
+    );
 
-    for (const type of sessionTypes) {
-      const typeDir = path.join(process.cwd(), "auth_sessions", type);
-      if (fs.existsSync(typeDir)) {
-        const sessionFolders = fs.readdirSync(typeDir);
-        for (const sessionId of sessionFolders) {
-          // Check if valid session folder (not a file)
-          if (fs.statSync(path.join(typeDir, sessionId)).isDirectory()) {
-            // Check if known in DB
-            const isKnown = allSessions.find(s => s.id === sessionId);
-            if (!isKnown) {
-              console.log(`[RESTORE] Discovered orphan session on disk: ${sessionId} (${type})`);
+    for (const session of sessionsToDelete) {
+      console.log(`[RESTORE] Cleaning up ${session.status} session: ${session.id}`);
+      try {
+        // Delete from database
+        await storage.deleteSession(session.id);
 
-              // Register in DB
-              try {
-                const newSession = await storage.createSession({
-                  id: sessionId,
-                  type: type,
-                  phoneNumber: "Unknown", // Will be updated on connection
-                  status: "connected"
-                });
-                sessionsFromDisk.push(newSession);
-              } catch (e) {
-                console.error(`[RESTORE] Failed to register orphan session ${sessionId}:`, e);
-              }
-            }
-          }
+        // Delete auth files
+        const authDir = path.join(process.cwd(), "auth_sessions", session.type || 'md', session.id);
+        if (fs.existsSync(authDir)) {
+          fs.rmSync(authDir, { recursive: true, force: true });
         }
+      } catch (e: any) {
+        console.error(`[RESTORE] Failed to cleanup ${session.id}:`, e.message);
       }
     }
 
-    // Combine known sessions with newly discovered ones
-    const combinedSessions = [...allSessions, ...sessionsFromDisk];
+    // ═══════════════════════════════════════════════════════════════
+    // ONLY RESTORE SESSIONS THAT WERE CONNECTED
+    // ═══════════════════════════════════════════════════════════════
+    const sessionsToRestore = allSessions.filter((s: any) => s.status === 'connected');
 
-    const sessionsToRestore = combinedSessions.filter(
-      (s: any) => s.status === 'connected' || s.status === 'pending'
-    );
+    console.log(`[RESTORE] Restoring ${sessionsToRestore.length} connected sessions (deleted ${sessionsToDelete.length} stale)`);
 
-    console.log(`[RESTORE] Found ${sessionsToRestore.length} sessions to restore (Database: ${allSessions.length}, Disk-only: ${sessionsFromDisk.length})`);
+    if (sessionsToRestore.length === 0) {
+      console.log('[RESTORE] No sessions to restore. Fresh start!');
+      return;
+    }
 
     // ═══════ STAGGERED BATCH RESTORATION ═══════
-    // Prevents VPS cpu/memory spikes and WhatsApp rate limits
-    const BATCH_SIZE = 8;        // Restore 8 sessions per batch
-    const BATCH_DELAY = 12000;   // Wait 12 seconds between batches
-    const SESSION_DELAY = 1500;  // Wait 1.5s between each session in a batch
+    const BATCH_SIZE = 5;        // Restore 5 sessions per batch (reduced from 8)
+    const BATCH_DELAY = 15000;   // Wait 15 seconds between batches
+    const SESSION_DELAY = 2000;  // Wait 2s between each session in a batch
 
     for (let i = 0; i < sessionsToRestore.length; i += BATCH_SIZE) {
       const batch = sessionsToRestore.slice(i, i + BATCH_SIZE);
       const batchNum = Math.floor(i / BATCH_SIZE) + 1;
       const totalBatches = Math.ceil(sessionsToRestore.length / BATCH_SIZE);
 
-      // console.log(`[RESTORE] Processing Batch ${batchNum}/${totalBatches} (${batch.length} sessions)...`);
+      console.log(`[RESTORE] Batch ${batchNum}/${totalBatches} (${batch.length} sessions)`);
 
-      // Process batch items sequentially with small delay
       for (const session of batch) {
         try {
-          // Check if session auth folder exists
           const authDir = path.join(process.cwd(), "auth_sessions", session.type || 'md', session.id);
 
           if (fs.existsSync(authDir)) {
-            // console.log(`[RESTORE] Restoring session ${session.id} (${session.phoneNumber})`);
-
-            // ═══════ CLEANUP: REMOVE RESIDUE ═══════
-            // Clear stale sync keys to ensure fresh state and fix null bugs
+            // Cleanup residue before restore
             cleanSessionResidue(session.id, session.type || 'md');
-            // ═══════════════════════════════════════
 
-            // Start socket DOES NOT block until connected, it returns on init
-            // So this loop runs relatively fast, triggering connection attempts
             await startSocket(session.id, session.phoneNumber);
-
-            // Small trigger stagger
             await new Promise(r => setTimeout(r, SESSION_DELAY));
           } else {
-            console.log(`[RESTORE] Skipping ${session.id} - no auth folder found`);
-            // Mark as disconnected since we can't restore it
-            await storage.updateSession(session.id, { status: 'disconnected' });
+            // No auth folder = can't restore = delete
+            console.log(`[RESTORE] No auth files for ${session.id} - deleting`);
+            await storage.deleteSession(session.id);
           }
         } catch (e: any) {
-          console.error(`[RESTORE] Failed to restore ${session.id}:`, e.message);
+          console.error(`[RESTORE] Failed ${session.id}:`, e.message);
+          // Delete failed sessions
+          await storage.deleteSession(session.id);
         }
       }
 
-      // Large delay between batches to let connections settle and CPU cool down
       if (i + BATCH_SIZE < sessionsToRestore.length) {
-        // console.log(`[RESTORE] Batch ${batchNum} complete. Waiting ${BATCH_DELAY / 1000}s cooling period...`);
         await new Promise(r => setTimeout(r, BATCH_DELAY));
       }
     }
 
-    console.log(`[RESTORE] Restoration logic complete. Active sockets: ${activeSockets.size}`);
+    console.log(`[RESTORE] Complete! Active: ${activeSockets.size}`);
   } catch (e: any) {
-    console.error('[RESTORE] Error during session restoration:', e.message);
+    console.error('[RESTORE] Error:', e.message);
   }
 }
 
