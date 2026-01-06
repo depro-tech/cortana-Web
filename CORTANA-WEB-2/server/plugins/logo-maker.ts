@@ -2,21 +2,61 @@ import { registerCommand } from "./types";
 import axios from "axios";
 
 // ═══════════════════════════════════════════════════════════════
-// LOGO MAKER - Generates stylized logo images using Raganork API
+// LOGO MAKER - Using BK9 API for reliable logo generation
 // ═══════════════════════════════════════════════════════════════
 
-const LOGO_API_BASE = "https://raganork-network.vercel.app/api/logo";
+const BK9_LOGO_API = "https://bk9.fun/maker/logo";
 
-// Helper to send image from URL
-async function sendLogoFromUrl(sock: any, jid: string, url: string, caption?: string) {
+interface LogoResult {
+    status: boolean;
+    url: string | null;
+    error?: string;
+}
+
+async function createLogo(category: string, style: number, text: string): Promise<LogoResult> {
     try {
-        const response = await axios.get(url, { responseType: 'arraybuffer', timeout: 15000 });
+        const apiUrl = `${BK9_LOGO_API}?category=${category}&style=${style}&text=${encodeURIComponent(text)}`;
+
+        const response = await axios.get(apiUrl, { timeout: 30000 });
+
+        if (response.data && response.data.BK9) {
+            return { status: true, url: response.data.BK9 };
+        }
+
+        if (response.data && response.data.result) {
+            return { status: true, url: response.data.result };
+        }
+
+        if (response.data && response.data.url) {
+            return { status: true, url: response.data.url };
+        }
+
+        // Fallback: try original Raganork API
+        const fallbackUrl = `https://raganork-network.vercel.app/api/logo/${category}?style=${style}&text=${encodeURIComponent(text)}`;
+        const fallbackResponse = await axios.get(fallbackUrl, { responseType: 'arraybuffer', timeout: 15000 });
+
+        if (fallbackResponse.data && fallbackResponse.data.length > 0) {
+            // Return a data URL for the buffer
+            return { status: true, url: fallbackUrl };
+        }
+
+        return { status: false, url: null, error: 'No image returned from API' };
+    } catch (error: any) {
+        console.error('[LOGO] API Error:', error.message);
+        return { status: false, url: null, error: error.message };
+    }
+}
+
+// Helper to send image from URL with retry
+async function sendLogoImage(sock: any, jid: string, url: string, caption?: string) {
+    try {
+        const response = await axios.get(url, { responseType: 'arraybuffer', timeout: 20000 });
         await sock.sendMessage(jid, {
             image: response.data,
             caption: caption || ''
         });
     } catch (e: any) {
-        console.error('[LOGO] Failed to send logo:', e.message);
+        console.error('[LOGO] Failed to send image:', e.message);
         throw e;
     }
 }
@@ -118,13 +158,17 @@ for (const logo of LOGO_STYLES) {
 
             await reply(`⏳ Generating ${logo.desc}...`);
 
-            const apiUrl = `${LOGO_API_BASE}/${logo.category}?style=${logo.style}&text=${encodeURIComponent(text)}`;
+            const result = await createLogo(logo.category, logo.style, text);
 
-            try {
-                const jid = msg.key.remoteJid!;
-                await sendLogoFromUrl(sock, jid, apiUrl, `✨ ${logo.desc}`);
-            } catch (error: any) {
-                await reply(`❌ Failed to generate logo: ${error.message || 'Unknown error'}`);
+            if (result.status && result.url) {
+                try {
+                    const jid = msg.key.remoteJid!;
+                    await sendLogoImage(sock, jid, result.url, `✨ ${logo.desc}`);
+                } catch (error: any) {
+                    await reply(`❌ Failed to send logo: ${error.message}`);
+                }
+            } else {
+                await reply(`❌ Failed to generate logo: ${result.error || 'API unavailable'}\n\n_Try again or use a different style._`);
             }
         }
     });

@@ -11,13 +11,14 @@ export class MessageCache {
     private readonly ttlMs: number; // Time-to-live in milliseconds
     private cleanupInterval: NodeJS.Timeout | null = null;
 
-    constructor(maxSize: number = 500, ttlMs: number = 300000) { // 500 msgs, 5 min TTL
+    // OPTIMIZED FOR VPS: 200 msgs (was 500), 2 min TTL (was 5)
+    constructor(maxSize: number = 200, ttlMs: number = 120000) {
         this.cache = new Map();
         this.maxSize = maxSize;
         this.ttlMs = ttlMs;
 
-        // Auto-cleanup expired messages every 60 seconds
-        this.cleanupInterval = setInterval(() => this.cleanup(), 60000);
+        // Auto-cleanup expired messages every 30 seconds (was 60)
+        this.cleanupInterval = setInterval(() => this.cleanup(), 30000);
     }
 
     public add(key: string, message: proto.IWebMessageInfo) {

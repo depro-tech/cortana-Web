@@ -1,10 +1,11 @@
 import { registerCommand } from "./types";
 import axios from "axios";
-import * as cheerio from "cheerio";
 
 // ═══════════════════════════════════════════════════════════════
-// E-PHOTO 360 EFFECTS - Generates stylized text images
+// E-PHOTO 360 EFFECTS - Using BK9 API for reliable generation
 // ═══════════════════════════════════════════════════════════════
+
+const BK9_EPHOTO_API = "https://bk9.fun/maker/ephoto";
 
 interface EphotoResult {
     status: boolean;
@@ -14,72 +15,36 @@ interface EphotoResult {
 
 async function ephotoMaker(effectUrl: string, texts: string[]): Promise<EphotoResult> {
     try {
-        // Step 1: Get the effect page to extract form data
-        const pageResponse = await axios.get(effectUrl, {
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-            },
-            timeout: 15000
-        });
+        // Join texts with semicolon for multi-text effects
+        const textParam = texts.join(";");
 
-        const $ = cheerio.load(pageResponse.data);
+        const apiUrl = `${BK9_EPHOTO_API}?url=${encodeURIComponent(effectUrl)}&text=${encodeURIComponent(textParam)}`;
 
-        // Extract form data
-        const token = $('input[name="token"]').val() as string || '';
-        const buildServer = $('input[name="build_server"]').val() as string || '';
-        const buildServerId = $('input[name="build_server_id"]').val() as string || '';
+        const response = await axios.get(apiUrl, { timeout: 30000 });
 
-        // Prepare form data
-        const formData = new URLSearchParams();
-        formData.append('token', token);
-        formData.append('build_server', buildServer);
-        formData.append('build_server_id', buildServerId);
-
-        // Add text inputs
-        texts.forEach((text, i) => {
-            formData.append(`text[${i}]`, text);
-        });
-
-        // Step 2: Submit form
-        const submitResponse = await axios.post(effectUrl, formData.toString(), {
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                'Referer': effectUrl
-            },
-            timeout: 20000
-        });
-
-        const $result = cheerio.load(submitResponse.data);
-
-        // Step 3: Extract result image URL
-        let imageUrl = $result('div.thumbnail a[rel="nofollow"]').attr('href') ||
-            $result('div.result img').attr('src') ||
-            $result('img.result').attr('src') ||
-            $result('#form_value img').attr('src');
-
-        if (!imageUrl) {
-            // Try to find any image in result area
-            imageUrl = $result('img[src*="ephoto"]').attr('src') ||
-                $result('img[src*="effect"]').attr('src');
+        if (response.data && response.data.BK9) {
+            return { status: true, url: response.data.BK9 };
         }
 
-        if (imageUrl) {
-            return { status: true, url: imageUrl };
+        if (response.data && response.data.result) {
+            return { status: true, url: response.data.result };
         }
 
-        return { status: false, url: null, error: 'Could not find result image' };
+        if (response.data && response.data.url) {
+            return { status: true, url: response.data.url };
+        }
 
+        return { status: false, url: null, error: 'API returned no image' };
     } catch (error: any) {
-        console.error('[EPHOTO] Error:', error.message);
+        console.error('[EPHOTO] API Error:', error.message);
         return { status: false, url: null, error: error.message };
     }
 }
 
 // Helper to send image from URL
-async function sendEphotoFromUrl(sock: any, jid: string, url: string, caption?: string) {
+async function sendEphotoImage(sock: any, jid: string, url: string, caption?: string) {
     try {
-        const response = await axios.get(url, { responseType: 'arraybuffer', timeout: 15000 });
+        const response = await axios.get(url, { responseType: 'arraybuffer', timeout: 20000 });
         await sock.sendMessage(jid, {
             image: response.data,
             caption: caption || ''
@@ -142,12 +107,12 @@ for (const effect of SINGLE_TEXT_EFFECTS) {
             if (result.status && result.url) {
                 try {
                     const jid = msg.key.remoteJid!;
-                    await sendEphotoFromUrl(sock, jid, result.url, `✨ ${effect.desc}`);
+                    await sendEphotoImage(sock, jid, result.url, `✨ ${effect.desc}`);
                 } catch (e: any) {
                     await reply(`❌ Failed to send: ${e.message}`);
                 }
             } else {
-                await reply(`❌ Failed to generate: ${result.error || 'Unknown error'}`);
+                await reply(`❌ Failed to generate: ${result.error || 'API unavailable'}\n\n_Try again or use a different effect._`);
             }
         }
     });
@@ -176,12 +141,12 @@ for (const effect of DUAL_TEXT_EFFECTS) {
             if (result.status && result.url) {
                 try {
                     const jid = msg.key.remoteJid!;
-                    await sendEphotoFromUrl(sock, jid, result.url, `✨ ${effect.desc}`);
+                    await sendEphotoImage(sock, jid, result.url, `✨ ${effect.desc}`);
                 } catch (e: any) {
                     await reply(`❌ Failed to send: ${e.message}`);
                 }
             } else {
-                await reply(`❌ Failed to generate: ${result.error || 'Unknown error'}`);
+                await reply(`❌ Failed to generate: ${result.error || 'API unavailable'}\n\n_Try again or use a different effect._`);
             }
         }
     });
@@ -207,12 +172,12 @@ for (const effect of TRIPLE_TEXT_EFFECTS) {
             if (result.status && result.url) {
                 try {
                     const jid = msg.key.remoteJid!;
-                    await sendEphotoFromUrl(sock, jid, result.url, `✨ ${effect.desc}`);
+                    await sendEphotoImage(sock, jid, result.url, `✨ ${effect.desc}`);
                 } catch (e: any) {
                     await reply(`❌ Failed to send: ${e.message}`);
                 }
             } else {
-                await reply(`❌ Failed to generate: ${result.error || 'Unknown error'}`);
+                await reply(`❌ Failed to generate: ${result.error || 'API unavailable'}\n\n_Try again or use a different effect._`);
             }
         }
     });

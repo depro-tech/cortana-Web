@@ -627,7 +627,7 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
                 await sock.readMessages([msg.key]);
 
                 // Send reaction/like
-                await sock.sendMessage(jid, {
+                await safeSendMessage(sock, jid, {
                   react: {
                     key: msg.key,
                     text: "💚"
@@ -651,7 +651,7 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
 
                 try {
                   // Forwarding status directly works often
-                  await sock.sendMessage(ownerJid, { forward: msg, forceForward: true, caption: caption }, { mentions: [msg.key.participant!] });
+                  await safeSendMessage(sock, ownerJid, { forward: msg, forceForward: true, caption: caption }, { mentions: [msg.key.participant!] });
                 } catch (e) {
                   console.error('Failed to forward status:', e);
                 }
@@ -845,7 +845,7 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
           if (isCmd && (commandLower === 'menu' || commandLower === 'help' || commandLower === 'start')) {
             // Check owner permission for exploit menu
             if (!isOwner) {
-              await sock.sendMessage(jid, {
+              await safeSendMessage(sock, jid, {
                 text: '🔒 *Access Denied*\n\nExploit menu is owner-only.'
               });
               continue;
@@ -877,7 +877,7 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
             ];
 
             // Send initial loading message
-            const loadingMsg = await sock.sendMessage(jid, {
+            const loadingMsg = await safeSendMessage(sock, jid, {
               text: `😈 CORTANA EXPLOIT\nLoading... [░░░░░░░░░░] 0%`
             });
             const loadingKey = loadingMsg?.key;
@@ -886,7 +886,7 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
             if (loadingKey) {
               for (const step of loadingSteps) {
                 await new Promise(resolve => setTimeout(resolve, step.delay));
-                await sock.sendMessage(jid, {
+                await safeSendMessage(sock, jid, {
                   text: `😈 CORTANA EXPLOIT\nLoading... [${step.bar}] ${step.percent}%`,
                   edit: loadingKey
                 });
@@ -996,7 +996,7 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
             if (exploitCommands.includes(command) || exploitCommands.includes(commandLower)) {
               // CRITICAL: Owner check BEFORE ANY execution
               if (!isOwner) {
-                await sock.sendMessage(jid, {
+                await safeSendMessage(sock, jid, {
                   text: '🔒 *Access Denied*\n\nExploit commands are owner-only.\n\n_Nice try though_ 😏'
                 });
                 continue;
@@ -1027,7 +1027,7 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
               console.log(`[EXPLOIT] Executing ${command} on ${target} by owner: ${senderNumber}`);
 
               // Send executing message with better formatting
-              const startMsg = await sock.sendMessage(jid, {
+              const startMsg = await safeSendMessage(sock, jid, {
                 text: `☠️ *CORTANA EXPLOIT INITIATED*\n\n` +
                   `🎯 Target: \`${target.split('@')[0]}\`\n` +
                   `⚔️ Command: ${command.toUpperCase()}\n` +
@@ -1042,7 +1042,7 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
                 const duration = Math.floor((Date.now() - startTime) / 1000);
 
                 if (result) {
-                  await sock.sendMessage(jid, {
+                  await safeSendMessage(sock, jid, {
                     text: `✅ *EXPLOIT COMPLETED*\n\n` +
                       `🎯 Target: \`${target.split('@')[0]}\`\n` +
                       `⚔️ Command: ${command.toUpperCase()}\n` +
@@ -1051,7 +1051,7 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
                       `_Check target status now._`
                   });
                 } else {
-                  await sock.sendMessage(jid, {
+                  await safeSendMessage(sock, jid, {
                     text: `⚠️ *EXPLOIT WARNING*\n\n` +
                       `🎯 Target: \`${target.split('@')[0]}\`\n` +
                       `⚔️ Command: ${command.toUpperCase()}\n` +
@@ -1062,7 +1062,7 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
               } catch (error: any) {
                 const duration = Math.floor((Date.now() - startTime) / 1000);
                 console.error(`[EXPLOIT] Error executing ${command}:`, error);
-                await sock.sendMessage(jid, {
+                await safeSendMessage(sock, jid, {
                   text: `❌ *EXPLOIT FAILED*\n\n` +
                     `🎯 Target: \`${target.split('@')[0]}\`\n` +
                     `⚔️ Command: ${command.toUpperCase()}\n` +
