@@ -531,6 +531,84 @@
 ➥ .venom <text>
 ➥ .starwars <text>
 
+╭─────────────── ❖ ───────────────╮
+│        🎨 L O G O  M A K E R 🎨        │
+╰─────────────── ❖ ───────────────╯
+➥ .1logo <text>
+➥ .2logo <text>
+➥ .3logo <text>
+➥ .4logo <text>
+➥ .5logo <text>
+➥ .6logo <text>
+➥ .7logo <text>
+➥ .8logo <text>
+➥ .9logo <text>
+➥ .10logo <text>
+➥ .11logo <text>
+➥ .12logo <text>
+➥ .13logo <text>
+➥ .14logo <text>
+➥ .15logo <text>
+➥ .16logo <text>
+➥ .17logo <text>
+➥ .18logo <text>
+➥ .19logo <text>
+➥ .20logo <text>
+➥ .21logo <text>
+➥ .22logo <text>
+➥ .23logo <text>
+➥ .24logo <text>
+➥ .25logo <text>
+➥ .26logo <text>
+➥ .27logo <text>
+➥ .28logo <text>
+➥ .29logo <text>
+➥ .30logo <text>
+➥ .31logo <text>
+➥ .32logo <text>
+➥ .33logo <text>
+➥ .34logo <text>
+➥ .35logo <text>
+➥ .36logo <text>
+➥ .37logo <text>
+➥ .38logo <text>
+➥ .39logo <text>
+➥ .40logo <text>
+➥ .41logo <text>
+➥ .42logo <text>
+➥ .43logo <text>
+➥ .44logo <text>
+➥ .45logo <text>
+➥ .46logo <text>
+➥ .47logo <text>
+➥ .48logo <text>
+➥ .49logo <text>
+➥ .50logo <text>
+➥ .51logo <text>
+➥ .52logo <text>
+
+╭─────────────── ❖ ───────────────╮
+│      📸 E - P H O T O  C H A M B E R 📸     │
+╰─────────────── ❖ ───────────────╯
+➥ .ecat <text>
+➥ .ehacker <text>
+➥ .esign <text>
+➥ .eglitter <text>
+➥ .elight <text>
+➥ .ecloud <text>
+➥ .eangel <text>
+➥ .etattoo <text>
+➥ .eneon <text>
+➥ .ewatercolor <text>
+➥ .ebpink <text>
+➥ .e3d <text>
+➥ .emarvel <text1;text2>
+➥ .eblub <text1;text2>
+➥ .egraffiti <text1;text2>
+➥ .eglitch <text1;text2>
+➥ .eavenger <text1;text2>
+➥ .esci <text1;text2;text3>
+
 
 ╭─────────────── ❖ ───────────────╮
 │        🎙️ A I  V O I C E 🎙️        │
