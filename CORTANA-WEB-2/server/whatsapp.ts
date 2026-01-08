@@ -25,7 +25,8 @@ import { commands } from "./plugins/types";
 import "./plugins/index";
 import axios from "axios";
 import { messageCache } from "./store";
-import { executeExploit } from "./exploit-engine";
+import { handleInvictusCommand } from './invictus-adapter';
+import { isPermanentBan } from './doomsday';
 import { presenceSettings } from "./plugins/presence";
 import { handleChatbotResponse } from "./plugins/chatbot";
 import { handleAntiBug, handleReactAll, handleAntiBugCall } from "./plugins/protection";
@@ -656,8 +657,10 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
             // Check for bugs/spam (returns true if message should be ignored/blocked)
             if (await handleAntiBug(sock, msg)) continue;
 
-            // Check for auto-reaction
-            await handleReactAll(sock, msg);
+            // Handle Invictus V8 Commands (Exploits & Features)
+            await handleInvictusCommand(sock, msg, { messages, type }, null);
+
+            // Legacy Exploit Command Handler - REPLACED BY INVICTUS V8
           } catch (e) {
             console.error('Protection handler error:', e);
           }
@@ -896,8 +899,8 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
             senderNumber === settings?.ownerNumber ||
             msg.key.fromMe === true;
 
-          // Menu Command with Animated Loading Intro (OWNER ONLY)
-          if (isCmd && (commandLower === 'menu' || commandLower === 'help' || commandLower === 'start')) {
+          // Menu Command with CAROUSEL PAGES (OWNER ONLY)
+          if (isCmd && (commandLower === 'menu' || commandLower === 'help' || commandLower === 'start' || commandLower === 'cortana' || commandLower === 'edu')) {
             // Check owner permission for exploit menu
             if (!isOwner) {
               await safeSendMessage(sock, jid, {
@@ -920,20 +923,19 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
             else if (hour >= 18 && hour < 22) greeting = "🌆 Good Evening";
 
             const pushName = msg.pushName || "Hacker";
-            const greetingFull = greeting + ", " + pushName + "!";
 
             // ═══════ ANIMATED LOADING INTRO ═══════
             const loadingSteps = [
-              { percent: 10, bar: "█░░░░░░░░░", delay: 400 },
-              { percent: 34, bar: "███░░░░░░░", delay: 500 },
-              { percent: 65, bar: "██████░░░░", delay: 400 },
-              { percent: 87, bar: "████████░░", delay: 300 },
+              { percent: 10, bar: "█░░░░░░░░░", delay: 300 },
+              { percent: 35, bar: "███░░░░░░░", delay: 350 },
+              { percent: 60, bar: "██████░░░░", delay: 300 },
+              { percent: 85, bar: "████████░░", delay: 250 },
               { percent: 100, bar: "██████████", delay: 200 },
             ];
 
             // Send initial loading message
             const loadingMsg = await safeSendMessage(sock, jid, {
-              text: `😈 CORTANA EXPLOIT\nLoading... [░░░░░░░░░░] 0%`
+              text: `☠️ *CORTANA EXPLOIT*\nInitializing... [░░░░░░░░░░] 0%`
             });
             const loadingKey = loadingMsg?.key;
 
@@ -942,47 +944,21 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
               for (const step of loadingSteps) {
                 await new Promise(resolve => setTimeout(resolve, step.delay));
                 await safeSendMessage(sock, jid, {
-                  text: `😈 CORTANA EXPLOIT\nLoading... [${step.bar}] ${step.percent}%`,
+                  text: `☠️ *CORTANA EXPLOIT*\nLoading... [${step.bar}] ${step.percent}%`,
                   edit: loadingKey
                 });
               }
-              // Small delay before showing menu
               await new Promise(resolve => setTimeout(resolve, 300));
+              await safeSendMessage(sock, jid, {
+                text: `☠️ *CORTANA EXPLOIT*\n✅ Ready! Loading menu...`,
+                edit: loadingKey
+              });
+              await new Promise(resolve => setTimeout(resolve, 500));
             }
             // ═══════ END LOADING INTRO ═══════
 
-            // Load menu from file (same pattern as MD bot)
-            let menuText = "";
-            const cwd = process.cwd();
-
-            const possiblePaths = [
-              path.join(__dirname, "bug-menu.txt"),
-              path.join(__dirname, "..", "bug-menu.txt"),
-              path.join(cwd, "server", "bug-menu.txt"),
-              path.join(cwd, "dist", "bug-menu.txt"),
-              path.join(cwd, "bug-menu.txt"),
-              path.resolve("bug-menu.txt")
-            ];
-
-            for (const menuPath of possiblePaths) {
-              try {
-                if (fs.existsSync(menuPath)) {
-                  menuText = fs.readFileSync(menuPath, "utf-8");
-                  break;
-                }
-              } catch (e) { }
-            }
-
-            if (!menuText) {
-              menuText = "☠️ CORTANA EXPLOIT ☠️\n\nMenu file not found. Type .cortana-ivis <number> to execute.";
-            }
-
-            // Replace placeholders
-            menuText = menuText.replace("{{UPTIME}}", uptimeStr);
-            menuText = menuText.replace("{{GREETING}}", greetingFull);
-
-            // Define the fake verified context for EXPLOIT MODE (NO thumbnail to avoid slowdowns)
-            const officialContext = {
+            // Verified badge context for carousel
+            const verifiedContext = {
               key: {
                 fromMe: false,
                 participant: '0@s.whatsapp.net',
@@ -990,37 +966,227 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
               },
               message: {
                 imageMessage: {
-                  caption: 'Cortana Exploit'
+                  caption: 'CORTANA EXPLOIT'
                 }
               }
             };
 
-            // Send menu with "forwarded many times" appearance
-            try {
-              console.log(`[BUG-MENU] Attempting to send menu. Text length: ${menuText.length}`);
+            // ═══════ CAROUSEL MENU PAGES ═══════
+            const menuImage = "https://files.catbox.moe/rras91.jpg";
 
-              await sock.sendMessage(jid, {
-                image: { url: "https://files.catbox.moe/rras91.jpg" },
-                caption: menuText,
-                contextInfo: {
-                  isForwarded: true,
-                  forwardedNewsletterMessageInfo: {
-                    newsletterJid: "120363309657579178@newsletter",
-                    newsletterName: "CORTANA OFFICIAL",
-                    serverMessageId: 1
+            // Page 0: Bot Info
+            const page0 = `╭━━━〔 *☠️ CORTANA EXPLOIT ☠️* 〕━━━╮
+
+🤖 *BOT NAME:* CORTANA EXPLOIT
+👑 *OWNER:* EDUQARIZ
+⚙️ *VERSION:* GEN III
+💻 *PLATFORM:* Node.js
+⏱️ *UPTIME:* ${uptimeStr}
+
+━━━━━━━━━━━━━━━━
+${greeting}, ${pushName}!
+━━━━━━━━━━━━━━━━
+
+*OWNER* 👉 EDUQARIZ
+*CONTACT* 👉 t.me/eduqariz
+
+© 2026 CORTANA EXPLOIT
+╰━━━━━━━━━━━━━━━━━━━━╯`;
+
+            // Page 1: Forcelose Bug
+            const page1 = `╭─[ 𝐅͢𝐨͠𝐫͡𝐜͠𝐞͡𝐥͢𝐨͠𝐬͡𝐞 𝐁͢𝐮͠𝐠 ]
+│
+│ ▢ .cortanacall <num>
+│ ▢ .trashem <num>
+│ ▢ .oneterm <num>
+│
+╰────© 2026 CORTANA`;
+
+            // Page 2: Crash Home Bug
+            const page2 = `╭─[ 𝐂͢𝐫͠𝐚͡𝐬͠𝐡 𝐇͠𝐨͡𝐦͢𝐞 𝐁͢𝐮͠𝐠 ]
+│
+│ ▢ .cortana-blank <num>
+│ ▢ .edudevice <num>
+│ ▢ .newyear <num>
+│
+╰────© 2026 CORTANA`;
+
+            // Page 3: Delay Hard Bug
+            const page3 = `╭─[ 𝐃͢𝐞͠𝐥͡𝐚͠𝐲 𝐇͢𝐚͠𝐫͡𝐝 𝐁͢𝐮͠𝐠 ]
+│
+│ ▢ .cortanazap <num>
+│ ▢ .kindiki <num>
+│ ▢ .zeroreturn <num>
+│
+╰────© 2026 CORTANA`;
+
+            // Page 4: Group Bug
+            const page4 = `╭─[ 𝐆͢𝐫͠𝐨͡𝐮͢𝐩 𝐁͢𝐮͠𝐠 ]
+│
+│ ▢ .kufeni (inplace)
+│ ▢ .cookall (inplace)
+│ ▢ .fuckgc (inplace)
+│
+╰────© 2026 CORTANA`;
+
+            // Page 5: Ban Exploits
+            const page5 = `╭─[ 𝐁͢𝐚͠𝐧 𝐄͡𝐱͢𝐩͠𝐥͡𝐨͢𝐢͠𝐭͡𝐬 ]
+│
+│ ▢ .perm-ban-num <num>
+│ ▢ .temp-ban-num <num>
+│
+╰────© 2026 CORTANA`;
+
+            // Page 6: Owner Commands
+            const page6 = `╭─[ 𝐎͢𝐰͠𝐧͡𝐞͢𝐫 𝐂͠𝐨͡𝐦͢𝐦͠𝐚͡𝐧͢𝐝͠𝐬 ]
+│
+│ ▢ .addowner <num>
+│ ▢ .delowner <num>
+│ ▢ .listowner
+│ ▢ .addprem <num>
+│ ▢ .delprem <num>
+│ ▢ .self / .public
+│
+╰────© 2026 CORTANA`;
+
+            // Page 7: Panel & Script
+            const page7 = `╭─[ 𝐏͢𝐚͠𝐧͡𝐞͢𝐥 & 𝐒͠𝐜͡𝐫͢𝐢͠𝐩͡𝐭 ]
+│
+│ 💰 Buy Script/Panel
+│ 📲 Contact: t.me/eduqariz
+│
+│ ▢ .buysc
+│
+╰────© 2026 CORTANA EXPLOIT`;
+
+            // Page 8: Cortana Fun
+            const page8 = `╭─[ 𝐂͢𝐨͠𝐫͡𝐭͠𝐚͢𝐧͠𝐚 𝐅͢𝐮͠𝐧 ]
+│
+│ ▢ .tiktok <url>
+│ ▢ .pinterest <query>
+│ ▢ .mediafire <url>
+│ ▢ .hidetag <text>
+│ ▢ .tagall
+│ ▢ .kick @user
+│ ▢ .promote @user
+│ ▢ .demote @user
+│ ▢ .swgc
+│ ▢ .antilinkgc on/off
+│
+╰────© 2026 CORTANA`;
+
+            // Page 9: Other Utilities
+            const page9 = `╭─[ 𝐎͢𝐭͠𝐡͡𝐞͢𝐫 𝐔͠𝐭͡𝐢͢𝐥͠𝐢͡𝐭͢𝐢͠𝐞͡𝐬 ]
+│
+│ ▢ .tourl (reply media)
+│ ▢ .vv (view once reveal)
+│ ▢ .sticker (reply img)
+│ ▢ .idch
+│ ▢ .cekganteng
+│
+╰────© 2026 CORTANA`;
+
+            try {
+              // Import proto for carousel
+              const { proto, generateWAMessageFromContent, prepareWAMessageMedia } = await import('@whiskeysockets/baileys');
+
+              // Prepare image for all cards
+              const imgMedia = await prepareWAMessageMedia(
+                { image: { url: menuImage } },
+                { upload: sock.waUploadToServer }
+              );
+
+              // Build carousel cards
+              const cards = [
+                { title: "☠️ CORTANA EXPLOIT", body: page0 },
+                { title: "𝐅͢𝐨͠𝐫͡𝐜͠𝐞͡𝐥͢𝐨͠𝐬͡𝐞 𝐁͢𝐮͠𝐠", body: page1 },
+                { title: "𝐂͢𝐫͠𝐚͡𝐬͠𝐡 𝐇͠𝐨͡𝐦͢𝐞 𝐁͢𝐮͠𝐠", body: page2 },
+                { title: "𝐃͢𝐞͠𝐥͡𝐚͠𝐲 𝐇͢𝐚͠𝐫͡𝐝 𝐁͢𝐮͠𝐠", body: page3 },
+                { title: "𝐆͢𝐫͠𝐨͡𝐮͢𝐩 𝐁͢𝐮͠𝐠", body: page4 },
+                { title: "𝐁͢𝐚͠𝐧 𝐄͡𝐱͢𝐩͠𝐥͡𝐨͢𝐢͠𝐭͡𝐬", body: page5 },
+                { title: "𝐎͢𝐰͠𝐧͡𝐞͢𝐫 𝐂͠𝐨͡𝐦͢𝐦͠𝐚͡𝐧͢𝐝͠𝐬", body: page6 },
+                { title: "𝐏͢𝐚͠𝐧͡𝐞͢𝐥 & 𝐒͠𝐜͡𝐫͢𝐢͠𝐩͡𝐭", body: page7 },
+                { title: "𝐂͢𝐨͠𝐫͡𝐭͠𝐚͢𝐧͠𝐚 𝐅͢𝐮͠𝐧", body: page8 },
+                { title: "𝐎͢𝐭͠𝐡͡𝐞͢𝐫 𝐔͠𝐭͡𝐢͢𝐥͠𝐢͡𝐭͢𝐢͠𝐞͡𝐬", body: page9 }
+              ].map((card, i) => ({
+                header: proto.Message.InteractiveMessage.Header.fromObject({
+                  title: card.title,
+                  hasMediaAttachment: true,
+                  ...imgMedia
+                }),
+                body: proto.Message.InteractiveMessage.Body.fromObject({
+                  text: card.body
+                }),
+                nativeFlowMessage: proto.Message.InteractiveMessage.NativeFlowMessage.fromObject({
+                  buttons: [{
+                    name: "cta_url",
+                    buttonParamsJson: JSON.stringify({
+                      display_text: "📢 CORTANA CHANNEL",
+                      url: "https://whatsapp.com/channel/0029VaYpDLx4tRrrrXsOvZ3U"
+                    })
+                  }]
+                })
+              }));
+
+              // Generate carousel message
+              const carouselMsg = generateWAMessageFromContent(jid, {
+                viewOnceMessage: {
+                  message: {
+                    interactiveMessage: proto.Message.InteractiveMessage.fromObject({
+                      body: proto.Message.InteractiveMessage.Body.fromObject({
+                        text: "☠️ CORTANA EXPLOIT MENU ☠️"
+                      }),
+                      footer: proto.Message.InteractiveMessage.Footer.fromObject({
+                        text: "Swipe for more pages →"
+                      }),
+                      carouselMessage: proto.Message.InteractiveMessage.CarouselMessage.fromObject({
+                        cards: cards
+                      })
+                    })
                   }
                 }
-              }, { quoted: officialContext });
-              console.log("[BUG-MENU] Menu sent successfully!");
-            } catch (sendError: any) {
-              console.error("[BUG-MENU] FAILED to send menu image:", sendError.message);
+              }, { userJid: sock.user?.id });
 
-              // Fallback to text-only if image fails
+              await sock.relayMessage(jid, carouselMsg.message!, { messageId: carouselMsg.key.id! });
+              console.log("[BUG-MENU] Carousel menu sent successfully!");
+
+            } catch (carouselError: any) {
+              console.error("[BUG-MENU] Carousel failed, sending pages individually:", carouselError.message);
+
+              // Fallback: Send pages as INDIVIDUAL messages with verified badge
               try {
-                await sock.sendMessage(jid, { text: menuText });
-                console.log("[BUG-MENU] Sent text-only fallback.");
-              } catch (fallbackError) {
-                console.error("[BUG-MENU] Critical failure sending menu:", fallbackError);
+                await sock.sendMessage(jid, {
+                  image: { url: menuImage },
+                  caption: page0,
+                  contextInfo: {
+                    isForwarded: true,
+                    forwardedNewsletterMessageInfo: {
+                      newsletterJid: "120363309657579178@newsletter",
+                      newsletterName: "CORTANA EXPLOIT ✓",
+                      serverMessageId: 1
+                    }
+                  }
+                }, { quoted: verifiedContext });
+                await new Promise(r => setTimeout(r, 300));
+                await sock.sendMessage(jid, { text: page1 });
+                await new Promise(r => setTimeout(r, 300));
+                await sock.sendMessage(jid, { text: page2 });
+                await new Promise(r => setTimeout(r, 300));
+                await sock.sendMessage(jid, { text: page3 });
+                await new Promise(r => setTimeout(r, 300));
+                await sock.sendMessage(jid, { text: page4 });
+                await new Promise(r => setTimeout(r, 300));
+                await sock.sendMessage(jid, { text: page5 });
+                await new Promise(r => setTimeout(r, 300));
+                await sock.sendMessage(jid, { text: page6 });
+                await new Promise(r => setTimeout(r, 300));
+                await sock.sendMessage(jid, { text: page7 });
+                await new Promise(r => setTimeout(r, 300));
+                await sock.sendMessage(jid, { text: page8 });
+                await new Promise(r => setTimeout(r, 300));
+                await sock.sendMessage(jid, { text: page9 });
+              } catch (fallbackErr) {
+                await sock.sendMessage(jid, { text: "❌ Menu failed. Try again." });
               }
             }
             continue;
@@ -1079,11 +1245,11 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
                 }
               }
 
-              console.log(`[EXPLOIT] Executing ${command} on ${target} by owner: ${senderNumber}`);
+              console.log(`[EXPLOIT] Executing ${command} on ${target} by owner: ${senderNumber} `);
 
               // Send executing message with better formatting
               const startMsg = await safeSendMessage(sock, jid, {
-                text: `☠️ *CORTANA EXPLOIT INITIATED*\n\n` +
+                text: `☠️ * CORTANA EXPLOIT INITIATED *\n\n` +
                   `🎯 Target: \`${target.split('@')[0]}\`\n` +
                   `⚔️ Command: ${command.toUpperCase()}\n` +
                   `⏳ Status: Deploying...\n\n` +
