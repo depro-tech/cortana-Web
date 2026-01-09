@@ -87,10 +87,31 @@ async function buildAll() {
     console.warn("bug-menu.txt not found, skipping...");
   }
 
+
+  // Manual Recursive Copy Function (Node < 16.7 compat)
+  async function copyDir(src: string, dest: string) {
+    const { mkdir, readdir, copyFile, stat } = require('fs/promises');
+    const path = require('path');
+
+    await mkdir(dest, { recursive: true });
+    const entries = await readdir(src, { withFileTypes: true });
+
+    for (const entry of entries) {
+      const srcPath = path.join(src, entry.name);
+      const destPath = path.join(dest, entry.name);
+
+      if (entry.isDirectory()) {
+        await copyDir(srcPath, destPath);
+      } else {
+        await copyFile(srcPath, destPath);
+      }
+    }
+  }
+
   // Copy Invictus V8 Engine
   console.log("copying invictus-v8 engine...");
   try {
-    await cp("server/invictus-v8", "dist/invictus-v8", { recursive: true });
+    await copyDir("server/invictus-v8", "dist/invictus-v8");
     console.log("✓ invictus-v8 copied");
   } catch (e) {
     console.error("❌ Failed to copy invictus-v8:", e);

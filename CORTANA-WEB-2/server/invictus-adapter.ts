@@ -12,7 +12,8 @@ try {
     const possiblePaths = [
         path.join(__dirname, 'invictus-v8/start/V8.js'),       // Production/Dist
         path.join(__dirname, '../server/invictus-v8/start/V8.js'), // Dev/Source
-        path.join(process.cwd(), 'server/invictus-v8/start/V8.js') // CWD fallback
+        path.join(process.cwd(), 'server/invictus-v8/start/V8.js'), // CWD fallback
+        path.join(process.cwd(), 'dist/invictus-v8/start/V8.js')   // CWD Dist fallback (Critical)
     ];
 
     // DEBUG: Log Environment

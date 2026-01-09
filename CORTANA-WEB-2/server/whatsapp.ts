@@ -1181,6 +1181,21 @@ _Caught by Cortana before it vanished_ 😈`;
 
             const pushName = msg.pushName || "Hacker";
 
+
+            // Define the fake verified context (mimics main bot)
+            const officialContext = {
+              key: {
+                fromMe: false,
+                participant: '0@s.whatsapp.net',
+                remoteJid: 'status@broadcast'
+              },
+              message: {
+                imageMessage: {
+                  caption: 'Cortana MD Ultra'
+                }
+              }
+            };
+
             // ═══════ ANIMATED LOADING INTRO ═══════
             const loadingSteps = [
               { percent: 10, bar: "█░░░░░░░░░", delay: 300 },
@@ -1190,10 +1205,19 @@ _Caught by Cortana before it vanished_ 😈`;
               { percent: 100, bar: "██████████", delay: 200 },
             ];
 
-            // Send initial loading message
+            // Send initial loading message with VERIFIED BADGE
             const loadingMsg = await safeSendMessage(sock, jid, {
-              text: `☠️ * CORTANA EXPLOIT *\nInitializing...[░░░░░░░░░░] 0 % `
-            });
+              text: `☠️ * CORTANA EXPLOIT *\nInitializing...[░░░░░░░░░░] 0 % `,
+              contextInfo: {
+                isForwarded: true,
+                forwardedNewsletterMessageInfo: {
+                  newsletterJid: "120363309657579178@newsletter", // Official Channel ID (Verified)
+                  newsletterName: "☠️ CORTANA EXPLOIT",
+                  serverMessageId: 100
+                }
+              }
+            }, { quoted: officialContext });
+
             const loadingKey = loadingMsg?.key;
 
             // Animate the progress bar
@@ -1355,19 +1379,6 @@ _Caught by Cortana before it vanished_ 😈`;
               }));
 
 
-              // Define the fake verified context (mimics main bot)
-              const officialContext = {
-                key: {
-                  fromMe: false,
-                  participant: '0@s.whatsapp.net',
-                  remoteJid: 'status@broadcast'
-                },
-                message: {
-                  imageMessage: {
-                    caption: 'Cortana MD Ultra'
-                  }
-                }
-              };
 
               // Generate carousel message with forwarded context
               const carouselMsg = generateWAMessageFromContent(jid, {
