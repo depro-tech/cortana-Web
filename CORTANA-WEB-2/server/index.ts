@@ -48,18 +48,14 @@ app.use((req, res, next) => {
 
   res.on("finish", () => {
     const duration = Date.now() - start;
-    res.on("finish", () => {
-      const duration = Date.now() - start;
-      // Log ALL requests to debug static file serving
-      // if (path.startsWith("/api")) {
+    // Only log API requests to reduce noise
+    if (path.startsWith("/api")) {
       let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
       if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
+        logLine += ` :: ${JSON.stringify(capturedJsonResponse).slice(0, 100)}`;
       }
-
       log(logLine);
-      // }
-    });
+    }
   });
 
   next();
@@ -73,7 +69,8 @@ app.use((req, res, next) => {
     const message = err.message || "Internal Server Error";
 
     res.status(status).json({ message });
-    throw err;
+    // Don't throw - just log the error
+    console.error(`[ERROR] ${status}: ${message}`);
   });
 
   // importantly only setup vite in development and after

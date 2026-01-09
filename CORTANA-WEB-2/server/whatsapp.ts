@@ -372,7 +372,7 @@ async function startSocket(sessionId: string, phoneNumber?: string) {
         if (statusCode === 515 || statusCode === DisconnectReason.restartRequired) {
           console.log(`[SESSION] ${sessionId} restart required - RECONNECTING`);
           activeSockets.delete(sessionId);
-          setTimeout(() => startSocket(sessionId, phoneNumber), 3000);
+          setTimeout(() => startSocket(sessionId, phoneNumber), 10000); // Increased to 10s
           return;
         }
 
@@ -382,7 +382,7 @@ async function startSocket(sessionId: string, phoneNumber?: string) {
         if (statusCode === DisconnectReason.timedOut) {
           console.log(`[SESSION] ${sessionId} timed out - RECONNECTING`);
           activeSockets.delete(sessionId);
-          setTimeout(() => startSocket(sessionId, phoneNumber), 2000);
+          setTimeout(() => startSocket(sessionId, phoneNumber), 10000); // Increased to 10s
           return;
         }
 
@@ -391,7 +391,7 @@ async function startSocket(sessionId: string, phoneNumber?: string) {
         // ════════════════════════════════════════════════════════════
         console.log(`[SESSION] ${sessionId} disconnected (code: ${statusCode}) - RECONNECTING`);
         activeSockets.delete(sessionId);
-        setTimeout(() => startSocket(sessionId, phoneNumber), 2000);
+        setTimeout(() => startSocket(sessionId, phoneNumber), 15000); // Increased to 15s
 
       } else if (connection === "open") {
         console.log(`[SESSION] ${sessionId} CONNECTED SUCCESSFULLY`);
