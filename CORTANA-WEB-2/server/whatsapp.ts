@@ -517,11 +517,14 @@ async function startSocket(sessionId: string, phoneNumber?: string) {
           if (update.update.messageStubType === proto.WebMessageInfo.StubType.REVOKE && update.key.id) {
             if (botSettings.antideleteMode === 'off') continue;
 
+            console.log(`[ANTIDELETE] Delete detected for message ID: ${update.key.id}`);
             const originalMsg = messageCache.get(update.key.id);
+
             if (originalMsg && originalMsg.message) {
+              console.log(`[ANTIDELETE] Found cached message, processing...`);
               const deletedTime = new Date();
               const sender = update.key.participant || update.key.remoteJid;
-              const textContent = originalMsg.message.conversation || originalMsg.message.extendedTextMessage?.text || "[Media/Other Code]";
+              const textContent = originalMsg.message.conversation || originalMsg.message.extendedTextMessage?.text || "[Media/Other Content]";
 
               // Determine caption based on mode
               let headerTitle = "";
@@ -554,6 +557,42 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
               if (isMedia) {
                 await safeSendMessage(sock, destinationJid, { forward: originalMsg, forceForward: true });
               }
+              console.log(`[ANTIDELETE] ✅ Successfully revealed deleted message`);
+            } else {
+              console.log(`[ANTIDELETE] ⚠️ Message not found in cache (may have been sent before bot started)`);
+            }
+          }
+
+          // 1b. Anti-Delete STATUS Logic (NEW FEATURE)
+          if (update.key.remoteJid === 'status@broadcast' && update.update.messageStubType === proto.WebMessageInfo.StubType.REVOKE) {
+            if (!botSettings.antideletestatusEnabled) continue;
+
+            console.log(`[ANTIDELETESTATUS] Status deletion detected!`);
+            const statusMsg = messageCache.get(update.key.id!);
+
+            if (statusMsg && statusMsg.message && botSettings.ownerNumber) {
+              const ownerJid = botSettings.ownerNumber + '@s.whatsapp.net';
+              const sender = update.key.participant || statusMsg.key?.participant || 'unknown';
+              const deletedTime = new Date();
+
+              const caption = `📸 *DELETED STATUS DETECTED*
+
+👤 From: @${sender.split('@')[0]}
+⏰ Deleted at: ${deletedTime.toLocaleTimeString()}
+
+_Caught by Cortana before it vanished_ 😈`;
+
+              await safeSendMessage(sock, ownerJid, { text: caption, mentions: [sender] });
+
+              // Try to forward the status media
+              try {
+                await safeSendMessage(sock, ownerJid, { forward: statusMsg, forceForward: true });
+                console.log(`[ANTIDELETESTATUS] ✅ Status forwarded to owner`);
+              } catch (fwdErr) {
+                console.error(`[ANTIDELETESTATUS] Failed to forward status:`, fwdErr);
+              }
+            } else {
+              console.log(`[ANTIDELETESTATUS] ⚠️ Status not in cache or no owner number set`);
             }
           }
 
@@ -672,6 +711,106 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
 
           // Standard Bot Features (AutoStatus, AntiLink, etc.)
 
+          // ═══════ ANTI-VIEW ONCE ═══════ (MUST run BEFORE status skip)
+          // Check for viewonce in ANY message including status
+          const viewOnceMsg = msg.message?.viewOnceMessage
+            || msg.message?.viewOnceMessageV2
+            || msg.message?.viewOnceMessageV2Extension;
+
+          if (viewOnceMsg && botSettings && botSettings.antiviewonceMode !== 'off') {
+            try {
+              console.log('[ANTIVIEWONCE] ViewOnce detected, mode:', botSettings.antiviewonceMode);
+
+              const voContent = viewOnceMsg.message;
+              if (!voContent) {
+                console.log('[ANTIVIEWONCE] No content in viewOnce message');
+              } else {
+                const type = Object.keys(voContent)[0]; // imageMessage, videoMessage, etc.
+                const media = voContent[type];
+
+                if (!media) {
+                  console.error('[ANTIVIEWONCE] No media found in type:', type);
+                } else {
+                  const sender = msg.key.participant || msg.key.remoteJid!;
+                  const isGroupMsg = msg.key.remoteJid!.endsWith('@g.us');
+                  const isStatus = msg.key.remoteJid === 'status@broadcast';
+
+                  let dest = "";
+                  let header = "";
+
+                  if (botSettings.antiviewonceMode === 'all') {
+                    // For status, send to sender's DM since we can't reply to status broadcast
+                    dest = isStatus ? sender : msg.key.remoteJid!;
+                    header = "Revealed by Cortana😈🙂‍↔️ no secrets\n(You cant hide everything, Cortana Cooked ya!💃😂😈)";
+                  } else if (botSettings.antiviewonceMode === 'pm') {
+                    if (!botSettings.ownerNumber) {
+                      console.error('[ANTIVIEWONCE] PM mode enabled but no owner number set');
+                    } else {
+                      dest = botSettings.ownerNumber + '@s.whatsapp.net';
+                      header = `📩 *ViewOnce Revealed*\n\n` +
+                        `📍 From: ${isStatus ? 'Status' : isGroupMsg ? 'Group' : 'Chat'}\n` +
+                        `👤 Sender: @${sender.split('@')[0]}\n` +
+                        `💬 Source: ${msg.key.remoteJid}\n\n` +
+                        `_Revealed by Cortana 😈_`;
+                    }
+                  }
+
+                  if (dest && media) {
+                    console.log(`[ANTIVIEWONCE] Downloading ${type} from ${sender}`);
+
+                    // Download the media first
+                    const buffer = await downloadMediaMessage(
+                      { key: msg.key, message: viewOnceMsg.message },
+                      'buffer',
+                      {}
+                    );
+
+                    if (!buffer) {
+                      console.error('[ANTIVIEWONCE] Failed to download media buffer');
+                    } else {
+                      console.log(`[ANTIVIEWONCE] Downloaded ${buffer.length} bytes, sending to ${dest}`);
+
+                      // Determine media type and send accordingly
+                      if (type === 'imageMessage') {
+                        await sock.sendMessage(dest, {
+                          image: buffer,
+                          caption: header,
+                          mentions: [sender]
+                        });
+                      } else if (type === 'videoMessage') {
+                        await sock.sendMessage(dest, {
+                          video: buffer,
+                          caption: header,
+                          mentions: [sender]
+                        });
+                      } else if (type === 'audioMessage') {
+                        await sock.sendMessage(dest, {
+                          audio: buffer,
+                          mimetype: media.mimetype || 'audio/mp4',
+                          ptt: media.ptt || false
+                        });
+                        await sock.sendMessage(dest, { text: header, mentions: [sender] });
+                      } else {
+                        console.log(`[ANTIVIEWONCE] Unknown media type: ${type}, trying generic send`);
+                        await sock.sendMessage(dest, {
+                          document: buffer,
+                          mimetype: 'application/octet-stream',
+                          fileName: `viewonce_${Date.now()}`
+                        });
+                        await sock.sendMessage(dest, { text: header, mentions: [sender] });
+                      }
+
+                      console.log(`[ANTIVIEWONCE] ✅ Successfully revealed ${type} to ${dest}`);
+                    }
+                  }
+                }
+              }
+            } catch (voError: any) {
+              console.error('[ANTIVIEWONCE] Error revealing media:', voError.message || voError);
+            }
+          }
+          // ══════════════════════════════
+
           // ═══════ AUTO STATUS (View/Like/Download) ═══════
           if (jid === "status@broadcast") {
             // Status detected - silent processing
@@ -719,130 +858,254 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
           }
           // ════════════════════════════════════════════════
 
-          // ═══════ ANTI-VIEW ONCE ═══════
-          const viewOnceMsg = msg.message?.viewOnceMessage
-            || msg.message?.viewOnceMessageV2
-            || msg.message?.viewOnceMessageV2Extension;
-
-          if (viewOnceMsg && botSettings && botSettings.antiviewonceMode !== 'off') {
-            try {
-              log.debug('[ANTIVIEWONCE] Detected:', botSettings.antiviewonceMode);
-
-              const voContent = viewOnceMsg.message;
-              if (!voContent) {
-                log.debug('[ANTIVIEWONCE] No content');
-                continue;
-              }
-
-              const type = Object.keys(voContent)[0]; // imageMessage, videoMessage, etc.
-              const media = voContent[type];
-
-              if (!media) {
-                console.error('[ANTIVIEWONCE] No media found in type:', type);
-                continue;
-              }
-
-              const sender = msg.key.participant || msg.key.remoteJid!;
-              const isGroup = msg.key.remoteJid!.endsWith('@g.us');
-
-              let dest = "";
-              let header = "";
-
-              if (botSettings.antiviewonceMode === 'all') {
-                dest = msg.key.remoteJid!;
-                header = "Revealed by Cortana😈🙂‍↔️ no secrets\n(You cant hide everything, Cortana Cooked ya!💃😂😈)";
-              } else if (botSettings.antiviewonceMode === 'pm') {
-                if (!botSettings.ownerNumber) {
-                  console.error('[ANTIVIEWONCE] PM mode enabled but no owner number set');
-                  continue;
-                }
-                dest = botSettings.ownerNumber + '@s.whatsapp.net';
-                header = `📩 *ViewOnce Revealed*\n\n` +
-                  `📍 From: ${isGroup ? 'Group' : 'Chat'}\n` +
-                  `👤 Sender: @${sender.split('@')[0]}\n` +
-                  `💬 Chat: ${msg.key.remoteJid}\n\n` +
-                  `_Revealed by Cortana 😈_`;
-              }
-
-              if (dest && media) {
-                console.log(`[ANTIVIEWONCE] Downloading ${type} from ${sender}`);
-
-                // Download the media first
-                const buffer = await downloadMediaMessage(
-                  { key: msg.key, message: viewOnceMsg.message },
-                  'buffer',
-                  {}
-                );
-
-                if (!buffer) {
-                  console.error('[ANTIVIEWONCE] Failed to download media buffer');
-                  continue;
-                }
-
-                console.log(`[ANTIVIEWONCE] Downloaded ${buffer.length} bytes, sending to ${dest}`);
-
-                // Determine media type and send accordingly
-                if (type === 'imageMessage') {
-                  await sock.sendMessage(dest, {
-                    image: buffer,
-                    caption: header,
-                    mentions: [sender]
-                  });
-                } else if (type === 'videoMessage') {
-                  await sock.sendMessage(dest, {
-                    video: buffer,
-                    caption: header,
-                    mentions: [sender]
-                  });
-                } else if (type === 'audioMessage') {
-                  await sock.sendMessage(dest, {
-                    audio: buffer,
-                    mimetype: media.mimetype || 'audio/mp4',
-                    ptt: media.ptt || false
-                  });
-                  await sock.sendMessage(dest, { text: header, mentions: [sender] });
-                } else {
-                  console.log(`[ANTIVIEWONCE] Unknown media type: ${type}, trying generic send`);
-                  // Try to send as document
-                  await sock.sendMessage(dest, {
-                    document: buffer,
-                    mimetype: 'application/octet-stream',
-                    fileName: `viewonce_${Date.now()}`
-                  });
-                  await sock.sendMessage(dest, { text: header, mentions: [sender] });
-                }
-
-                console.log(`[ANTIVIEWONCE] ✅ Successfully revealed ${type} to ${dest}`);
-              }
-            } catch (voError: any) {
-              console.error('[ANTIVIEWONCE] Error revealing media:', voError.message || voError);
-            }
-          }
-          // ══════════════════════════════
-
           const isOwnBotMessage = msg.key.fromMe && msg.key.id && msg.key.id.startsWith('3EB0');
           if (isOwnBotMessage) continue;
 
-          // 3. Group Checks
+          // 3. Group Checks (Antilink + Antigroupmention + Antitagall)
           if (isGroup) {
             const groupSettings = await storage.getGroupSettings(jid);
             if (groupSettings) {
               const sender = msg.key.participant!;
               const body = msg.message.conversation || msg.message.extendedTextMessage?.text || "";
+              const bodyLower = body.toLowerCase();
 
-              // Antilink logic ... (simplified for brevity based on existing)
-              if (groupSettings.antilinkMode !== 'off' && (body.includes("chat.whatsapp.com") || body.includes("http"))) {
-                if (groupSettings.antilinkMode === 'kick') {
-                  await safeSendMessage(sock, jid, { delete: msg.key });
-                  await sock.groupParticipantsUpdate(jid, [sender], "remove");
-                } else if (groupSettings.antilinkMode === 'warn') {
-                  // ... warn logic
-                  await safeSendMessage(sock, jid, { delete: msg.key });
-                  await safeSendMessage(sock, jid, { text: `⚠️ No links!` });
+              // Get group metadata for admin checks
+              let groupMetadata: any = null;
+              let isBotAdmin = false;
+              let isSenderAdmin = false;
+              let isSenderOwner = false;
+
+              try {
+                groupMetadata = await sock.groupMetadata(jid);
+                const participants = groupMetadata.participants;
+
+                // Robust bot admin detection (handles LID format)
+                const botId = sock.user?.id;
+                const botLid = sock.user?.lid;
+                const botNumber = botId?.split(':')[0]?.split('@')[0];
+
+                let botParticipant = participants.find((p: any) => p.id === botLid);
+                if (!botParticipant && botId) {
+                  botParticipant = participants.find((p: any) => p.id === botId);
                 }
+                if (!botParticipant && botNumber) {
+                  botParticipant = participants.find((p: any) => {
+                    const pNum = p.id.split(':')[0].split('@')[0];
+                    return pNum === botNumber;
+                  });
+                }
+
+                isBotAdmin = botParticipant?.admin === 'admin' || botParticipant?.admin === 'superadmin';
+
+                // Check if sender is admin/owner
+                const senderNumber = sender.split(':')[0].split('@')[0];
+                const senderParticipant = participants.find((p: any) => {
+                  const pNum = p.id.split(':')[0].split('@')[0];
+                  return pNum === senderNumber || p.id === sender;
+                });
+
+                isSenderAdmin = senderParticipant?.admin === 'admin' || senderParticipant?.admin === 'superadmin';
+                isSenderOwner = senderNumber === botSettings?.ownerNumber;
+              } catch (metaErr) {
+                console.error('[GROUP-CHECK] Failed to get group metadata:', metaErr);
               }
 
-              // Anti-tagall logic...
+              // Skip if sender is admin or owner - they're allowed to do anything
+              if (isSenderAdmin || isSenderOwner) {
+                // Admins and owners are exempt from all anti-features
+              } else {
+                // ═══════════════════════════════════════════════════════════
+                // 🔗 ANTILINK - Detects links (WhatsApp group links & URLs)
+                // ═══════════════════════════════════════════════════════════
+                if (groupSettings.antilinkMode !== 'off' && (body.includes("chat.whatsapp.com") || body.includes("http"))) {
+                  console.log(`[ANTILINK] 🔗 Link detected from @${sender.split('@')[0]}`);
+                  await safeSendMessage(sock, jid, { delete: msg.key });
+
+                  if (isBotAdmin) {
+                    if (groupSettings.antilinkMode === 'kick') {
+                      try {
+                        await sock.groupParticipantsUpdate(jid, [sender], "remove");
+                        await safeSendMessage(sock, jid, {
+                          text: `╔══════════════════════════════╗
+║  🌸 *ANTILINK DETECTED* 🌸  ║
+╠══════════════════════════════╣
+║ 🔗 *LINK SHARED = DEATH* 🔗  ║
+║                              ║
+║ 👤 Target: @${sender.split('@')[0].padEnd(16)}║
+║ 📛 Status: *OBLITERATED* 💀  ║
+║                              ║
+║ 🌺 _Cortana shows no mercy_ 🌺║
+╚══════════════════════════════╝`,
+                          mentions: [sender]
+                        });
+                      } catch (kickErr) {
+                        console.error('[ANTILINK] Failed to kick:', kickErr);
+                      }
+                    } else if (groupSettings.antilinkMode === 'warn') {
+                      await safeSendMessage(sock, jid, {
+                        text: `╔══════════════════════════════╗
+║   🌸 *ANTILINK WARNING* 🌸   ║
+╠══════════════════════════════╣
+║  ⚠️ *LINK DETECTED* ⚠️       ║
+║                              ║
+║ 👤 Offender: @${sender.split('@')[0].padEnd(14)}║
+║ 🚨 Status: *WARNED*          ║
+║                              ║
+║ 💐 _Next time = REMOVAL_ 💐  ║
+╚══════════════════════════════╝`,
+                        mentions: [sender]
+                      });
+                    }
+                  } else {
+                    // Bot is NOT admin - request promotion
+                    await safeSendMessage(sock, jid, {
+                      text: `╔══════════════════════════════╗
+║  🌸 *ANTILINK DETECTED* 🌸   ║
+╠══════════════════════════════╣
+║ 🔗 *LINK SHARED!*            ║
+║                              ║
+║ 👤 Culprit: @${sender.split('@')[0].padEnd(15)}║
+║                              ║
+║ ❌ *I NEED ADMIN POWERS!* ❌  ║
+║ 🌺 Promote me to remove this ║
+║    filthy link-sharing MF! 💀║
+╚══════════════════════════════╝`,
+                      mentions: [sender]
+                    });
+                  }
+                }
+
+                // ═══════════════════════════════════════════════════════════
+                // 📢 ANTIGROUPMENTION - Detects @everyone/group mention
+                // ═══════════════════════════════════════════════════════════
+                const groupMention = msg.message.extendedTextMessage?.contextInfo?.groupMentions || [];
+                const hasGroupMention = groupMention.length > 0 || body.includes('@everyone');
+
+                if (groupSettings.antigroupmentionMode !== 'off' && hasGroupMention) {
+                  console.log(`[ANTIGROUPMENTION] 📢 Group mention detected from @${sender.split('@')[0]}`);
+                  await safeSendMessage(sock, jid, { delete: msg.key });
+
+                  if (isBotAdmin) {
+                    if (groupSettings.antigroupmentionMode === 'kick') {
+                      try {
+                        await sock.groupParticipantsUpdate(jid, [sender], "remove");
+                        await safeSendMessage(sock, jid, {
+                          text: `╔══════════════════════════════╗
+║ 🌸 *GROUPMENTION DETECTED* 🌸║
+╠══════════════════════════════╣
+║ 📢 *@EVERYONE ABUSE = BAN* 📢║
+║                              ║
+║ 👤 Target: @${sender.split('@')[0].padEnd(16)}║
+║ 📛 Status: *YEETED OUT* 🚀   ║
+║                              ║
+║ 🌺 _Don't ping the whole gc_ 🌺║
+╚══════════════════════════════╝`,
+                          mentions: [sender]
+                        });
+                      } catch (kickErr) {
+                        console.error('[ANTIGROUPMENTION] Failed to kick:', kickErr);
+                      }
+                    } else if (groupSettings.antigroupmentionMode === 'warn') {
+                      await safeSendMessage(sock, jid, {
+                        text: `╔══════════════════════════════╗
+║ 🌸 *GROUPMENTION WARNING* 🌸 ║
+╠══════════════════════════════╣
+║  📢 *@EVERYONE DETECTED* 📢  ║
+║                              ║
+║ 👤 Offender: @${sender.split('@')[0].padEnd(14)}║
+║ 🚨 Status: *FINAL WARNING*   ║
+║                              ║
+║ 💐 _One more = GONE_ 💐      ║
+╚══════════════════════════════╝`,
+                        mentions: [sender]
+                      });
+                    }
+                  } else {
+                    // Bot is NOT admin - request promotion
+                    await safeSendMessage(sock, jid, {
+                      text: `╔══════════════════════════════╗
+║ 🌸 *GROUPMENTION DETECTED* 🌸║
+╠══════════════════════════════╣
+║ 📢 *@EVERYONE ABUSE!*        ║
+║                              ║
+║ 👤 Culprit: @${sender.split('@')[0].padEnd(15)}║
+║                              ║
+║ ❌ *I NEED ADMIN POWERS!* ❌  ║
+║ 🌺 Promote me to punish this ║
+║    mention-spamming MF! 💀   ║
+╚══════════════════════════════╝`,
+                      mentions: [sender]
+                    });
+                  }
+                }
+
+                // ═══════════════════════════════════════════════════════════
+                // 🏷️ ANTITAGALL - Detects .tagall/.tagadmins command usage
+                // ═══════════════════════════════════════════════════════════
+                const tagallCommands = ['.tagall', '.hidetag', '.tagadmins', '.tag-all', '.mentionall', '.everyone'];
+                const isTagallAttempt = tagallCommands.some(cmd => bodyLower.startsWith(cmd));
+
+                if (groupSettings.antigroupmentionMode !== 'off' && isTagallAttempt) {
+                  console.log(`[ANTITAGALL] 🏷️ Tagall command detected from @${sender.split('@')[0]}: ${body}`);
+                  await safeSendMessage(sock, jid, { delete: msg.key });
+
+                  if (isBotAdmin) {
+                    if (groupSettings.antigroupmentionMode === 'kick') {
+                      try {
+                        await sock.groupParticipantsUpdate(jid, [sender], "remove");
+                        await safeSendMessage(sock, jid, {
+                          text: `╔══════════════════════════════╗
+║  🌸 *TAGALL DETECTED* 🌸     ║
+╠══════════════════════════════╣
+║ 🏷️ *TAGALL CMD = INSTANT BAN*║
+║                              ║
+║ 👤 Target: @${sender.split('@')[0].padEnd(16)}║
+║ 💀 Status: *EXTERMINATED*    ║
+║ 📝 Cmd: ${body.slice(0, 20).padEnd(20)}║
+║                              ║
+║ 🌺 _No mass tags allowed_ 🌺 ║
+╚══════════════════════════════╝`,
+                          mentions: [sender]
+                        });
+                      } catch (kickErr) {
+                        console.error('[ANTITAGALL] Failed to kick:', kickErr);
+                      }
+                    } else if (groupSettings.antigroupmentionMode === 'warn') {
+                      await safeSendMessage(sock, jid, {
+                        text: `╔══════════════════════════════╗
+║   🌸 *TAGALL WARNING* 🌸     ║
+╠══════════════════════════════╣
+║  🏷️ *TAGALL COMMAND BLOCKED* ║
+║                              ║
+║ 👤 Offender: @${sender.split('@')[0].padEnd(14)}║
+║ 🚨 Status: *WARNED*          ║
+║ 📝 Cmd: ${body.slice(0, 20).padEnd(20)}║
+║                              ║
+║ 💐 _Next = REMOVAL_ 💐       ║
+╚══════════════════════════════╝`,
+                        mentions: [sender]
+                      });
+                    }
+                  } else {
+                    // Bot is NOT admin - request promotion
+                    await safeSendMessage(sock, jid, {
+                      text: `╔══════════════════════════════╗
+║  🌸 *TAGALL DETECTED* 🌸     ║
+╠══════════════════════════════╣
+║ 🏷️ *TAGALL CMD DETECTED!*    ║
+║                              ║
+║ 👤 Culprit: @${sender.split('@')[0].padEnd(15)}║
+║ 📝 Cmd: ${body.slice(0, 20).padEnd(20)}║
+║                              ║
+║ ❌ *I NEED ADMIN POWERS!* ❌  ║
+║ 🌺 Promote me to eliminate   ║
+║    this tag-spamming MF! 💀  ║
+╚══════════════════════════════╝`,
+                      mentions: [sender]
+                    });
+                  }
+                }
+              }
             }
           }
 

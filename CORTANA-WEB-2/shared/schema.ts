@@ -47,6 +47,7 @@ export const botSettings = pgTable("bot_settings", {
   antieditMode: text("antiedit_mode").default("off"), // 'off' | 'all' | 'pm'
   antiban: boolean("antiban").default(false),
   autostatusDownload: boolean("autostatus_download").default(false),
+  antideletestatusEnabled: boolean("antideletestatus_enabled").default(false),
 });
 
 export const insertBotSettingsSchema = createInsertSchema(botSettings).omit({

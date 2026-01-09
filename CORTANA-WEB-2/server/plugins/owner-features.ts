@@ -27,7 +27,10 @@ const TOGGLES = [
     { cmd: "antiedit-off", field: "antieditMode", val: "off", text: "Anti-Edit DISABLED ❌" },
 
     { cmd: "antiban-on", field: "antiban", val: true, text: "😈 *ANTIBAN MODE ACTIVATED* 🛡️\n\n🚫 ALL commands are now BLOCKED!\n🙅 Only `.antiban off` will work\n\n_You coward, you feared ban?_ 🤣" },
-    { cmd: "antiban-off", field: "antiban", val: false, text: "Antiban mode deactivated. Unlimited chaos speed restored 🌪️💥" }
+    { cmd: "antiban-off", field: "antiban", val: false, text: "Antiban mode deactivated. Unlimited chaos speed restored 🌪️💥" },
+
+    { cmd: "antideletestatus-on", field: "antideletestatusEnabled", val: true, text: "📸 *ANTI-DELETE STATUS ACTIVATED* 📸\n\n_Any deleted status will be forwarded to your DM!_" },
+    { cmd: "antideletestatus-off", field: "antideletestatusEnabled", val: false, text: "📸 Anti-Delete Status DISABLED ❌" }
 ];
 
 // Add flexible antiban command with on/off argument

@@ -101,43 +101,70 @@ registerCommand({
     }
 });
 
-// ════════════ ANTI-TAG (GROUP MENTION) ════════════
+// ════════════ ANTI-GROUPMENTION & ANTI-TAGALL ════════════
+// These commands control both:
+// 1. Antigroupmention - Detects @everyone group mention usage
+// 2. Antitagall - Detects .tagall/.hidetag/.tagadmins command attempts
+
 registerCommand({
     name: "antitag-kick",
-    aliases: ["antigroupmention-kick"],
-    description: "Anti-Tagall (Kick Mode)",
+    aliases: ["antigroupmention-kick", "antitagall-kick", "antitag-kick-on", "antigroupmention-kick-on"],
+    description: "Anti-Tag (Kick) - Kicks users who use @everyone or .tagall commands",
     category: "group",
     execute: async ({ msg, reply }) => {
         const jid = msg.key.remoteJid!;
         if (!jid.endsWith('@g.us')) return reply("Groups only");
         await storage.updateGroupSettings(jid, { antigroupmentionMode: 'kick' });
-        await reply("✅ Anti-GroupMention set to: *KICK*");
+        await reply(`╔══════════════════════════════╗
+║ 🌸 *ANTI-TAG MODE: KICK* 🌸  ║
+╠══════════════════════════════╣
+║ ✅ Now KICKING users who:    ║
+║ • Use @everyone mention      ║
+║ • Use .tagall/.hidetag cmds  ║
+║                              ║
+║ 💀 _No mercy for spammers_   ║
+╚══════════════════════════════╝`);
     }
 });
 
 registerCommand({
     name: "antitag-warn",
-    aliases: ["antigroupmention-warn"],
-    description: "Anti-Tagall (Warn Mode)",
+    aliases: ["antigroupmention-warn", "antitagall-warn", "antitag-warn-on", "antigroupmention-warn-on"],
+    description: "Anti-Tag (Warn) - Warns users who use @everyone or .tagall commands",
     category: "group",
     execute: async ({ msg, reply }) => {
         const jid = msg.key.remoteJid!;
         if (!jid.endsWith('@g.us')) return reply("Groups only");
         await storage.updateGroupSettings(jid, { antigroupmentionMode: 'warn' });
-        await reply("✅ Anti-GroupMention set to: *WARN*");
+        await reply(`╔══════════════════════════════╗
+║ 🌸 *ANTI-TAG MODE: WARN* 🌸  ║
+╠══════════════════════════════╣
+║ ⚠️ Now WARNING users who:    ║
+║ • Use @everyone mention      ║
+║ • Use .tagall/.hidetag cmds  ║
+║                              ║
+║ 💐 _Final warning = KICK_    ║
+╚══════════════════════════════╝`);
     }
 });
 
 registerCommand({
     name: "antitag-off",
-    aliases: ["antigroupmention-off"],
-    description: "Disable Anti-Tagall",
+    aliases: ["antigroupmention-off", "antitagall-off"],
+    description: "Disable Anti-Tag (both groupmention and tagall)",
     category: "group",
     execute: async ({ msg, reply }) => {
         const jid = msg.key.remoteJid!;
         if (!jid.endsWith('@g.us')) return reply("Groups only");
         await storage.updateGroupSettings(jid, { antigroupmentionMode: 'off' });
-        await reply("❌ Anti-GroupMention DISABLED");
+        await reply(`╔══════════════════════════════╗
+║ 🌸 *ANTI-TAG DISABLED* 🌸    ║
+╠══════════════════════════════╣
+║ ❌ Anti-Groupmention: OFF    ║
+║ ❌ Anti-Tagall: OFF          ║
+║                              ║
+║ 🌺 _Tags are now allowed_    ║
+╚══════════════════════════════╝`);
     }
 });
 

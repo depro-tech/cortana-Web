@@ -29,6 +29,8 @@
 ➥ .antidelete-all-on
 ➥ .antidelete-pm-on
 ➥ .antidelete-off
+➥ .antideletestatus-on
+➥ .antideletestatus-off
 
 
 ╭─────────────── ❖ ───────────────╮
@@ -65,9 +67,11 @@
 ➥ .antilink-kick
 ➥ .antilink-warn
 ➥ .antilink-off
-➥ .antitag-kick
-➥ .antitag-warn
+➥ .antitag-kick (blocks @everyone + .tagall)
+➥ .antitag-warn (warns @everyone + .tagall)
 ➥ .antitag-off
+➥ .antigroupmention-kick (alias)
+➥ .antitagall-kick (alias)
 ➥ .antileft <on/off>
 ➥ .promote <@user>
 ➥ .demote <@user>
