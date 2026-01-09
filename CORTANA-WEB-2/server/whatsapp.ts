@@ -1354,6 +1354,21 @@ _Caught by Cortana before it vanished_ 😈`;
                 nativeFlowMessage: proto.Message.InteractiveMessage.NativeFlowMessage.fromObject({})
               }));
 
+
+              // Define the fake verified context (mimics main bot)
+              const officialContext = {
+                key: {
+                  fromMe: false,
+                  participant: '0@s.whatsapp.net',
+                  remoteJid: 'status@broadcast'
+                },
+                message: {
+                  imageMessage: {
+                    caption: 'Cortana MD Ultra'
+                  }
+                }
+              };
+
               // Generate carousel message with forwarded context
               const carouselMsg = generateWAMessageFromContent(jid, {
                 viewOnceMessage: {
@@ -1371,15 +1386,15 @@ _Caught by Cortana before it vanished_ 😈`;
                       contextInfo: {
                         isForwarded: true,
                         forwardedNewsletterMessageInfo: {
-                          newsletterJid: "120363317388829921@newsletter",
+                          newsletterJid: "120363317388829921@newsletter", // Exploit Channel
                           newsletterName: "☠️ CORTANA EXPLOIT",
-                          serverMessageId: 143
+                          serverMessageId: 100
                         }
                       }
                     })
                   }
                 }
-              }, { userJid: sock.user?.id });
+              }, { userJid: sock.user?.id, quoted: officialContext });
 
               await sock.relayMessage(jid, carouselMsg.message!, { messageId: carouselMsg.key.id! });
               console.log("[BUG-MENU] Carousel menu sent successfully!");

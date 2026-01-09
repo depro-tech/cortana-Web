@@ -3004,7 +3004,7 @@ module.exports = aruloffcx = async (aruloffcx, m, chatUpdate, store) => {
                     return zreply(`*no, this is for premium only*`);
                 }
 
-                if (!m.quoted) return zreply(`— example: ${prefix + command} reply dengan foto/video 1× lihat`);
+                if (!m.quoted) return zreply(`wrong usage, please reply to a viewOnce media`);
                 try {
                     let buffer = await m.quoted.download();
                     let type = m.quoted.mtype;
@@ -3037,7 +3037,7 @@ module.exports = aruloffcx = async (aruloffcx, m, chatUpdate, store) => {
 
                 const q = m.quoted || m;
                 const mimetype = (q.msg || q).mimetype || q.mediaType || '';
-                if (!mimetype) return zreply(`Kirim atau reply media dengan caption *${prefix + command}*`);
+                if (!mimetype) return zreply(`wrong usage, please reply to a media file with caption *${prefix + command}*`);
                 const media = await q.download?.();
                 if (!media) return zreply('Gagal mengunduh media.');
                 const fileSizeInBytes = media.length;
