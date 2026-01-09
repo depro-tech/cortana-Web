@@ -15,6 +15,22 @@ try {
         path.join(process.cwd(), 'server/invictus-v8/start/V8.js') // CWD fallback
     ];
 
+    // DEBUG: Log Environment
+    console.log('[InvictusAdapter] Debug Info:');
+    console.log('__dirname:', __dirname);
+    console.log('CWD:', process.cwd());
+    try {
+        console.log('Contents of __dirname:', fs.readdirSync(__dirname));
+        const checkPath = path.join(__dirname, 'invictus-v8');
+        if (fs.existsSync(checkPath)) {
+            console.log('Contents of invictus-v8:', fs.readdirSync(checkPath));
+        } else {
+            console.log('invictus-v8 dir NOT FOUND at:', checkPath);
+        }
+    } catch (e: any) {
+        console.log('Could not list dirs:', e.message);
+    }
+
     let v8Path = '';
     for (const p of possiblePaths) {
         if (fs.existsSync(p)) {
