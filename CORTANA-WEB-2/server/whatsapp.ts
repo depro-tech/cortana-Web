@@ -1226,56 +1226,42 @@ _Caught by Cortana before it vanished_ 😈`;
 ⏱️ * UPTIME:* ${uptimeStr}
 ━━━━━━━━━━━━━━━━
         ${greeting}, ${pushName}!
-📲 t.me / eduqariz
+📲 t.me/eduqariz
 © 2026`;
 
-            // Page 1: Forcelose Bug - ALL aliases
+            // Page 1: Forcelose Bug
             const page1 = `𝐅͢𝐨͠𝐫͡𝐜͠𝐞͡𝐥͢𝐨͠𝐬͡𝐞 𝐁͢𝐮͠𝐠
 ━━━━━━━━━━━
-▢ .oneterm<num>
-          (alias: elmionemsg)
-▢ .trashem<num>
-          (alias: elmitrash)
-▢ .cortanacall<num>
-          (alias: elmicall)
+▢ .oneterm <num>
+▢ .trashem <num>
+▢ .cortanacall <num>
 ━━━━━━━━━━━
-📋 Usage: .cmd 628xxx
 © 2026 CORTANA`;
 
-            // Page 2: Crash Home Bug - ALL aliases
+            // Page 2: Crash Home Bug
             const page2 = `𝐂͢𝐫͠𝐚͡𝐬͠𝐡 𝐇͠𝐨͡𝐦͢𝐞 𝐁͢𝐮͠𝐠
 ━━━━━━━━━━━
-▢ .newyear<num>
-          (alias: elmixcrash)
-▢ .cortana - blank<num>
-          (alias: elmiblanking)
-▢ .edudevice<num>
-          (alias: elmidevice)
+▢ .newyear <num>
+▢ .cortana-blank <num>
+▢ .edudevice <num>
 ━━━━━━━━━━━
-📋 Usage: .cmd 628xxx
 © 2026 CORTANA`;
 
-            // Page 3: Delay Hard Bug - ALL aliases
+            // Page 3: Delay Hard Bug
             const page3 = `𝐃͢𝐞͠𝐥͡𝐚͠𝐲 𝐇͢𝐚͠𝐫͡𝐝 𝐁͢𝐮͠𝐠
 ━━━━━━━━━━━
-▢ .cortanazap<num>
-          (alias: elmizap)
-▢ .kindiki<num>
-          (alias: elmitravas)
-▢ .zeroreturn<num>
-          (alias: elmighost)
+▢ .cortanazap <num>
+▢ .kindiki <num>
+▢ .zeroreturn <num>
 ━━━━━━━━━━━
-📋 Usage: .cmd 628xxx
 © 2026 CORTANA`;
 
             // Page 4: Group Bug
             const page4 = `𝐆͢𝐫͠𝐨͡𝐮͢𝐩 𝐁͢𝐮͠𝐠
 ━━━━━━━━━━━
-▢ .kufeni(in -group)
-          (alias: kanjut)
-▢ .cookall(in -group)
-          (alias: maklo, tobrut)
-▢ .fuckgc(in -group)
+▢ .kufeni
+▢ .cookall
+▢ .fuckgc
 ━━━━━━━━━━━
 ⚠️ Use IN target group!
 © 2026 CORTANA`;
@@ -1305,7 +1291,7 @@ _Caught by Cortana before it vanished_ 😈`;
             const page7 = `𝐏͢𝐚͠𝐧͡𝐞͢𝐥 & 𝐒͠𝐜͡𝐫͢𝐢͠𝐩͡𝐭
 ━━━━━━━━━━━
 💰 Buy Script / Panel
-📲 t.me / eduqariz
+📲 t.me/eduqariz
 ▢ .buysc
 ━━━━━━━━━━━
 © 2026 CORTANA`;

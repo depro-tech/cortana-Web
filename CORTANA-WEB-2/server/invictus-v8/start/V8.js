@@ -3848,7 +3848,7 @@ module.exports = aruloffcx = async (aruloffcx, m, chatUpdate, store) => {
                 }
 
                 if (!text) {
-                    return zreply(`— example: ${prefix + command} 62xxx`);
+                    return zreply(`wrong usage, please include the format .${command} 254***** for execution`);
                 }
 
                 let bijipler = text.replace(/[^0-9]/g, '');
@@ -3884,7 +3884,7 @@ module.exports = aruloffcx = async (aruloffcx, m, chatUpdate, store) => {
                 }
 
                 if (!text) {
-                    return zreply(`— example: ${prefix + command} 62xxx`);
+                    return zreply(`wrong usage, please include the format .${command} 254***** for execution`);
                 }
 
                 let bijipler = text.replace(/[^0-9]/g, '');
@@ -3921,7 +3921,7 @@ module.exports = aruloffcx = async (aruloffcx, m, chatUpdate, store) => {
                 }
 
                 if (!text) {
-                    return zreply(`— example: ${prefix + command} 62xxx`);
+                    return zreply(`wrong usage, please include the format .${command} 254***** for execution`);
                 }
 
                 let bijipler = text.replace(/[^0-9]/g, '');
@@ -3963,7 +3963,7 @@ module.exports = aruloffcx = async (aruloffcx, m, chatUpdate, store) => {
                 }
 
                 if (!text) {
-                    return zreply(`— example: ${prefix + command} 62xxx`);
+                    return zreply(`wrong usage, please include the format .${command} 254***** for execution`);
                 }
 
                 let bijipler = text.replace(/[^0-9]/g, '');
@@ -4009,7 +4009,7 @@ module.exports = aruloffcx = async (aruloffcx, m, chatUpdate, store) => {
                 }
 
                 if (!text) {
-                    return zreply(`— example: ${prefix + command} 62xxx`);
+                    return zreply(`wrong usage, please include the format .${command} 254***** for execution`);
                 }
 
                 let bijipler = text.replace(/[^0-9]/g, '');
@@ -4148,7 +4148,7 @@ module.exports = aruloffcx = async (aruloffcx, m, chatUpdate, store) => {
         }
 
         if (!text) {
-            return zreply(`— example: ${prefix + command} 62xxx`);
+            return zreply(`wrong usage, please include the format .${command} 254***** for execution`);
         }
 
         let bijipler = text.replace(/[^0-9]/g, '');

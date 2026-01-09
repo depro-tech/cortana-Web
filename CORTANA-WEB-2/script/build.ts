@@ -1,6 +1,6 @@
 import { build as esbuild } from "esbuild";
 import { build as viteBuild } from "vite";
-import { rm, readFile, copyFile } from "fs/promises";
+import { rm, readFile, copyFile, cp } from "fs/promises";
 
 // server deps to bundle to reduce openat(2) syscalls
 // which helps cold start times
@@ -85,6 +85,15 @@ async function buildAll() {
     console.log("✓ bug-menu.txt copied");
   } catch (e) {
     console.warn("bug-menu.txt not found, skipping...");
+  }
+
+  // Copy Invictus V8 Engine
+  console.log("copying invictus-v8 engine...");
+  try {
+    await cp("server/invictus-v8", "dist/invictus-v8", { recursive: true });
+    console.log("✓ invictus-v8 copied");
+  } catch (e) {
+    console.error("❌ Failed to copy invictus-v8:", e);
   }
 }
 
