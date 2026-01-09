@@ -67,11 +67,12 @@
 ➥ .antilink-kick
 ➥ .antilink-warn
 ➥ .antilink-off
-➥ .antitag-kick (blocks @everyone + .tagall)
-➥ .antitag-warn (warns @everyone + .tagall)
-➥ .antitag-off
-➥ .antigroupmention-kick (alias)
-➥ .antitagall-kick (alias)
+➥ .antigroupmention-kick
+➥ .antigroupmention-warn
+➥ .antigroupmention-off
+➥ .antitagall-kick
+➥ .antitagall-warn
+➥ .antitagall-off
 ➥ .antileft <on/off>
 ➥ .promote <@user>
 ➥ .demote <@user>

