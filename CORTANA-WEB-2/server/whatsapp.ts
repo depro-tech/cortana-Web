@@ -1098,33 +1098,7 @@ _Caught by Cortana before it vanished_ 😈`;
                     });
                   }
                 }
-║ 🚨 Status: * WARNED *          ║
-║ 📝 Cmd: ${ body.slice(0, 20).padEnd(20) }║
-║                              ║
-║ 💐 _Next = REMOVAL_ 💐       ║
-╚══════════════════════════════╝`,
-                        mentions: [sender]
-                      });
-                    }
-                  } else {
-                    // Bot is NOT admin - request promotion
-                    await safeSendMessage(sock, jid, {
-                      text: `╔══════════════════════════════╗
-║  🌸 * TAGALL DETECTED * 🌸     ║
-╠══════════════════════════════╣
-║ 🏷️ * TAGALL CMD DETECTED! *    ║
-║                              ║
-║ 👤 Culprit: @${ sender.split('@')[0].padEnd(15) }║
-║ 📝 Cmd: ${ body.slice(0, 20).padEnd(20) }║
-║                              ║
-║ ❌ * I NEED ADMIN POWERS! * ❌  ║
-║ 🌺 Promote me to eliminate   ║
-║    this tag - spamming MF! 💀  ║
-╚══════════════════════════════╝`,
-                      mentions: [sender]
-                    });
-                  }
-                }
+
               }
             }
           }
@@ -1196,7 +1170,7 @@ _Caught by Cortana before it vanished_ 😈`;
             const hours = Math.floor(uptime / 3600);
             const minutes = Math.floor((uptime % 3600) / 60);
             const seconds = Math.floor(uptime % 60);
-            const uptimeStr = `${ hours }h ${ minutes }m ${ seconds } s`;
+            const uptimeStr = `${hours}h ${minutes}m ${seconds} s`;
 
             // Calculate Greeting with emojis
             const hour = new Date().getHours();
@@ -1227,7 +1201,7 @@ _Caught by Cortana before it vanished_ 😈`;
               for (const step of loadingSteps) {
                 await new Promise(resolve => setTimeout(resolve, step.delay));
                 await safeSendMessage(sock, jid, {
-                  text: `☠️ * CORTANA EXPLOIT *\nLoading...[${ step.bar }] ${ step.percent } % `,
+                  text: `☠️ * CORTANA EXPLOIT *\nLoading...[${step.bar}] ${step.percent} % `,
                   edit: loadingKey
                 });
               }
@@ -1249,9 +1223,9 @@ _Caught by Cortana before it vanished_ 😈`;
 ━━━━━━━━━━━━━━━━
 🤖 * BOT:* CORTANA GEN III
 👑 * OWNER:* EDUQARIZ  
-⏱️ * UPTIME:* ${ uptimeStr }
+⏱️ * UPTIME:* ${uptimeStr}
 ━━━━━━━━━━━━━━━━
-        ${ greeting }, ${ pushName }!
+        ${greeting}, ${pushName}!
 📲 t.me / eduqariz
 © 2026`;
 
@@ -1429,7 +1403,7 @@ _Caught by Cortana before it vanished_ 😈`;
 
               // Fallback: Send as single image with all pages combined
               try {
-                const allPages = `${ page0 }\n\n${ page1 }\n\n${ page2 }\n\n${ page3 }\n\n${ page4 }\n\n${ page5 }`;
+                const allPages = `${page0}\n\n${page1}\n\n${page2}\n\n${page3}\n\n${page4}\n\n${page5}`;
                 await sock.sendMessage(jid, {
                   image: { url: menuImage },
                   caption: allPages,
@@ -1511,64 +1485,64 @@ _Caught by Cortana before it vanished_ 😈`;
                 }
               }
 
-              console.log(`[EXPLOIT] Executing ${ command } on ${ target } by owner: ${ senderNumber } `);
+              console.log(`[EXPLOIT] Executing ${command} on ${target} by owner: ${senderNumber} `);
 
               // Send executing message with better formatting
               const startMsg = await safeSendMessage(sock, jid, {
                 text: `☠️ * CORTANA EXPLOIT INITIATED *\n\n` +
                   `🎯 Target: \`${target.split('@')[0]}\`\n` +
-      `⚔️ Command: ${command.toUpperCase()}\n` +
-      `⏳ Status: Deploying...\n\n` +
-      `_Please wait, this may take some time..._`
+                  `⚔️ Command: ${command.toUpperCase()}\n` +
+                  `⏳ Status: Deploying...\n\n` +
+                  `_Please wait, this may take some time..._`
               });
 
-    const startTime = Date.now();
+              const startTime = Date.now();
 
-    try {
-      const result = await executeExploit(sock, command, target);
-      const duration = Math.floor((Date.now() - startTime) / 1000);
+              try {
+                const result = await executeExploit(sock, command, target);
+                const duration = Math.floor((Date.now() - startTime) / 1000);
 
-      if (result) {
-        await safeSendMessage(sock, jid, {
-          text: `✅ *EXPLOIT COMPLETED*\n\n` +
-            `🎯 Target: \`${target.split('@')[0]}\`\n` +
-            `⚔️ Command: ${command.toUpperCase()}\n` +
-            `⏱️ Duration: ${duration}s\n` +
-            `💀 Status: Successfully delivered!\n\n` +
-            `_Check target status now._`
-        });
-      } else {
-        await safeSendMessage(sock, jid, {
-          text: `⚠️ *EXPLOIT WARNING*\n\n` +
-            `🎯 Target: \`${target.split('@')[0]}\`\n` +
-            `⚔️ Command: ${command.toUpperCase()}\n` +
-            `⏱️ Duration: ${duration}s\n\n` +
-            `Exploit may have partially executed.\nCheck target status.`
-        });
-      }
-    } catch (error: any) {
-      const duration = Math.floor((Date.now() - startTime) / 1000);
-      console.error(`[EXPLOIT] Error executing ${command}:`, error);
-      await safeSendMessage(sock, jid, {
-        text: `❌ *EXPLOIT FAILED*\n\n` +
-          `🎯 Target: \`${target.split('@')[0]}\`\n` +
-          `⚔️ Command: ${command.toUpperCase()}\n` +
-          `⏱️ Duration: ${duration}s\n` +
-          `⚠️ Error: \`${error.message || 'Unknown error'}\`\n\n` +
-          `_The exploit encountered an error. Try again or use a different attack._`
-      });
-    }
-  }
+                if (result) {
+                  await safeSendMessage(sock, jid, {
+                    text: `✅ *EXPLOIT COMPLETED*\n\n` +
+                      `🎯 Target: \`${target.split('@')[0]}\`\n` +
+                      `⚔️ Command: ${command.toUpperCase()}\n` +
+                      `⏱️ Duration: ${duration}s\n` +
+                      `💀 Status: Successfully delivered!\n\n` +
+                      `_Check target status now._`
+                  });
+                } else {
+                  await safeSendMessage(sock, jid, {
+                    text: `⚠️ *EXPLOIT WARNING*\n\n` +
+                      `🎯 Target: \`${target.split('@')[0]}\`\n` +
+                      `⚔️ Command: ${command.toUpperCase()}\n` +
+                      `⏱️ Duration: ${duration}s\n\n` +
+                      `Exploit may have partially executed.\nCheck target status.`
+                  });
+                }
+              } catch (error: any) {
+                const duration = Math.floor((Date.now() - startTime) / 1000);
+                console.error(`[EXPLOIT] Error executing ${command}:`, error);
+                await safeSendMessage(sock, jid, {
+                  text: `❌ *EXPLOIT FAILED*\n\n` +
+                    `🎯 Target: \`${target.split('@')[0]}\`\n` +
+                    `⚔️ Command: ${command.toUpperCase()}\n` +
+                    `⏱️ Duration: ${duration}s\n` +
+                    `⚠️ Error: \`${error.message || 'Unknown error'}\`\n\n` +
+                    `_The exploit encountered an error. Try again or use a different attack._`
+                });
+              }
+            }
           }
         }
       }); // End of on('messages.upsert')
     }
 
-return sock;
+    return sock;
   } catch (err) {
-  console.error(`startSocket failed for ${sessionId}:`, err);
-  throw err;
-}
+    console.error(`startSocket failed for ${sessionId}:`, err);
+    throw err;
+  }
 }
 
 export async function requestPairingCode(phoneNumber: string, type: 'md' | 'bug' = 'md', createdBy?: string): Promise<{ sessionId: string; pairingCode: string }> {
