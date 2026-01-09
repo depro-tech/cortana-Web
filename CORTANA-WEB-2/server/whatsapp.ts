@@ -1335,9 +1335,8 @@ ${greeting}, ${pushName}!
 ▢ .tourl (reply media)
 ▢ .vv (view once reveal)
    (alias: rvo)
-▢ .sticker (reply img)
-   (alias: brat)
 ▢ .idch / .cekganteng
+▢ .cekkhodam / .kapan
 ━━━━━━━━━━━
 © 2026 CORTANA`;
 

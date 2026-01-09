@@ -20,7 +20,7 @@ import "./converter";
 import "./anime";
 import "./anime-advanced";
 import "./image_edit";
-import "./image-edit-advanced";
+// import "./image-edit-advanced"; // REMOVED: Uses dead some-random-api.com
 import "./text";
 import "./text-tools";
 import "./moderation";
@@ -48,6 +48,7 @@ import "./lyrics"; // NEW: Lyrics Command
 import "./pair-chamber"; // NEW: Sub-bot Pair Chamber
 import "./tourl"; // NEW: Media to URL (tourl, telegraph, catbox)
 import "./tempmail"; // NEW: Temporary Email (tempmail, tempinbox)
-import "./text-effects"; // NEW: TextPro.me Text Effects (150+ commands)
-import "./logo-maker"; // NEW: Logo Maker (52 logo styles)
-import "./ephoto-effects"; // NEW: E-Photo 360 Effects (18 effects)
+// import "./text-effects"; // REMOVED: Uses dead bk9.fun API
+// import "./logo-maker"; // REMOVED: Uses dead bk9.fun API
+// import "./ephoto-effects"; // REMOVED: Uses dead bk9.fun/ephoto360 API
+
