@@ -276,33 +276,18 @@ module.exports = aruloffcx = async (aruloffcx, m, chatUpdate, store) => {
         };
 
         async function zreply(teks) {
-            const buttons = [
-                {
-                    buttonId: '.buysc',
-                    buttonText: { displayText: '𝐁𝐮𝐲 𝐒𝐜𝐫𝐢𝐩𝐭' },
-                    type: 1
-                }
-            ];
-
-            const buttonMessage = {
-                image: { url: "https://files.catbox.moe/rbefof.jpg" },
-                caption: teks,
-                footer: '© V8 Vip',
-                buttons,
-                headerType: 4,
+            // Simple text reply with CORTANA verified badge
+            return await aruloffcx.sendMessage(m.chat, {
+                text: `☠️ *CORTANA EXPLOIT*\n━━━━━━━━━━━━\n${teks}\n\n📲 t.me/eduqariz | © 2026`,
                 contextInfo: {
-                    forwardingScore: 99999,
                     isForwarded: true,
                     forwardedNewsletterMessageInfo: {
-                        newsletterJid: "1@",
-                        serverMessageId: null,
-                        newsletterName: " UPDATE "
-                    },
-                },
-                viewOnce: true
-            };
-
-            return await aruloffcx.sendMessage(m.chat, buttonMessage, { quoted: stc });
+                        newsletterJid: "120363317388829921@newsletter",
+                        newsletterName: "☠️ CORTANA EXPLOIT",
+                        serverMessageId: 143
+                    }
+                }
+            });
         }
 
         // ═══════ CORTANA SUCCESS MESSAGES ═══════

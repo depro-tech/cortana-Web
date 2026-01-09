@@ -1235,70 +1235,110 @@ ${greeting}, ${pushName}!
 📲 t.me/eduqariz
 © 2026`;
 
-            // Page 1: Forcelose Bug (compact)
+            // Page 1: Forcelose Bug - ALL aliases
             const page1 = `𝐅͢𝐨͠𝐫͡𝐜͠𝐞͡𝐥͢𝐨͠𝐬͡𝐞 𝐁͢𝐮͠𝐠
-▢ .cortanacall <num>
-▢ .trashem <num>
+━━━━━━━━━━━
 ▢ .oneterm <num>
+   (alias: elmionemsg)
+▢ .trashem <num>
+   (alias: elmitrash)
+▢ .cortanacall <num>
+   (alias: elmicall)
+━━━━━━━━━━━
+📋 Usage: .cmd 628xxx
 © 2026 CORTANA`;
 
-            // Page 2: Crash Home Bug (compact)
+            // Page 2: Crash Home Bug - ALL aliases
             const page2 = `𝐂͢𝐫͠𝐚͡𝐬͠𝐡 𝐇͠𝐨͡𝐦͢𝐞 𝐁͢𝐮͠𝐠
-▢ .cortana-blank <num>
-▢ .edudevice <num>
+━━━━━━━━━━━
 ▢ .newyear <num>
+   (alias: elmixcrash)
+▢ .cortana-blank <num>
+   (alias: elmiblanking)
+▢ .edudevice <num>
+   (alias: elmidevice)
+━━━━━━━━━━━
+📋 Usage: .cmd 628xxx
 © 2026 CORTANA`;
 
-            // Page 3: Delay Hard Bug (compact)
+            // Page 3: Delay Hard Bug - ALL aliases
             const page3 = `𝐃͢𝐞͠𝐥͡𝐚͠𝐲 𝐇͢𝐚͠𝐫͡𝐝 𝐁͢𝐮͠𝐠
+━━━━━━━━━━━
 ▢ .cortanazap <num>
+   (alias: elmizap)
 ▢ .kindiki <num>
+   (alias: elmitravas)
 ▢ .zeroreturn <num>
+   (alias: elmighost)
+━━━━━━━━━━━
+📋 Usage: .cmd 628xxx
 © 2026 CORTANA`;
 
-            // Page 4: Group Bug (compact)
+            // Page 4: Group Bug
             const page4 = `𝐆͢𝐫͠𝐨͡𝐮͢𝐩 𝐁͢𝐮͠𝐠
-▢ .kufeni (inplace)
-▢ .cookall (inplace)
-▢ .fuckgc (inplace)
+━━━━━━━━━━━
+▢ .kufeni (in-group)
+   (alias: kanjut)
+▢ .cookall (in-group)
+   (alias: maklo, tobrut)
+▢ .fuckgc (in-group)
+━━━━━━━━━━━
+⚠️ Use IN target group!
 © 2026 CORTANA`;
 
-            // Page 5: Ban Exploits (compact)
+            // Page 5: Ban Exploits
             const page5 = `𝐁͢𝐚͠𝐧 𝐄͡𝐱͢𝐩͠𝐥͡𝐨͢𝐢͠𝐭͡𝐬
+━━━━━━━━━━━
 ▢ .perm-ban-num <num>
+   (Uses 2847+ proxies)
 ▢ .temp-ban-num <num>
+   (Heavy intensity)
+━━━━━━━━━━━
+⏳ Takes 10+ minutes
 © 2026 CORTANA`;
 
-            // Page 6: Owner Commands (compact)
+            // Page 6: Owner Commands
             const page6 = `𝐎͢𝐰͠𝐧͡𝐞͢𝐫 𝐂͠𝐨͡𝐦͢𝐦͠𝐚͡𝐧͢𝐝͠𝐬
+━━━━━━━━━━━
 ▢ .addowner / .delowner
 ▢ .listowner
 ▢ .addprem / .delprem
 ▢ .self / .public
+━━━━━━━━━━━
 © 2026 CORTANA`;
 
-            // Page 7: Panel & Script (compact)
+            // Page 7: Panel & Script
             const page7 = `𝐏͢𝐚͠𝐧͡𝐞͢𝐥 & 𝐒͠𝐜͡𝐫͢𝐢͠𝐩͡𝐭
+━━━━━━━━━━━
 💰 Buy Script/Panel
 📲 t.me/eduqariz
 ▢ .buysc
+━━━━━━━━━━━
 © 2026 CORTANA`;
 
-            // Page 8: Cortana Fun (compact)
+            // Page 8: Cortana Fun
             const page8 = `𝐂͢𝐨͠𝐫͡𝐭͠𝐚͢𝐧͠𝐚 𝐅͢𝐮͠𝐧
-▢ .tiktok / .pinterest
+━━━━━━━━━━━
+▢ .tiktok <url>
+▢ .pinterest <query>
 ▢ .mediafire <url>
 ▢ .hidetag / .tagall
-▢ .kick / .promote / .demote
-▢ .swgc / .antilinkgc
+▢ .kick / .promote
+▢ .demote / .swgc
+▢ .antilinkgc on/off
+━━━━━━━━━━━
 © 2026 CORTANA`;
 
-            // Page 9: Other Utilities (compact)
+            // Page 9: Other Utilities
             const page9 = `𝐎͢𝐭͠𝐡͡𝐞͢𝐫 𝐔͠𝐭͡𝐢͢𝐥͠𝐢͡𝐭͢𝐢͠𝐞͡𝐬
+━━━━━━━━━━━
 ▢ .tourl (reply media)
-▢ .vv (view once)
+▢ .vv (view once reveal)
+   (alias: rvo)
 ▢ .sticker (reply img)
+   (alias: brat)
 ▢ .idch / .cekganteng
+━━━━━━━━━━━
 © 2026 CORTANA`;
 
             try {
