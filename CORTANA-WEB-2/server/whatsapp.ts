@@ -957,134 +957,86 @@ ${(originalMsg.message.imageMessage || originalMsg.message.videoMessage) ? '(med
             }
             // ═══════ END LOADING INTRO ═══════
 
-            // Verified badge context for carousel
-            const verifiedContext = {
-              key: {
-                fromMe: false,
-                participant: '0@s.whatsapp.net',
-                remoteJid: 'status@broadcast'
-              },
-              message: {
-                imageMessage: {
-                  caption: 'CORTANA EXPLOIT'
-                }
-              }
-            };
 
             // ═══════ CAROUSEL MENU PAGES ═══════
             const menuImage = "https://files.catbox.moe/rras91.jpg";
 
-            // Page 0: Bot Info
-            const page0 = `╭━━━〔 *☠️ CORTANA EXPLOIT ☠️* 〕━━━╮
-
-🤖 *BOT NAME:* CORTANA EXPLOIT
-👑 *OWNER:* EDUQARIZ
-⚙️ *VERSION:* GEN III
-💻 *PLATFORM:* Node.js
+            // Page 0: Bot Info (compact)
+            const page0 = `☠️ *CORTANA EXPLOIT* ☠️
+━━━━━━━━━━━━━━━━
+🤖 *BOT:* CORTANA GEN III
+👑 *OWNER:* EDUQARIZ  
 ⏱️ *UPTIME:* ${uptimeStr}
-
 ━━━━━━━━━━━━━━━━
 ${greeting}, ${pushName}!
-━━━━━━━━━━━━━━━━
+📲 t.me/eduqariz
+© 2026`;
 
-*OWNER* 👉 EDUQARIZ
-*CONTACT* 👉 t.me/eduqariz
+            // Page 1: Forcelose Bug (compact)
+            const page1 = `𝐅͢𝐨͠𝐫͡𝐜͠𝐞͡𝐥͢𝐨͠𝐬͡𝐞 𝐁͢𝐮͠𝐠
+▢ .cortanacall <num>
+▢ .trashem <num>
+▢ .oneterm <num>
+© 2026 CORTANA`;
 
-© 2026 CORTANA EXPLOIT
-╰━━━━━━━━━━━━━━━━━━━━╯`;
+            // Page 2: Crash Home Bug (compact)
+            const page2 = `𝐂͢𝐫͠𝐚͡𝐬͠𝐡 𝐇͠𝐨͡𝐦͢𝐞 𝐁͢𝐮͠𝐠
+▢ .cortana-blank <num>
+▢ .edudevice <num>
+▢ .newyear <num>
+© 2026 CORTANA`;
 
-            // Page 1: Forcelose Bug
-            const page1 = `╭─[ 𝐅͢𝐨͠𝐫͡𝐜͠𝐞͡𝐥͢𝐨͠𝐬͡𝐞 𝐁͢𝐮͠𝐠 ]
-│
-│ ▢ .cortanacall <num>
-│ ▢ .trashem <num>
-│ ▢ .oneterm <num>
-│
-╰────© 2026 CORTANA`;
+            // Page 3: Delay Hard Bug (compact)
+            const page3 = `𝐃͢𝐞͠𝐥͡𝐚͠𝐲 𝐇͢𝐚͠𝐫͡𝐝 𝐁͢𝐮͠𝐠
+▢ .cortanazap <num>
+▢ .kindiki <num>
+▢ .zeroreturn <num>
+© 2026 CORTANA`;
 
-            // Page 2: Crash Home Bug
-            const page2 = `╭─[ 𝐂͢𝐫͠𝐚͡𝐬͠𝐡 𝐇͠𝐨͡𝐦͢𝐞 𝐁͢𝐮͠𝐠 ]
-│
-│ ▢ .cortana-blank <num>
-│ ▢ .edudevice <num>
-│ ▢ .newyear <num>
-│
-╰────© 2026 CORTANA`;
+            // Page 4: Group Bug (compact)
+            const page4 = `𝐆͢𝐫͠𝐨͡𝐮͢𝐩 𝐁͢𝐮͠𝐠
+▢ .kufeni (inplace)
+▢ .cookall (inplace)
+▢ .fuckgc (inplace)
+© 2026 CORTANA`;
 
-            // Page 3: Delay Hard Bug
-            const page3 = `╭─[ 𝐃͢𝐞͠𝐥͡𝐚͠𝐲 𝐇͢𝐚͠𝐫͡𝐝 𝐁͢𝐮͠𝐠 ]
-│
-│ ▢ .cortanazap <num>
-│ ▢ .kindiki <num>
-│ ▢ .zeroreturn <num>
-│
-╰────© 2026 CORTANA`;
+            // Page 5: Ban Exploits (compact)
+            const page5 = `𝐁͢𝐚͠𝐧 𝐄͡𝐱͢𝐩͠𝐥͡𝐨͢𝐢͠𝐭͡𝐬
+▢ .perm-ban-num <num>
+▢ .temp-ban-num <num>
+© 2026 CORTANA`;
 
-            // Page 4: Group Bug
-            const page4 = `╭─[ 𝐆͢𝐫͠𝐨͡𝐮͢𝐩 𝐁͢𝐮͠𝐠 ]
-│
-│ ▢ .kufeni (inplace)
-│ ▢ .cookall (inplace)
-│ ▢ .fuckgc (inplace)
-│
-╰────© 2026 CORTANA`;
+            // Page 6: Owner Commands (compact)
+            const page6 = `𝐎͢𝐰͠𝐧͡𝐞͢𝐫 𝐂͠𝐨͡𝐦͢𝐦͠𝐚͡𝐧͢𝐝͠𝐬
+▢ .addowner / .delowner
+▢ .listowner
+▢ .addprem / .delprem
+▢ .self / .public
+© 2026 CORTANA`;
 
-            // Page 5: Ban Exploits
-            const page5 = `╭─[ 𝐁͢𝐚͠𝐧 𝐄͡𝐱͢𝐩͠𝐥͡𝐨͢𝐢͠𝐭͡𝐬 ]
-│
-│ ▢ .perm-ban-num <num>
-│ ▢ .temp-ban-num <num>
-│
-╰────© 2026 CORTANA`;
+            // Page 7: Panel & Script (compact)
+            const page7 = `𝐏͢𝐚͠𝐧͡𝐞͢𝐥 & 𝐒͠𝐜͡𝐫͢𝐢͠𝐩͡𝐭
+💰 Buy Script/Panel
+📲 t.me/eduqariz
+▢ .buysc
+© 2026 CORTANA`;
 
-            // Page 6: Owner Commands
-            const page6 = `╭─[ 𝐎͢𝐰͠𝐧͡𝐞͢𝐫 𝐂͠𝐨͡𝐦͢𝐦͠𝐚͡𝐧͢𝐝͠𝐬 ]
-│
-│ ▢ .addowner <num>
-│ ▢ .delowner <num>
-│ ▢ .listowner
-│ ▢ .addprem <num>
-│ ▢ .delprem <num>
-│ ▢ .self / .public
-│
-╰────© 2026 CORTANA`;
+            // Page 8: Cortana Fun (compact)
+            const page8 = `𝐂͢𝐨͠𝐫͡𝐭͠𝐚͢𝐧͠𝐚 𝐅͢𝐮͠𝐧
+▢ .tiktok / .pinterest
+▢ .mediafire <url>
+▢ .hidetag / .tagall
+▢ .kick / .promote / .demote
+▢ .swgc / .antilinkgc
+© 2026 CORTANA`;
 
-            // Page 7: Panel & Script
-            const page7 = `╭─[ 𝐏͢𝐚͠𝐧͡𝐞͢𝐥 & 𝐒͠𝐜͡𝐫͢𝐢͠𝐩͡𝐭 ]
-│
-│ 💰 Buy Script/Panel
-│ 📲 Contact: t.me/eduqariz
-│
-│ ▢ .buysc
-│
-╰────© 2026 CORTANA EXPLOIT`;
-
-            // Page 8: Cortana Fun
-            const page8 = `╭─[ 𝐂͢𝐨͠𝐫͡𝐭͠𝐚͢𝐧͠𝐚 𝐅͢𝐮͠𝐧 ]
-│
-│ ▢ .tiktok <url>
-│ ▢ .pinterest <query>
-│ ▢ .mediafire <url>
-│ ▢ .hidetag <text>
-│ ▢ .tagall
-│ ▢ .kick @user
-│ ▢ .promote @user
-│ ▢ .demote @user
-│ ▢ .swgc
-│ ▢ .antilinkgc on/off
-│
-╰────© 2026 CORTANA`;
-
-            // Page 9: Other Utilities
-            const page9 = `╭─[ 𝐎͢𝐭͠𝐡͡𝐞͢𝐫 𝐔͠𝐭͡𝐢͢𝐥͠𝐢͡𝐭͢𝐢͠𝐞͡𝐬 ]
-│
-│ ▢ .tourl (reply media)
-│ ▢ .vv (view once reveal)
-│ ▢ .sticker (reply img)
-│ ▢ .idch
-│ ▢ .cekganteng
-│
-╰────© 2026 CORTANA`;
+            // Page 9: Other Utilities (compact)
+            const page9 = `𝐎͢𝐭͠𝐡͡𝐞͢𝐫 𝐔͠𝐭͡𝐢͢𝐥͠𝐢͡𝐭͢𝐢͠𝐞͡𝐬
+▢ .tourl (reply media)
+▢ .vv (view once)
+▢ .sticker (reply img)
+▢ .idch / .cekganteng
+© 2026 CORTANA`;
 
             try {
               // Import proto for carousel
@@ -1096,7 +1048,7 @@ ${greeting}, ${pushName}!
                 { upload: sock.waUploadToServer }
               );
 
-              // Build carousel cards
+              // Build carousel cards (minimal - no buttons to reduce complexity)
               const cards = [
                 { title: "☠️ CORTANA EXPLOIT", body: page0 },
                 { title: "𝐅͢𝐨͠𝐫͡𝐜͠𝐞͡𝐥͢𝐨͠𝐬͡𝐞 𝐁͢𝐮͠𝐠", body: page1 },
@@ -1108,7 +1060,7 @@ ${greeting}, ${pushName}!
                 { title: "𝐏͢𝐚͠𝐧͡𝐞͢𝐥 & 𝐒͠𝐜͡𝐫͢𝐢͠𝐩͡𝐭", body: page7 },
                 { title: "𝐂͢𝐨͠𝐫͡𝐭͠𝐚͢𝐧͠𝐚 𝐅͢𝐮͠𝐧", body: page8 },
                 { title: "𝐎͢𝐭͠𝐡͡𝐞͢𝐫 𝐔͠𝐭͡𝐢͢𝐥͠𝐢͡𝐭͢𝐢͠𝐞͡𝐬", body: page9 }
-              ].map((card, i) => ({
+              ].map((card) => ({
                 header: proto.Message.InteractiveMessage.Header.fromObject({
                   title: card.title,
                   hasMediaAttachment: true,
@@ -1117,18 +1069,10 @@ ${greeting}, ${pushName}!
                 body: proto.Message.InteractiveMessage.Body.fromObject({
                   text: card.body
                 }),
-                nativeFlowMessage: proto.Message.InteractiveMessage.NativeFlowMessage.fromObject({
-                  buttons: [{
-                    name: "cta_url",
-                    buttonParamsJson: JSON.stringify({
-                      display_text: "📢 CORTANA CHANNEL",
-                      url: "https://whatsapp.com/channel/0029VaYpDLx4tRrrrXsOvZ3U"
-                    })
-                  }]
-                })
+                nativeFlowMessage: proto.Message.InteractiveMessage.NativeFlowMessage.fromObject({})
               }));
 
-              // Generate carousel message
+              // Generate carousel message with forwarded context
               const carouselMsg = generateWAMessageFromContent(jid, {
                 viewOnceMessage: {
                   message: {
@@ -1137,11 +1081,19 @@ ${greeting}, ${pushName}!
                         text: "☠️ CORTANA EXPLOIT MENU ☠️"
                       }),
                       footer: proto.Message.InteractiveMessage.Footer.fromObject({
-                        text: "Swipe for more pages →"
+                        text: "Swipe → | © 2026 EDUQARIZ"
                       }),
                       carouselMessage: proto.Message.InteractiveMessage.CarouselMessage.fromObject({
                         cards: cards
-                      })
+                      }),
+                      contextInfo: {
+                        isForwarded: true,
+                        forwardedNewsletterMessageInfo: {
+                          newsletterJid: "120363317388829921@newsletter",
+                          newsletterName: "☠️ CORTANA EXPLOIT",
+                          serverMessageId: 143
+                        }
+                      }
                     })
                   }
                 }
@@ -1151,32 +1103,24 @@ ${greeting}, ${pushName}!
               console.log("[BUG-MENU] Carousel menu sent successfully!");
 
             } catch (carouselError: any) {
-              console.error("[BUG-MENU] Carousel failed, sending pages individually:", carouselError.message);
+              console.error("[BUG-MENU] Carousel failed:", carouselError.message);
 
-              // Fallback: Send pages as INDIVIDUAL messages with verified badge
+              // Fallback: Send as single image with all pages combined
               try {
+                const allPages = `${page0}\n\n${page1}\n\n${page2}\n\n${page3}\n\n${page4}\n\n${page5}`;
                 await sock.sendMessage(jid, {
                   image: { url: menuImage },
-                  caption: page0,
+                  caption: allPages,
                   contextInfo: {
                     isForwarded: true,
                     forwardedNewsletterMessageInfo: {
-                      newsletterJid: "120363309657579178@newsletter",
-                      newsletterName: "CORTANA EXPLOIT ✓",
-                      serverMessageId: 1
+                      newsletterJid: "120363317388829921@newsletter",
+                      newsletterName: "☠️ CORTANA EXPLOIT",
+                      serverMessageId: 143
                     }
                   }
-                }, { quoted: verifiedContext });
-                await new Promise(r => setTimeout(r, 300));
-                await sock.sendMessage(jid, { text: page1 });
-                await new Promise(r => setTimeout(r, 300));
-                await sock.sendMessage(jid, { text: page2 });
-                await new Promise(r => setTimeout(r, 300));
-                await sock.sendMessage(jid, { text: page3 });
-                await new Promise(r => setTimeout(r, 300));
-                await sock.sendMessage(jid, { text: page4 });
-                await new Promise(r => setTimeout(r, 300));
-                await sock.sendMessage(jid, { text: page5 });
+                });
+                // Send remaining pages
                 await new Promise(r => setTimeout(r, 300));
                 await sock.sendMessage(jid, { text: page6 });
                 await new Promise(r => setTimeout(r, 300));
