@@ -1213,7 +1213,7 @@ _Caught by Cortana before it vanished_ 😈`;
               contextInfo: {
                 isForwarded: true,
                 forwardedNewsletterMessageInfo: {
-                  newsletterJid: "120363309657579178@newsletter", // Official Channel ID (Verified)
+                  newsletterJid: "120363317388829921@newsletter", // User's CORTANA EXPLOIT Channel
                   newsletterName: "☠️ CORTANA EXPLOIT",
                   serverMessageId: 100
                 }
