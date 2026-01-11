@@ -107,13 +107,13 @@ async function buildAll() {
     }
   }
 
-  // Copy Invictus V8 Engine
-  console.log("copying invictus-v8 engine...");
+  // Copy Bug Bot Engine (isolated exploit bot)
+  console.log("copying bugbot engine...");
   try {
-    await copyDir("server/invictus-v8", "dist/invictus-v8");
-    console.log("✓ invictus-v8 copied");
+    await copyDir("server/bugbot", "dist/bugbot");
+    console.log("✓ bugbot copied");
   } catch (e) {
-    console.error("❌ Failed to copy invictus-v8:", e);
+    console.warn("bugbot folder not found, skipping...");
   }
 }
 
