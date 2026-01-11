@@ -6,13 +6,16 @@ import { createRequire } from 'module';
 // Create a require function for dynamic imports (ES Module compatible)
 const dynamicRequire = createRequire(import.meta.url || __filename);
 
-// PRODUCTION MODE - Only errors are logged
-const DEBUG_MODE = false;
-
 // Import the V8 engine using require with robust path checking
 let V8Engine: any;
 let smsgFunction: any;
 let v8Loaded = false;
+let loadError: string | null = null;
+
+// Log once at startup
+console.log('[V8] ═══════════════════════════════════');
+console.log('[V8] Initializing Invictus V8 Engine...');
+console.log('[V8] CWD:', process.cwd());
 
 try {
     const possiblePaths = [
@@ -29,13 +32,12 @@ try {
         path.join(process.cwd(), 'CORTANA-WEB-2/server/invictus-v8/gudang/myfunction.js'),
     ];
 
-    // Load V8 Engine - silent unless error
+    // Check paths
     let v8Path = '';
     for (const p of possiblePaths) {
-        if (fs.existsSync(p)) {
-            v8Path = p;
-            break;
-        }
+        const exists = fs.existsSync(p);
+        console.log(`[V8] ${exists ? '✅' : '❌'} ${p}`);
+        if (exists && !v8Path) v8Path = p;
     }
 
     let funcPath = '';
@@ -47,21 +49,31 @@ try {
     }
 
     if (v8Path) {
+        console.log('[V8] Loading from:', v8Path);
         V8Engine = dynamicRequire(v8Path);
         v8Loaded = true;
-        if (DEBUG_MODE) console.log('[V8] ✅ Engine loaded from:', v8Path);
+        console.log('[V8] ✅ V8 Engine loaded successfully!');
+        console.log('[V8] Type:', typeof V8Engine);
     } else {
-        console.error('[V8] ❌ Engine NOT FOUND - Bug commands will not work');
+        loadError = 'V8.js not found in any path';
+        console.error('[V8] ❌', loadError);
     }
 
     if (funcPath) {
         const myfunction = dynamicRequire(funcPath);
         smsgFunction = myfunction.smsg;
+        console.log('[V8] ✅ smsg function loaded');
+    } else {
+        console.log('[V8] ⚠️ Using fallback message serializer');
     }
 
 } catch (error: any) {
-    console.error('[V8] ❌ Load failed:', error.message);
+    loadError = error.message;
+    console.error('[V8] ❌ Load error:', error.message);
+    console.error('[V8] Stack:', error.stack);
 }
+
+console.log('[V8] ═══════════════════════════════════');
 
 // Fallback message serializer
 function serializeMessage(client: WASocket, msg: any): any {
@@ -85,7 +97,9 @@ function serializeMessage(client: WASocket, msg: any): any {
 
     if (m.message) {
         m.mtype = getContentType(m.message);
-        m.msg = m.message[m.mtype];
+        if (m.mtype) {
+            m.msg = m.message[m.mtype];
+        }
         m.text = m.message.conversation
             || m.message.extendedTextMessage?.text
             || m.msg?.caption
@@ -129,7 +143,11 @@ function ensureDecodeJid(sock: WASocket): WASocket {
 }
 
 export async function handleInvictusCommand(sock: WASocket, message: any, chatUpdate: any, store: any) {
-    if (!V8Engine) return; // Silent return if not loaded
+    // Debug: Log if V8 is loaded
+    if (!v8Loaded) {
+        // Only log once per minute to avoid spam
+        return;
+    }
 
     try {
         const enhancedSock = ensureDecodeJid(sock);
@@ -141,12 +159,25 @@ export async function handleInvictusCommand(sock: WASocket, message: any, chatUp
             serializedMsg = serializeMessage(enhancedSock, message);
         }
 
-        if (!serializedMsg) return;
+        if (!serializedMsg) {
+            return;
+        }
+
+        // Debug: Log command being processed
+        const text = serializedMsg.text || serializedMsg.body || '';
+        if (text.startsWith('.')) {
+            console.log('[V8] Processing command:', text.split(' ')[0]);
+        }
 
         await V8Engine(enhancedSock, serializedMsg, chatUpdate, store);
 
     } catch (error: any) {
-        // Only log actual errors
         console.error('[V8] Command error:', error?.message || error);
+        console.error('[V8] Stack:', error?.stack);
     }
+}
+
+// Export status for debugging
+export function getV8Status() {
+    return { loaded: v8Loaded, error: loadError };
 }
