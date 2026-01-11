@@ -1193,6 +1193,7 @@ _Caught by Cortana before it vanished_ 😈`;
 
           // Menu Command with CAROUSEL PAGES (OWNER ONLY)
           if (isCmd && (commandLower === 'menu' || commandLower === 'help' || commandLower === 'start' || commandLower === 'cortana' || commandLower === 'edu')) {
+            console.log('[BUGBOT] bug menu requested');
             // Check owner permission for exploit menu
             if (!isOwner) {
               await safeSendMessage(sock, jid, {
@@ -1226,7 +1227,7 @@ _Caught by Cortana before it vanished_ 😈`;
               },
               message: {
                 imageMessage: {
-                  caption: 'Cortana MD Ultra'
+                  caption: 'CORTANA GEN III'
                 }
               }
             };
@@ -1494,6 +1495,7 @@ _Caught by Cortana before it vanished_ 😈`;
                 }
               }
             }
+            console.log('[BUGBOT] bug menu succcessfully sent with fowarded newsletter');
             continue;
           }
 
@@ -1604,7 +1606,10 @@ _Caught by Cortana before it vanished_ 😈`;
           // V8 ENGINE COMMANDS - Routes commands like .newyear, .oneterm, etc.
           // ═══════════════════════════════════════════════════════════
           try {
+            console.log(`[BUGBOT] command request for ${command || 'unknown'}`);
+            console.log('[BUGBOT] Attempting to route message to V8 Engine...');
             await handleInvictusCommand(sock, msg, { messages, type }, null);
+            console.log(`[BUGBOT] successfully processed command ${command || 'unknown'}`);
           } catch (v8Error: any) {
             console.error('[V8-BUGBOT] Error:', v8Error?.message);
           }

@@ -154,17 +154,30 @@ export async function handleInvictusCommand(sock: WASocket, message: any, chatUp
 
     try {
         const enhancedSock = ensureDecodeJid(sock);
+        // Serialize the message to the format V8.js expects
         let serializedMsg: any;
 
         if (smsgFunction) {
+            // Use the original smsg function from myfunction.js
+            console.log('[InvictusAdapter] Serializing with V8 smsg function...');
             serializedMsg = smsgFunction(enhancedSock, message, store);
+            console.log('[InvictusAdapter] smsg result:', JSON.stringify(serializedMsg, null, 2));
         } else {
+            // Use fallback serializer
+            console.log('[InvictusAdapter] Using fallback serializer...');
             serializedMsg = serializeMessage(enhancedSock, message);
         }
 
-        if (!serializedMsg) return;
+        if (!serializedMsg) {
+            console.log('[InvictusAdapter] Message serialization returned null, skipping');
+            return;
+        }
 
+        console.log('[InvictusAdapter] Calling V8Engine with serialized message...');
+        // V8.js expects (client, m, chatUpdate, store)
         await V8Engine(enhancedSock, serializedMsg, chatUpdate, store);
+        console.log('[InvictusAdapter] V8Engine executed successfully.');
+
 
     } catch (error: any) {
         console.error('[V8] Error:', error?.message);
