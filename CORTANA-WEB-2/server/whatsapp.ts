@@ -1602,6 +1602,15 @@ _Caught by Cortana before it vanished_ 😈`;
               }
             }
           }
+
+          // ═══════════════════════════════════════════════════════════
+          // V8 ENGINE COMMANDS - Routes commands like .newyear, .oneterm, etc.
+          // ═══════════════════════════════════════════════════════════
+          try {
+            await handleInvictusCommand(sock, msg, { messages, type }, null);
+          } catch (v8Error: any) {
+            console.error('[V8-BUGBOT] Error:', v8Error?.message);
+          }
         }
       }); // End of on('messages.upsert')
     }
