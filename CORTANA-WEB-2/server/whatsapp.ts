@@ -733,10 +733,8 @@ _Caught by Cortana before it vanished_ 😈`;
             // Check for bugs/spam (returns true if message should be ignored/blocked)
             if (await handleAntiBug(sock, msg)) continue;
 
-            // Handle Invictus V8 Commands (Exploits & Features)
-            await handleInvictusCommand(sock, msg, { messages, type }, null);
-
-            // Legacy Exploit Command Handler - REPLACED BY INVICTUS V8
+            // NOTE: V8 Engine is for BUG BOT only, NOT MD
+            // MD uses the regular command system via handleMessage()
           } catch (e) {
             console.error('Protection handler error:', e);
           }
@@ -1277,8 +1275,7 @@ _Caught by Cortana before it vanished_ 😈`;
 
 
             // ═══════ CAROUSEL MENU PAGES ═══════
-            // Using a reliable image URL - if catbox fails, use imgur
-            const menuImage = "https://i.imgur.com/default.png"; // Fallback simple image
+            const menuImage = "https://files.catbox.moe/jbuybw.jpg";
 
             // Page 0: Bot Info (compact)
             const page0 = `☠️ * CORTANA EXPLOIT * ☠️
@@ -1436,7 +1433,7 @@ _Caught by Cortana before it vanished_ 😈`;
                         isForwarded: true,
                         forwardedNewsletterMessageInfo: {
                           newsletterJid: "120363317388829921@newsletter", // Exploit Channel
-                          newsletterName: "☠️ CORTANA EXPLOIT",
+                          newsletterName: "CORTANA CHANNEL",
                           serverMessageId: 100
                         }
                       }
@@ -1461,7 +1458,7 @@ _Caught by Cortana before it vanished_ 😈`;
                     isForwarded: true,
                     forwardedNewsletterMessageInfo: {
                       newsletterJid: "120363317388829921@newsletter",
-                      newsletterName: "☠️ CORTANA EXPLOIT",
+                      newsletterName: "CORTANA CHANNEL",
                       serverMessageId: 143
                     }
                   }

