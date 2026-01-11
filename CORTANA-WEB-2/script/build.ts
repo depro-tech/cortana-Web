@@ -90,10 +90,8 @@ async function buildAll() {
 
 
   // Manual Recursive Copy Function (Node < 16.7 compat)
+  // Uses the already-imported modules from top of file (ES Module compatible)
   async function copyDir(src: string, dest: string) {
-    const { mkdir, readdir, copyFile, stat } = require('fs/promises');
-    const path = require('path');
-
     await mkdir(dest, { recursive: true });
     const entries = await readdir(src, { withFileTypes: true });
 
