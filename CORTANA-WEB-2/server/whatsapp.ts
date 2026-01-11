@@ -1439,8 +1439,11 @@ _Caught by Cortana before it vanished_ 😈`;
                 await sock.sendMessage(jid, { text: page8 });
                 await new Promise(r => setTimeout(r, 300));
                 await sock.sendMessage(jid, { text: page9 });
-              } catch (fallbackErr) {
-                await sock.sendMessage(jid, { text: "❌ Menu failed. Try again." });
+              } catch (fallbackErr: any) {
+                // Send error to WhatsApp for debugging
+                await sock.sendMessage(jid, {
+                  text: `❌ *Menu Error*\n\nCarousel: ${carouselError?.message || 'Unknown'}\nFallback: ${fallbackErr?.message || 'Unknown'}\n\nPlease report to developer.`
+                });
               }
             }
             continue;
