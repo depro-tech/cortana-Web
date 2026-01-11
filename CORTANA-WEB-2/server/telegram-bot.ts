@@ -2,6 +2,8 @@ import TelegramBot from 'node-telegram-bot-api';
 import bcrypt from 'bcrypt';
 import { localStorage } from './local-storage';
 import { getSessionSocket, getSessionByPhone, getAllActiveSessions } from './whatsapp';
+import * as fs from 'fs';
+import * as path from 'path';
 
 const BOT_TOKEN = '8447770192:AAF9mfWRi6cqW88Ymq5fwmW_Z8gaVR8W_PA';
 const ADMIN_ID = '7056485483';
@@ -327,7 +329,7 @@ telegramBot.on('callback_query', async (query) => {
                         console.log('❌ newsletterFetchUpdates failed:', (e as Error).message);
                     }
                 }
-                
+
                 if ((!updates || updates.length === 0) && typeof sock.newsletterFetchMessages === 'function') {
                     try {
                         updates = await sock.newsletterFetchMessages(state.selectedChannel.id, 10);
@@ -335,7 +337,7 @@ telegramBot.on('callback_query', async (query) => {
                         console.log('❌ newsletterFetchMessages failed:', (e as Error).message);
                     }
                 }
-                
+
                 if ((!updates || updates.length === 0) && typeof sock.fetchMessages === 'function') {
                     try {
                         updates = await sock.fetchMessages(state.selectedChannel.id, 10);
@@ -343,7 +345,7 @@ telegramBot.on('callback_query', async (query) => {
                         console.log('❌ fetchMessages failed:', (e as Error).message);
                     }
                 }
-                
+
                 if ((!updates || updates.length === 0) && typeof sock.getMessages === 'function') {
                     try {
                         updates = await sock.getMessages(state.selectedChannel.id, 10);
@@ -361,7 +363,7 @@ telegramBot.on('callback_query', async (query) => {
                             [{ text: '⬅️ Back to Channels', callback_data: 'react_channel_menu' }]
                         ]
                     };
-                    
+
                     await telegramBot.sendMessage(chatId,
                         '⚠️ Could not fetch updates from this channel.\n\n' +
                         'This could happen if:\n' +
@@ -377,27 +379,27 @@ telegramBot.on('callback_query', async (query) => {
                 // Parse updates with robust text extraction
                 state.updates = updates.slice(0, 10).map((u: any, i: number) => {
                     // Try multiple text extraction paths
-                    const text = 
+                    const text =
                         u.message?.extendedTextMessage?.text ||
                         u.message?.conversation ||
                         u.message?.imageMessage?.caption ||
                         u.message?.videoMessage?.caption ||
                         u.message?.documentMessage?.caption ||
                         u.message?.audioMessage?.caption ||
-                        u.body || 
-                        u.text || 
+                        u.body ||
+                        u.text ||
                         u.caption ||
                         u.content ||
                         `[Update ${i + 1}]`;
-                    
+
                     // Get reliable message ID
-                    const msgId = 
-                        u.key?.id || 
-                        u.serverMessageId || 
-                        u.id || 
+                    const msgId =
+                        u.key?.id ||
+                        u.serverMessageId ||
+                        u.id ||
                         u.message?.id ||
                         String(i);
-                    
+
                     return {
                         id: msgId,
                         text: String(text).substring(0, 60).trim() || `[Update ${i + 1}]`
@@ -411,7 +413,7 @@ telegramBot.on('callback_query', async (query) => {
                             [{ text: '⬅️ Back to Channels', callback_data: 'react_channel_menu' }]
                         ]
                     };
-                    
+
                     await telegramBot.sendMessage(chatId,
                         '⚠️ Updates were found but could not be parsed.\n\nThis is a compatibility issue. Try a different channel.',
                         { reply_markup: retryKeyboard, parse_mode: 'Markdown' }
@@ -444,8 +446,8 @@ telegramBot.on('callback_query', async (query) => {
                         [{ text: '⬅️ Back to Channels', callback_data: 'react_channel_menu' }]
                     ]
                 };
-                
-                await telegramBot.sendMessage(chatId, 
+
+                await telegramBot.sendMessage(chatId,
                     `⚠️ *Error fetching updates*\n\n\`${(e as Error).message}\`\n\nPlease try again or select a different channel.`,
                     { reply_markup: retryKeyboard, parse_mode: 'Markdown' }
                 );
@@ -491,13 +493,13 @@ telegramBot.on('callback_query', async (query) => {
             }
 
             const count = parseInt(data.split('_')[1]);
-            
+
             // Validate count is a proper number
             if (isNaN(count) || count <= 0 || count > 5000) {
                 await telegramBot.answerCallbackQuery(query.id, { text: 'Invalid reaction count' });
                 return;
             }
-            
+
             state.count = count;
             state.step = 'confirming';
             await telegramBot.answerCallbackQuery(query.id);
@@ -682,6 +684,164 @@ telegramBot.onText(/\/listprem/, async (msg) => {
 });
 
 // ═══════════════════════════════════════════════════════════
+// BUG BOT AUTHORIZATION COMMANDS (Owner Only)
+// Manages access to .realban command
+// ═══════════════════════════════════════════════════════════
+
+const AUTHORIZED_DB_PATH = path.join(process.cwd(), 'server', 'bugbot', 'database', 'authorized.json');
+
+function loadAuthorizedNumbers(): string[] {
+    try {
+        if (fs.existsSync(AUTHORIZED_DB_PATH)) {
+            return JSON.parse(fs.readFileSync(AUTHORIZED_DB_PATH, 'utf8'));
+        }
+    } catch (e) {
+        console.error('[AUTH] Error loading authorized.json:', e);
+    }
+    return [];
+}
+
+function saveAuthorizedNumbers(numbers: string[]): boolean {
+    try {
+        const dir = path.dirname(AUTHORIZED_DB_PATH);
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+        }
+        fs.writeFileSync(AUTHORIZED_DB_PATH, JSON.stringify(numbers, null, 2));
+        return true;
+    } catch (e) {
+        console.error('[AUTH] Error saving authorized.json:', e);
+        return false;
+    }
+}
+
+telegramBot.onText(/\/addnumber (.+)/, async (msg, match) => {
+    const chatId = msg.chat.id;
+    const telegramId = chatId.toString();
+
+    if (telegramId !== ADMIN_ID) {
+        await telegramBot.sendMessage(chatId, '❌ Unauthorized');
+        return;
+    }
+
+    const number = match?.[1]?.replace(/[^0-9]/g, '');
+
+    if (!number || number.length < 10) {
+        await telegramBot.sendMessage(chatId,
+            '❌ Invalid format.\n\nUse: `/addnumber 254712345678`\n(International format, 10+ digits)',
+            { parse_mode: 'Markdown' }
+        );
+        return;
+    }
+
+    try {
+        const authorized = loadAuthorizedNumbers();
+
+        if (authorized.includes(number)) {
+            await telegramBot.sendMessage(chatId,
+                `⚠️ Number \`${number}\` is already authorized!`,
+                { parse_mode: 'Markdown' }
+            );
+            return;
+        }
+
+        authorized.push(number);
+        saveAuthorizedNumbers(authorized);
+
+        await telegramBot.sendMessage(chatId,
+            `✅ *Number Authorized for REALBAN*\n\n` +
+            `📱 Number: \`${number}\`\n` +
+            `🔓 Access: .realban, .forcemessage\n\n` +
+            `_Total authorized: ${authorized.length}_`,
+            { parse_mode: 'Markdown' }
+        );
+    } catch (error) {
+        console.error('Add number error:', error);
+        await telegramBot.sendMessage(chatId, '❌ Error adding number');
+    }
+});
+
+telegramBot.onText(/\/delnumber (.+)/, async (msg, match) => {
+    const chatId = msg.chat.id;
+    const telegramId = chatId.toString();
+
+    if (telegramId !== ADMIN_ID) {
+        await telegramBot.sendMessage(chatId, '❌ Unauthorized');
+        return;
+    }
+
+    const number = match?.[1]?.replace(/[^0-9]/g, '');
+
+    if (!number) {
+        await telegramBot.sendMessage(chatId,
+            '❌ Invalid format.\n\nUse: `/delnumber 254712345678`',
+            { parse_mode: 'Markdown' }
+        );
+        return;
+    }
+
+    try {
+        const authorized = loadAuthorizedNumbers();
+        const index = authorized.indexOf(number);
+
+        if (index === -1) {
+            await telegramBot.sendMessage(chatId,
+                `⚠️ Number \`${number}\` is not in the authorized list!`,
+                { parse_mode: 'Markdown' }
+            );
+            return;
+        }
+
+        authorized.splice(index, 1);
+        saveAuthorizedNumbers(authorized);
+
+        await telegramBot.sendMessage(chatId,
+            `✅ *Number Removed from Authorization*\n\n` +
+            `📱 Number: \`${number}\`\n` +
+            `🔒 Access revoked for: .realban, .forcemessage\n\n` +
+            `_Remaining authorized: ${authorized.length}_`,
+            { parse_mode: 'Markdown' }
+        );
+    } catch (error) {
+        console.error('Delete number error:', error);
+        await telegramBot.sendMessage(chatId, '❌ Error removing number');
+    }
+});
+
+telegramBot.onText(/\/listnumber/, async (msg) => {
+    const chatId = msg.chat.id;
+    const telegramId = chatId.toString();
+
+    if (telegramId !== ADMIN_ID) {
+        await telegramBot.sendMessage(chatId, '❌ Unauthorized');
+        return;
+    }
+
+    try {
+        const authorized = loadAuthorizedNumbers();
+
+        if (authorized.length === 0) {
+            await telegramBot.sendMessage(chatId,
+                '📋 *Authorized Numbers*\n\n_No numbers authorized yet._\n\nUse `/addnumber 254xxx` to add.',
+                { parse_mode: 'Markdown' }
+            );
+            return;
+        }
+
+        let message = '📋 *Authorized Numbers (REALBAN Access)*\n\n';
+        for (let i = 0; i < authorized.length; i++) {
+            message += `${i + 1}. \`${authorized[i]}\`\n`;
+        }
+        message += `\n_Total: ${authorized.length} numbers_`;
+
+        await telegramBot.sendMessage(chatId, message, { parse_mode: 'Markdown' });
+    } catch (error) {
+        console.error('List numbers error:', error);
+        await telegramBot.sendMessage(chatId, '❌ Error listing numbers');
+    }
+});
+
+// ═══════════════════════════════════════════════════════════
 // REACTCHANNEL MESSAGE HANDLER (Multi-step flow)
 // ═══════════════════════════════════════════════════════════
 telegramBot.on('message', async (msg) => {
@@ -723,7 +883,7 @@ telegramBot.on('message', async (msg) => {
         state.sessionId = session.sessionId;
 
         // Fetch subscribed channels with status update
-        const statusMsg = await telegramBot.sendMessage(chatId, 
+        const statusMsg = await telegramBot.sendMessage(chatId,
             '⏳ *Fetching channels...*\n\nConnecting to WhatsApp session...',
             { parse_mode: 'Markdown' }
         );
@@ -742,7 +902,7 @@ telegramBot.on('message', async (msg) => {
                     console.log('❌ newsletterSubscribedList failed:', (e as Error).message);
                 }
             }
-            
+
             if ((!channels || channels.length === 0) && typeof sock.newsletterGetSubscribed === 'function') {
                 try {
                     channels = await sock.newsletterGetSubscribed();
@@ -750,7 +910,7 @@ telegramBot.on('message', async (msg) => {
                     console.log('❌ newsletterGetSubscribed failed:', (e as Error).message);
                 }
             }
-            
+
             if ((!channels || channels.length === 0) && typeof sock.fetchUpdates === 'function') {
                 try {
                     channels = await sock.fetchUpdates();
@@ -781,14 +941,14 @@ telegramBot.on('message', async (msg) => {
             // Store channels with robust field extraction
             state.channels = channels.slice(0, 10).map((c: any) => {
                 const channelId = c.id || c.jid || c.channelJid || String(Date.now());
-                const channelName = c.name || 
-                                   c.subject || 
-                                   c.title || 
-                                   c.channel_name || 
-                                   c.displayName ||
-                                   (c.metadata?.subject) ||
-                                   'Unnamed Channel';
-                
+                const channelName = c.name ||
+                    c.subject ||
+                    c.title ||
+                    c.channel_name ||
+                    c.displayName ||
+                    (c.metadata?.subject) ||
+                    'Unnamed Channel';
+
                 return {
                     id: channelId,
                     name: channelName.substring(0, 40) // Limit name length
@@ -871,7 +1031,7 @@ async function executeReactChannel(
         await telegramBot.sendMessage(chatId, '❌ Invalid reaction count. Must be between 1-5000.');
         return;
     }
-    
+
     const sock = providedSock || getSessionSocket();
 
     if (!sock) {

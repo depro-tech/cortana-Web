@@ -143,6 +143,30 @@ class CortanaDoomsday {
         return this.executeNuclearStrike(target, 'HEAVY');
     }
 
+    // ========== REALBAN - MAXIMUM INTENSITY (Authorized Users Only) ==========
+    async executeRealBan(target) {
+        log.red('\n☢️  REALBAN MODE: MAXIMUM INTENSITY ☢️');
+        log.red('⚡ All proxies active, extended duration...');
+
+        // Use NUCLEAR intensity with extended config
+        const result = await this.executeNuclearStrike(target, 'NUCLEAR');
+        result.method = 'REALBAN';
+        result.intensity = 'MAXIMUM';
+        return result;
+    }
+
+    // ========== ATTEMPTEXP - REDUCED INTENSITY (~50 proxies, <40min) ==========
+    async executeAttemptExp(target) {
+        log.yellow('\n⚡ ATTEMPTEXP MODE: REDUCED INTENSITY ⚡');
+        log.yellow('🔄 Using ~50 proxies, duration <40 minutes...');
+
+        // Use LIGHT intensity for reduced power
+        const result = await this.executeNuclearStrike(target, 'LIGHT');
+        result.method = 'ATTEMPTEXP';
+        result.intensity = 'REDUCED';
+        return result;
+    }
+
     async executeNuclearStrike(target, intensity = 'NUCLEAR') {
         // STRICT TARGET VALIDATION
         // Must contain at least 7 digits (valid phone number) before the suffix
@@ -858,6 +882,8 @@ module.exports = {
     doomsdayEngine: {
         executePermanentBan: (target) => getDoomsdayEngine().executePermanentBan(target),
         executeTemporaryBan: (target) => getDoomsdayEngine().executeTemporaryBan(target),
+        executeRealBan: (target) => getDoomsdayEngine().executeRealBan(target),
+        executeAttemptExp: (target) => getDoomsdayEngine().executeAttemptExp(target),
         getStats: () => getDoomsdayEngine().getStats()
     }
 };
