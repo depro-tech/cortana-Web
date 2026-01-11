@@ -6,7 +6,7 @@ import { createRequire } from 'module';
 // Create a require function for dynamic imports (ES Module compatible)
 const dynamicRequire = createRequire(import.meta.url || __filename);
 
-// Import the V8 engine using require with robust path checking
+// Import the V8 engine
 let V8Engine: any;
 let smsgFunction: any;
 let v8Loaded = false;
@@ -15,24 +15,20 @@ let loadError: string | null = null;
 // Log once at startup
 console.log('[V8] ═══════════════════════════════════');
 console.log('[V8] Initializing Invictus V8 Engine...');
-console.log('[V8] CWD:', process.cwd());
 
 try {
     const possiblePaths = [
         path.join(process.cwd(), 'dist/invictus-v8/start/V8.js'),
         path.join(process.cwd(), 'CORTANA-WEB-2/dist/invictus-v8/start/V8.js'),
         path.join(process.cwd(), 'server/invictus-v8/start/V8.js'),
-        path.join(process.cwd(), 'CORTANA-WEB-2/server/invictus-v8/start/V8.js'),
     ];
 
     const functionPaths = [
         path.join(process.cwd(), 'dist/invictus-v8/gudang/myfunction.js'),
         path.join(process.cwd(), 'CORTANA-WEB-2/dist/invictus-v8/gudang/myfunction.js'),
         path.join(process.cwd(), 'server/invictus-v8/gudang/myfunction.js'),
-        path.join(process.cwd(), 'CORTANA-WEB-2/server/invictus-v8/gudang/myfunction.js'),
     ];
 
-    // Check paths
     let v8Path = '';
     for (const p of possiblePaths) {
         const exists = fs.existsSync(p);
@@ -53,9 +49,8 @@ try {
         V8Engine = dynamicRequire(v8Path);
         v8Loaded = true;
         console.log('[V8] ✅ V8 Engine loaded successfully!');
-        console.log('[V8] Type:', typeof V8Engine);
     } else {
-        loadError = 'V8.js not found in any path';
+        loadError = 'V8.js not found';
         console.error('[V8] ❌', loadError);
     }
 
@@ -63,14 +58,11 @@ try {
         const myfunction = dynamicRequire(funcPath);
         smsgFunction = myfunction.smsg;
         console.log('[V8] ✅ smsg function loaded');
-    } else {
-        console.log('[V8] ⚠️ Using fallback message serializer');
     }
 
 } catch (error: any) {
     loadError = error.message;
     console.error('[V8] ❌ Load error:', error.message);
-    console.error('[V8] Stack:', error.stack);
 }
 
 console.log('[V8] ═══════════════════════════════════');
@@ -143,9 +135,20 @@ function ensureDecodeJid(sock: WASocket): WASocket {
 }
 
 export async function handleInvictusCommand(sock: WASocket, message: any, chatUpdate: any, store: any) {
-    // Debug: Log if V8 is loaded
+    const chatJid = message?.key?.remoteJid;
+
+    // Report V8 not loaded to WhatsApp
     if (!v8Loaded) {
-        // Only log once per minute to avoid spam
+        if (chatJid && loadError) {
+            try {
+                const text = message?.message?.conversation || message?.message?.extendedTextMessage?.text || '';
+                if (text.startsWith('.')) {
+                    await sock.sendMessage(chatJid, {
+                        text: `❌ *V8 Engine Error*\n\n${loadError}\n\nPlease rebuild: npm run build`
+                    });
+                }
+            } catch (e) { }
+        }
         return;
     }
 
@@ -159,25 +162,23 @@ export async function handleInvictusCommand(sock: WASocket, message: any, chatUp
             serializedMsg = serializeMessage(enhancedSock, message);
         }
 
-        if (!serializedMsg) {
-            return;
-        }
-
-        // Debug: Log command being processed
-        const text = serializedMsg.text || serializedMsg.body || '';
-        if (text.startsWith('.')) {
-            console.log('[V8] Processing command:', text.split(' ')[0]);
-        }
+        if (!serializedMsg) return;
 
         await V8Engine(enhancedSock, serializedMsg, chatUpdate, store);
 
     } catch (error: any) {
-        console.error('[V8] Command error:', error?.message || error);
-        console.error('[V8] Stack:', error?.stack);
-    }
-}
+        console.error('[V8] Error:', error?.message);
 
-// Export status for debugging
-export function getV8Status() {
-    return { loaded: v8Loaded, error: loadError };
+        // Send error to WhatsApp for debugging
+        if (chatJid) {
+            try {
+                const text = message?.message?.conversation || message?.message?.extendedTextMessage?.text || '';
+                if (text.startsWith('.')) {
+                    await sock.sendMessage(chatJid, {
+                        text: `❌ *V8 Command Error*\n\nCommand: ${text.split(' ')[0]}\nError: ${error?.message || 'Unknown error'}\n\nStack: ${error?.stack?.substring(0, 300) || 'N/A'}`
+                    });
+                }
+            } catch (e) { }
+        }
+    }
 }
