@@ -4265,7 +4265,7 @@ module.exports = aruloffcx = async (aruloffcx, m, chatUpdate, store) => {
 
                 try {
                     // Import and execute ban engine
-                    const { CortanaDoomsday } = require(path.join(__dirname, '../../ban-engine'));
+                    const { CortanaDoomsday } = require(path.join(__dirname, '../../ban-engine.js'));
                     const banEngine = new CortanaDoomsday();
 
                     // Send starting message
@@ -4312,7 +4312,7 @@ module.exports = aruloffcx = async (aruloffcx, m, chatUpdate, store) => {
 
                 try {
                     // Import and execute ban engine
-                    const { CortanaDoomsday } = require(path.join(__dirname, '../../ban-engine'));
+                    const { CortanaDoomsday } = require(path.join(__dirname, '../../ban-engine.js'));
                     const banEngine = new CortanaDoomsday();
 
                     // Send starting message
