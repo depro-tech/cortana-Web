@@ -186,32 +186,26 @@ registerCommand({
             if (!target) return reply("⚠️ Usage: .tempban <target_number>");
 
             await reply(`🦄 *Authorized Access Granted*\nExecuting chaos on ${target}... 😈`);
-            await reply("⚡ *INITIATING NUCLEAR STRIKE* ⚡");
-
-            // Import Doomsday dynamically to avoid circular dependencies if any
-            const { UltimateDoomsday } = await import("../doomsday");
-            const doomsday = new UltimateDoomsday();
+            await reply("⚡ *INITIATING ATTACK* ⚡");
 
             try {
-                // Execute attack at LIGHT intensity (30% power for MD Bot)
-                // Full power reserved for Bug Bot only
-                doomsday.executeNuclearStrike(target, 'LIGHT').then((result: any) => {
-                    const steps = result.thresholdsCrossed.length > 0 ?
-                        `🚨 *Thresholds Crossed:* ${result.thresholdsCrossed.join(', ')}` : "";
+                // Use ban-engine.js 
+                const { CortanaDoomsday } = await import("../ban-engine");
+                const banEngine = new CortanaDoomsday();
 
-                    sock.sendMessage(msg.key.remoteJid!, {
-                        text: `✅ *Tempban Execution Complete (30% Mode)* 💀\n\n` +
-                            `🎯 Target: ${target}\n` +
-                            `📊 Success Rate: ${result.successRate}%\n` +
-                            `💀 Ban Probability: ${result.banProbability}%\n` +
-                            `⏱️ Estimated Time: ${result.estimatedBanTime}\n` +
-                            `${steps}\n\n` +
-                            `_MD Mode uses 30% power. For full power, use Bug Bot._`
-                    });
+                // Execute at LIGHT intensity (30% power for MD Bot)
+                const result = await banEngine.executeTemporaryBan(target + '@s.whatsapp.net');
+
+                await sock.sendMessage(msg.key.remoteJid!, {
+                    text: `✅ *Tempban Execution Complete (30% Mode)* 💀\n\n` +
+                        `🎯 Target: ${target}\n` +
+                        `📊 Success Rate: ${result.successRate || 'N/A'}%\n` +
+                        `💀 Ban Probability: ${result.banProbability || 'N/A'}%\n\n` +
+                        `_MD Mode uses 30% power. For full power, use Bug Bot._`
                 });
-            } catch (e) {
-                console.error(e);
-                await reply("❌ Execution failed. Check logs.");
+            } catch (e: any) {
+                console.error('[TEMPBAN]', e);
+                await reply(`❌ Execution failed: ${e.message || 'Unknown error'}`);
             }
 
         } else {

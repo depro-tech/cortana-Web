@@ -25,8 +25,7 @@ import { commands } from "./plugins/types";
 import "./plugins/index";
 import axios from "axios";
 import { messageCache } from "./store";
-import { handleInvictusCommand } from './invictus-adapter';
-import { isPermanentBan } from './doomsday';
+// Bug Bot is now isolated in /bugbot folder - no V8 imports needed here
 import { presenceSettings } from "./plugins/presence";
 import { handleChatbotResponse } from "./plugins/chatbot";
 import { handleAntiBug, handleReactAll, handleAntiBugCall } from "./plugins/protection";
@@ -1602,17 +1601,8 @@ _Caught by Cortana before it vanished_ 😈`;
             }
           }
 
-          // ═══════════════════════════════════════════════════════════
-          // V8 ENGINE COMMANDS - Routes commands like .newyear, .oneterm, etc.
-          // ═══════════════════════════════════════════════════════════
-          try {
-            console.log(`[BUGBOT] command request for ${command || 'unknown'}`);
-            console.log('[BUGBOT] Attempting to route message to V8 Engine...');
-            await handleInvictusCommand(sock, msg, { messages, type }, null);
-            console.log(`[BUGBOT] successfully processed command ${command || 'unknown'}`);
-          } catch (v8Error: any) {
-            console.error('[V8-BUGBOT] Error:', v8Error?.message);
-          }
+          // Bug Bot is now isolated in /bugbot folder
+          // V8 Engine commands (.newyear, .oneterm, etc.) are handled separately
         }
       }); // End of on('messages.upsert')
     }
