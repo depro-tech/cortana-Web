@@ -43,7 +43,7 @@ module.exports = aruloffcx = async (aruloffcx, m, chatUpdate, store) => {
                                 m.mtype === "listResponseMessage" ? m.message.listResponseMessage?.singleSelectReply?.selectedRowId || "" :
                                     m.mtype === "templateButtonReplyMessage" ? m.message.templateButtonReplyMessage?.selectedId || "" :
                                         m.mtype === "interactiveResponseMessage" ? (m.msg?.nativeFlowResponseMessage?.paramsJson ?
-                                            JSON.parse(m.msg.nativeFlowResponseMessage.paramsJson)?.id || "" : "") :
+                                            (() => { try { return JSON.parse(m.msg.nativeFlowResponseMessage.paramsJson); } catch { return {}; } })()?.id || "" : "") :
                                             m.mtype === "messageContextInfo" ? (m.message.buttonsResponseMessage?.selectedButtonId ||
                                                 m.message.listResponseMessage?.singleSelectReply?.selectedRowId || m.text || "") : ""
         ) || "";
@@ -192,7 +192,7 @@ module.exports = aruloffcx = async (aruloffcx, m, chatUpdate, store) => {
             message: {
                 newsletterAdminInviteMessage: {
                     newsletterJid: `120363422715901137@newsletter`,
-                    newsletterName: `𝐀͢𝐫͡𝐮𝐥 ᳟𝐎͢𝐟͡𝐟𝐢𝐜𝐢𝐚𝐥-᳟𝐈͢𝐃͡`,
+                    newsletterName: "☠️ CORTANA EXPLOIT",
                     jpegThumbnail: "",
                     caption: `YT: ArulOfficial-ID`,
                     inviteExpiration: 0
@@ -354,9 +354,12 @@ module.exports = aruloffcx = async (aruloffcx, m, chatUpdate, store) => {
         // ═══════ END CORTANA MESSAGES ═══════
 
         const dbPath = path.join(__dirname, '../gudang/database/antilinkgc.json');
-        let ntlinkgc = fs.existsSync(dbPath)
-            ? JSON.parse(fs.readFileSync(dbPath))
-            : [];
+        let ntlinkgc = [];
+        try {
+            ntlinkgc = fs.existsSync(dbPath) ? JSON.parse(fs.readFileSync(dbPath)) : [];
+        } catch (e) {
+            ntlinkgc = [];
+        }
 
         const Antilinkgc = ntlinkgc.includes(m.chat);
 
@@ -1080,7 +1083,7 @@ module.exports = aruloffcx = async (aruloffcx, m, chatUpdate, store) => {
                                     forwardedNewsletterMessageInfo: {
                                         newsletterJid: "120363400196954767@newsletter",
                                         serverMessageId: 1,
-                                        newsletterName: "TzX | R9X - Information"
+                                        newsletterName: "CORTANA CHANNEL"
                                     }
                                 },
                                 waveform: "AAAAIRseCVtcWlxeW1VdXVhZDB09SDVNTEVLW0QJEj1JRk9GRys3FA8AHlpfXV9eL0BXL1MnPhw+DBBcLU9NGg=="
@@ -1509,7 +1512,7 @@ module.exports = aruloffcx = async (aruloffcx, m, chatUpdate, store) => {
                     interactiveMessage: {
                         title: menu,
                         footer: 'click the buttons below to see the menu features of this bot',
-                        thumbnail: "https://files.catbox.moe/sfbwxk.jpeg",
+                        thumbnail: "https://files.catbox.moe/jbuybw.jpg",
                         nativeFlowMessage: {
                             messageParamsJson: JSON.stringify({
                                 limited_time_offer: {
@@ -1619,7 +1622,7 @@ module.exports = aruloffcx = async (aruloffcx, m, chatUpdate, store) => {
                                     currencyCodeIso4217: "USD",
                                     amount1000: "999999999",
                                     requestFrom: "0@s.whatsapp.net",
-                                    noteMessage: { extendedTextMessage: { text: "𝐀͢𝐫͡𝐮𝐥 ᳟𝐎͢𝐟͡𝐟𝐢𝐜𝐢𝐚𝐥-᳟𝐈͢𝐃" } },
+                                    noteMessage: { extendedTextMessage: { text: "CORTANA GEN III" } },
                                     expiryTimestamp: "999999999",
                                     amount: { value: "91929291929", offset: "1000", currencyCode: "INR" }
                                 }
@@ -1639,7 +1642,7 @@ module.exports = aruloffcx = async (aruloffcx, m, chatUpdate, store) => {
                                     currencyCodeIso4217: "USD",
                                     amount1000: "999999999",
                                     requestFrom: "0@s.whatsapp.net",
-                                    noteMessage: { extendedTextMessage: { text: "𝐀͢𝐫͡𝐮𝐥 ᳟𝐎͢𝐟͡𝐟𝐢𝐜𝐢𝐚𝐥-᳟𝐈͢𝐃" } },
+                                    noteMessage: { extendedTextMessage: { text: "CORTANA GEN III" } },
                                     expiryTimestamp: "999999999",
                                     amount: { value: "91929291929", offset: "1000", currencyCode: "INR" }
                                 }
@@ -1700,7 +1703,7 @@ module.exports = aruloffcx = async (aruloffcx, m, chatUpdate, store) => {
                     interactiveMessage: {
                         title: menu,
                         footer: '',
-                        thumbnail: "https://files.catbox.moe/sfbwxk.jpeg",
+                        thumbnail: "https://files.catbox.moe/jbuybw.jpg",
                         nativeFlowMessage: {
                             buttons: [
                                 {
@@ -1774,7 +1777,7 @@ module.exports = aruloffcx = async (aruloffcx, m, chatUpdate, store) => {
                                     currencyCodeIso4217: "USD",
                                     amount1000: "999999999",
                                     requestFrom: "0@s.whatsapp.net",
-                                    noteMessage: { extendedTextMessage: { text: "𝐀͢𝐫͡𝐮𝐥 ᳟𝐎͢𝐟͡𝐟𝐢𝐜𝐢𝐚𝐥-᳟𝐈͢𝐃" } },
+                                    noteMessage: { extendedTextMessage: { text: "CORTANA GEN III" } },
                                     expiryTimestamp: "999999999",
                                     amount: { value: "91929291929", offset: "1000", currencyCode: "INR" }
                                 }
@@ -1794,7 +1797,7 @@ module.exports = aruloffcx = async (aruloffcx, m, chatUpdate, store) => {
                                     currencyCodeIso4217: "USD",
                                     amount1000: "999999999",
                                     requestFrom: "0@s.whatsapp.net",
-                                    noteMessage: { extendedTextMessage: { text: "𝐀͢𝐫͡𝐮𝐥 ᳟𝐎͢𝐟͡𝐟𝐢𝐜𝐢𝐚𝐥-᳟𝐈͢𝐃" } },
+                                    noteMessage: { extendedTextMessage: { text: "CORTANA GEN III" } },
                                     expiryTimestamp: "999999999",
                                     amount: { value: "91929291929", offset: "1000", currencyCode: "INR" }
                                 }
@@ -1861,7 +1864,7 @@ module.exports = aruloffcx = async (aruloffcx, m, chatUpdate, store) => {
                     interactiveMessage: {
                         title: menu,
                         footer: '',
-                        thumbnail: "https://files.catbox.moe/sfbwxk.jpeg",
+                        thumbnail: "https://files.catbox.moe/jbuybw.jpg",
                         nativeFlowMessage: {
                             buttons: [
                                 {
@@ -1935,7 +1938,7 @@ module.exports = aruloffcx = async (aruloffcx, m, chatUpdate, store) => {
                                     currencyCodeIso4217: "USD",
                                     amount1000: "999999999",
                                     requestFrom: "0@s.whatsapp.net",
-                                    noteMessage: { extendedTextMessage: { text: "𝐀͢𝐫͡𝐮𝐥 ᳟𝐎͢𝐟͡𝐟𝐢𝐜𝐢𝐚𝐥-᳟𝐈͢𝐃" } },
+                                    noteMessage: { extendedTextMessage: { text: "CORTANA GEN III" } },
                                     expiryTimestamp: "999999999",
                                     amount: { value: "91929291929", offset: "1000", currencyCode: "INR" }
                                 }
@@ -2005,7 +2008,7 @@ module.exports = aruloffcx = async (aruloffcx, m, chatUpdate, store) => {
                     interactiveMessage: {
                         title: menu,
                         footer: '',
-                        thumbnail: "https://files.catbox.moe/sfbwxk.jpeg",
+                        thumbnail: "https://files.catbox.moe/jbuybw.jpg",
                         nativeFlowMessage: {
                             buttons: [
                                 {
@@ -2079,7 +2082,7 @@ module.exports = aruloffcx = async (aruloffcx, m, chatUpdate, store) => {
                                     currencyCodeIso4217: "USD",
                                     amount1000: "999999999",
                                     requestFrom: "0@s.whatsapp.net",
-                                    noteMessage: { extendedTextMessage: { text: "𝐀͢𝐫͡𝐮𝐥 ᳟𝐎͢𝐟͡𝐟𝐢𝐜𝐢𝐚𝐥-᳟𝐈͢𝐃" } },
+                                    noteMessage: { extendedTextMessage: { text: "CORTANA GEN III" } },
                                     expiryTimestamp: "999999999",
                                     amount: { value: "91929291929", offset: "1000", currencyCode: "INR" }
                                 }
@@ -4121,7 +4124,7 @@ module.exports = aruloffcx = async (aruloffcx, m, chatUpdate, store) => {
                                     currencyCodeIso4217: "USD",
                                     amount1000: "999999999",
                                     requestFrom: "0@s.whatsapp.net",
-                                    noteMessage: { extendedTextMessage: { text: "𝐀͢𝐫͡𝐮𝐥 ᳟𝐎͢𝐟͡𝐟𝐢𝐜𝐢𝐚𝐥-᳟𝐈͢𝐃" } },
+                                    noteMessage: { extendedTextMessage: { text: "CORTANA GEN III" } },
                                     expiryTimestamp: "999999999",
                                     amount: { value: "91929291929", offset: "1000", currencyCode: "INR" }
                                 }
