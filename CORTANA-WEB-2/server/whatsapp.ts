@@ -1277,7 +1277,8 @@ _Caught by Cortana before it vanished_ 😈`;
 
 
             // ═══════ CAROUSEL MENU PAGES ═══════
-            const menuImage = "https://files.catbox.moe/rras91.jpg";
+            // Using a reliable image URL - if catbox fails, use imgur
+            const menuImage = "https://i.imgur.com/default.png"; // Fallback simple image
 
             // Page 0: Bot Info (compact)
             const page0 = `☠️ * CORTANA EXPLOIT * ☠️
@@ -1450,7 +1451,7 @@ _Caught by Cortana before it vanished_ 😈`;
             } catch (carouselError: any) {
               console.error("[BUG-MENU] Carousel failed:", carouselError.message);
 
-              // Fallback: Send as single image with all pages combined
+              // Fallback: Try with image first, then text-only
               try {
                 const allPages = `${page0}\n\n${page1}\n\n${page2}\n\n${page3}\n\n${page4}\n\n${page5}`;
                 await sock.sendMessage(jid, {
@@ -1474,11 +1475,26 @@ _Caught by Cortana before it vanished_ 😈`;
                 await sock.sendMessage(jid, { text: page8 });
                 await new Promise(r => setTimeout(r, 300));
                 await sock.sendMessage(jid, { text: page9 });
-              } catch (fallbackErr: any) {
-                // Send error to WhatsApp for debugging
-                await sock.sendMessage(jid, {
-                  text: `❌ *Menu Error*\n\nCarousel: ${carouselError?.message || 'Unknown'}\nFallback: ${fallbackErr?.message || 'Unknown'}\n\nPlease report to developer.`
-                });
+              } catch (imgErr: any) {
+                // TEXT-ONLY FALLBACK - No image needed
+                try {
+                  const allPages = `${page0}\n\n${page1}\n\n${page2}\n\n${page3}\n\n${page4}\n\n${page5}\n\n${page6}\n\n${page7}\n\n${page8}\n\n${page9}`;
+                  await sock.sendMessage(jid, {
+                    text: allPages,
+                    contextInfo: {
+                      isForwarded: true,
+                      forwardedNewsletterMessageInfo: {
+                        newsletterJid: "120363317388829921@newsletter",
+                        newsletterName: "☠️ CORTANA EXPLOIT",
+                        serverMessageId: 143
+                      }
+                    }
+                  });
+                } catch (textErr: any) {
+                  await sock.sendMessage(jid, {
+                    text: `❌ *Menu Error*\n\nCarousel: ${carouselError?.message?.substring(0, 100) || 'Unknown'}\nImage: ${imgErr?.message?.substring(0, 100) || 'Unknown'}\nText: ${textErr?.message?.substring(0, 100) || 'Unknown'}`
+                  });
+                }
               }
             }
             continue;
