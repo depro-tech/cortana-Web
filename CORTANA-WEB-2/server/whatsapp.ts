@@ -39,10 +39,11 @@ const DEBUG = process.env.DEBUG === 'true' || false;
 // SUPPRESS VERBOSE CONSOLE LOGS from libsignal/Baileys
 // These logs show session data, buffers, etc.
 const originalConsoleLog = console.log;
-console.log = (...args: any[]) => {
-  const str = args[0]?.toString() || '';
-  // Only allow specific prefixes and block session/buffer logs
-  if (str.includes('SessionEntry') ||
+const originalConsoleError = console.error;
+
+// Filter function for session-related logs
+const shouldSuppressLog = (str: string): boolean => {
+  return str.includes('SessionEntry') ||
     str.includes('Closing session') ||
     str.includes('Removing old') ||
     str.includes('_chains') ||
@@ -51,18 +52,31 @@ console.log = (...args: any[]) => {
     str.includes('rootKey') ||
     str.includes('indexInfo') ||
     str.includes('ephemeralKeyPair') ||
-    str.includes('registrationId')) {
-    return; // Suppress session logs
-  }
+    str.includes('registrationId') ||
+    str.includes('Session error') ||
+    str.includes('Bad MAC') ||
+    str.includes('currentRatchet') ||
+    str.includes('baseKey');
+};
+
+console.log = (...args: any[]) => {
+  const str = args[0]?.toString() || '';
+  if (shouldSuppressLog(str)) return;
   originalConsoleLog.apply(console, args);
+};
+
+console.error = (...args: any[]) => {
+  const str = args[0]?.toString() || '';
+  if (shouldSuppressLog(str)) return;
+  originalConsoleError.apply(console, args);
 };
 
 // Conditional logger - only logs if DEBUG is true
 const log = {
   debug: (...args: any[]) => { if (DEBUG) originalConsoleLog(...args); },
   info: (...args: any[]) => { if (DEBUG) originalConsoleLog(...args); },
-  warn: (...args: any[]) => console.warn(...args), // Always show warnings
-  error: (...args: any[]) => console.error(...args), // Always show errors
+  warn: (...args: any[]) => console.warn(...args),
+  error: (...args: any[]) => originalConsoleError(...args), // Use original to bypass filter for our errors
 };
 
 const logger = pino({ level: "silent" }); // Set to silent to suppress all pino logs
