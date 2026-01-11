@@ -1,42 +1,59 @@
 import { WASocket, getContentType, jidNormalizedUser, areJidsSameUser, proto } from '@whiskeysockets/baileys';
 import * as path from 'path';
 import * as fs from 'fs';
+import { createRequire } from 'module';
+
+// Create a require function for dynamic imports (ES Module compatible)
+const dynamicRequire = createRequire(import.meta.url || __filename);
 
 // Import the V8 engine using require with robust path checking
 let V8Engine: any;
 let smsgFunction: any;
 
 try {
-    // Try production path (dist/invictus-v8) first, then dev path
+    // In production, dist/index.cjs runs from dist/, so invictus-v8 should be at dist/invictus-v8
+    // In development, server/invictus-adapter.ts runs from server/, so invictus-v8 is at server/invictus-v8
+
     const possiblePaths = [
-        path.join(__dirname, 'invictus-v8/start/V8.js'),       // Production/Dist
-        path.join(__dirname, '../server/invictus-v8/start/V8.js'), // Dev/Source
-        path.join(process.cwd(), 'server/invictus-v8/start/V8.js'), // CWD fallback
-        path.join(process.cwd(), 'dist/invictus-v8/start/V8.js')   // CWD Dist fallback (Critical)
+        // Production paths (when running from dist/index.cjs)
+        path.join(process.cwd(), 'dist/invictus-v8/start/V8.js'),
+        path.join(process.cwd(), 'CORTANA-WEB-2/dist/invictus-v8/start/V8.js'),
+        // Development paths
+        path.join(process.cwd(), 'server/invictus-v8/start/V8.js'),
+        path.join(process.cwd(), 'CORTANA-WEB-2/server/invictus-v8/start/V8.js'),
     ];
 
     const functionPaths = [
-        path.join(__dirname, 'invictus-v8/gudang/myfunction.js'),
-        path.join(__dirname, '../server/invictus-v8/gudang/myfunction.js'),
+        path.join(process.cwd(), 'dist/invictus-v8/gudang/myfunction.js'),
+        path.join(process.cwd(), 'CORTANA-WEB-2/dist/invictus-v8/gudang/myfunction.js'),
         path.join(process.cwd(), 'server/invictus-v8/gudang/myfunction.js'),
-        path.join(process.cwd(), 'dist/invictus-v8/gudang/myfunction.js')
+        path.join(process.cwd(), 'CORTANA-WEB-2/server/invictus-v8/gudang/myfunction.js'),
     ];
 
     // DEBUG: Log Environment
     console.log('[InvictusAdapter] Debug Info:');
-    console.log('__dirname:', __dirname);
-    console.log('CWD:', process.cwd());
+    console.log('  CWD:', process.cwd());
+    console.log('  NODE_ENV:', process.env.NODE_ENV);
 
-    try {
-        console.log('Contents of __dirname:', fs.readdirSync(__dirname));
-        const checkPath = path.join(__dirname, 'invictus-v8');
-        if (fs.existsSync(checkPath)) {
-            console.log('Contents of invictus-v8:', fs.readdirSync(checkPath));
+    // Check what's in dist folder
+    const distPath = path.join(process.cwd(), 'dist');
+    if (fs.existsSync(distPath)) {
+        console.log('  dist/ contents:', fs.readdirSync(distPath));
+        const v8DistPath = path.join(distPath, 'invictus-v8');
+        if (fs.existsSync(v8DistPath)) {
+            console.log('  dist/invictus-v8/ contents:', fs.readdirSync(v8DistPath));
         } else {
-            console.log('invictus-v8 dir NOT FOUND at:', checkPath);
+            console.log('  ❌ dist/invictus-v8/ NOT FOUND');
         }
-    } catch (e: any) {
-        console.log('Could not list dirs:', e.message);
+    } else {
+        console.log('  ❌ dist/ folder NOT FOUND');
+    }
+
+    // Check possible paths and log
+    console.log('[InvictusAdapter] Checking paths:');
+    for (const p of possiblePaths) {
+        const exists = fs.existsSync(p);
+        console.log(`  ${exists ? '✅' : '❌'} ${p}`);
     }
 
     // Load V8 Engine
@@ -59,23 +76,26 @@ try {
 
     if (v8Path) {
         console.log('[InvictusAdapter] Loading V8 engine from:', v8Path);
-        V8Engine = require(v8Path);
+        // Use dynamicRequire for proper module resolution
+        V8Engine = dynamicRequire(v8Path);
         console.log('[InvictusAdapter] ✅ V8 Engine loaded successfully!');
     } else {
-        console.error('[InvictusAdapter] ❌ V8 Engine file NOT FOUND in paths:', possiblePaths);
+        console.error('[InvictusAdapter] ❌ V8 Engine file NOT FOUND in any path');
+        console.error('[InvictusAdapter] Make sure to run: npm run build');
     }
 
     if (funcPath) {
         console.log('[InvictusAdapter] Loading myfunction from:', funcPath);
-        const myfunction = require(funcPath);
+        const myfunction = dynamicRequire(funcPath);
         smsgFunction = myfunction.smsg;
         console.log('[InvictusAdapter] ✅ smsg function loaded successfully!');
     } else {
         console.warn('[InvictusAdapter] ⚠️ myfunction.js NOT FOUND, using fallback serializer');
     }
 
-} catch (error) {
-    console.error('[InvictusAdapter] ❌ Failed to load V8 engine:', error);
+} catch (error: any) {
+    console.error('[InvictusAdapter] ❌ Failed to load V8 engine:', error.message);
+    console.error('[InvictusAdapter] Stack:', error.stack);
 }
 
 // Fallback message serializer if smsg is not available
@@ -154,7 +174,7 @@ function ensureDecodeJid(sock: WASocket): WASocket {
 
 export async function handleInvictusCommand(sock: WASocket, message: any, chatUpdate: any, store: any) {
     if (!V8Engine) {
-        console.error('[InvictusAdapter] V8 Engine not loaded, cannot handle command.');
+        // Only log once per session, not every message
         return;
     }
 
@@ -174,7 +194,6 @@ export async function handleInvictusCommand(sock: WASocket, message: any, chatUp
         }
 
         if (!serializedMsg) {
-            console.log('[InvictusAdapter] Message serialization returned null, skipping');
             return;
         }
 
