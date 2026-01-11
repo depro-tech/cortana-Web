@@ -1,6 +1,7 @@
 import { build as esbuild } from "esbuild";
 import { build as viteBuild } from "vite";
-import { rm, readFile, copyFile, cp } from "fs/promises";
+import { rm, readFile, copyFile, cp, mkdir, readdir, stat } from "fs/promises";
+import * as path from "path";
 
 // server deps to bundle to reduce openat(2) syscalls
 // which helps cold start times
