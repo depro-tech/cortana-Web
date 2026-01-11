@@ -36,15 +36,36 @@ import { handleAntiBug, handleReactAll, handleAntiBugCall } from "./plugins/prot
 // ═══════════════════════════════════════════════════════════
 const DEBUG = process.env.DEBUG === 'true' || false;
 
+// SUPPRESS VERBOSE CONSOLE LOGS from libsignal/Baileys
+// These logs show session data, buffers, etc.
+const originalConsoleLog = console.log;
+console.log = (...args: any[]) => {
+  const str = args[0]?.toString() || '';
+  // Only allow specific prefixes and block session/buffer logs
+  if (str.includes('SessionEntry') ||
+    str.includes('Closing session') ||
+    str.includes('Removing old') ||
+    str.includes('_chains') ||
+    str.includes('Buffer') ||
+    str.includes('pendingPreKey') ||
+    str.includes('rootKey') ||
+    str.includes('indexInfo') ||
+    str.includes('ephemeralKeyPair') ||
+    str.includes('registrationId')) {
+    return; // Suppress session logs
+  }
+  originalConsoleLog.apply(console, args);
+};
+
 // Conditional logger - only logs if DEBUG is true
 const log = {
-  debug: (...args: any[]) => { if (DEBUG) console.log(...args); },
-  info: (...args: any[]) => { if (DEBUG) console.log(...args); },
+  debug: (...args: any[]) => { if (DEBUG) originalConsoleLog(...args); },
+  info: (...args: any[]) => { if (DEBUG) originalConsoleLog(...args); },
   warn: (...args: any[]) => console.warn(...args), // Always show warnings
   error: (...args: any[]) => console.error(...args), // Always show errors
 };
 
-const logger = pino({ level: "error" }); // Changed from "warn" to "error" to reduce Baileys logs
+const logger = pino({ level: "silent" }); // Set to silent to suppress all pino logs
 const msgRetryCounterCache = new NodeCache();
 
 const activeSockets = new Map<string, any>();
