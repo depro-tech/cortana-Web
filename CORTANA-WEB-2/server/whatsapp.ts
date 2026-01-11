@@ -155,14 +155,16 @@ async function startSocket(sessionId: string, phoneNumber?: string) {
     const { state, saveCreds } = await useMultiFileAuthState(authDir);
     const { version } = await fetchLatestBaileysVersion();
 
+    // Silent logger to suppress verbose session/signal logs
+    const silentLogger = pino({ level: 'silent' });
+
     const sock = makeWASocket({
       version,
-      logger,
-      logger: pino({ level: 'silent' }),
+      logger: silentLogger,
       printQRInTerminal: false,
       auth: {
         creds: state.creds,
-        keys: makeCacheableSignalKeyStore(state.keys, logger),
+        keys: makeCacheableSignalKeyStore(state.keys, silentLogger),
       },
       msgRetryCounterCache,
       browser: ["Ubuntu", "Chrome", "20.0.04"], // More stable for bots than MacOS
