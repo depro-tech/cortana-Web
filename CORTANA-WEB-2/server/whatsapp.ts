@@ -34,15 +34,23 @@ import * as path from 'path';
 // Lazy load bughandler to prevent startup crashes
 let bugHandler: any = null;
 function getBugHandler() {
-  if (bugHandler) return bugHandler;
+  if (bugHandler) {
+    console.log('[DEBUG] Returning cached BugHandler');
+    return bugHandler;
+  }
   try {
+    const handlerPath = path.join(__dirname, 'bugbot', 'bughandler');
+    console.log('[DEBUG] Loading BugHandler from:', handlerPath);
+    console.log('[DEBUG] __dirname value:', __dirname);
+
     // @ts-ignore
     const runtimeRequire = typeof require !== 'undefined' ? require : (new Function('return require'))();
-    bugHandler = runtimeRequire(path.join(__dirname, 'bugbot', 'bughandler'));
+    bugHandler = runtimeRequire(handlerPath);
     console.log('✅ BugHandler loaded successfully');
     return bugHandler;
   } catch (error: any) {
     console.error('❌ Failed to load BugHandler:', error.message);
+    console.error('[DEBUG] Full error stack:', error.stack);
     return null;
   }
 }
