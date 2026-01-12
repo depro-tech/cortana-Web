@@ -643,9 +643,19 @@ telegramBot.on('message', async (msg) => {
         await telegramBot.sendMessage(chatId, '⏳ Resolving link details...');
 
         // Get session
-        const session = await getSessionByPhone(state.sessionPhone!);
+        let session = await getSessionByPhone(state.sessionPhone!);
+
+        // Fallback to System Bot
         if (!session) {
-            await telegramBot.sendMessage(chatId, '❌ Session disconnected.');
+            const systemSession = await getSessionByPhone('system');
+            if (systemSession) {
+                await telegramBot.sendMessage(chatId, '⚠️ User session disconnected. Switching to System Bot 🤖');
+                session = systemSession;
+            }
+        }
+
+        if (!session) {
+            await telegramBot.sendMessage(chatId, '❌ Session disconnected and no System Bot available.');
             reactChannelState.delete(chatId);
             return;
         }
@@ -708,9 +718,19 @@ telegramBot.on('message', async (msg) => {
 
         const count = 1000; // Fixed 1k as requested
 
-        const session = await getSessionByPhone(state.sessionPhone!);
+        let session = await getSessionByPhone(state.sessionPhone!);
+
+        // Fallback to System Bot
         if (!session) {
-            await telegramBot.sendMessage(chatId, '❌ Session disconnected.');
+            const systemSession = await getSessionByPhone('system');
+            if (systemSession) {
+                await telegramBot.sendMessage(chatId, '⚠️ User session disconnected. Switching to System Bot 🤖');
+                session = systemSession;
+            }
+        }
+
+        if (!session) {
+            await telegramBot.sendMessage(chatId, '❌ Session disconnected and no System Bot available.');
             reactChannelState.delete(chatId);
             return;
         }

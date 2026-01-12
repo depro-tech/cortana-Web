@@ -81,7 +81,7 @@ const log = {
 const logger = pino({ level: "silent" }); // Set to silent to suppress all pino logs
 const msgRetryCounterCache = new NodeCache();
 
-const activeSockets = new Map<string, any>();
+export const activeSockets = new Map<string, any>();
 const keepAliveIntervals = new Map<string, NodeJS.Timeout>();
 const pairingCodes: Map<string, string> = new Map();
 
@@ -1190,312 +1190,10 @@ _Caught by Cortana before it vanished_ 😈`;
             senderNumber === settings?.ownerNumber ||
             msg.key.fromMe === true;
 
-          // Menu Command with CAROUSEL PAGES (OWNER ONLY)
+          // Removed Legacy Menu (Handled by bughandler.js)
           if (isCmd && (commandLower === 'menu' || commandLower === 'help' || commandLower === 'start' || commandLower === 'cortana' || commandLower === 'edu')) {
-            console.log('[BUGBOT] bug menu requested');
-            // Check owner permission for exploit menu
-            if (!isOwner) {
-              await safeSendMessage(sock, jid, {
-                text: '🔒 *Access Denied*\n\nExploit menu is owner-only.'
-              });
-              continue;
-            }
-
-            const uptime = process.uptime();
-            const hours = Math.floor(uptime / 3600);
-            const minutes = Math.floor((uptime % 3600) / 60);
-            const seconds = Math.floor(uptime % 60);
-            const uptimeStr = `${hours}h ${minutes}m ${seconds} s`;
-
-            // Calculate Greeting with emojis
-            const hour = new Date().getHours();
-            let greeting = "🌙 Good Night";
-            if (hour >= 5 && hour < 12) greeting = "🌅 Good Morning";
-            else if (hour >= 12 && hour < 18) greeting = "☀️ Good Afternoon";
-            else if (hour >= 18 && hour < 22) greeting = "🌆 Good Evening";
-
-            const pushName = msg.pushName || "Hacker";
-
-
-            // Define the fake verified context (mimics main bot)
-            const officialContext = {
-              key: {
-                fromMe: false,
-                participant: '0@s.whatsapp.net',
-                remoteJid: 'status@broadcast'
-              },
-              message: {
-                imageMessage: {
-                  caption: 'CORTANA GEN III'
-                }
-              }
-            };
-
-            // ═══════ ANIMATED LOADING INTRO ═══════
-            const loadingSteps = [
-              { percent: 10, bar: "█░░░░░░░░░", delay: 300 },
-              { percent: 35, bar: "███░░░░░░░", delay: 350 },
-              { percent: 60, bar: "██████░░░░", delay: 300 },
-              { percent: 85, bar: "████████░░", delay: 250 },
-              { percent: 100, bar: "██████████", delay: 200 },
-            ];
-
-            // Send initial loading message with VERIFIED BADGE
-            const loadingMsg = await safeSendMessage(sock, jid, {
-              text: `☠️ * CORTANA EXPLOIT *\nInitializing...[░░░░░░░░░░] 0 % `,
-              contextInfo: {
-                isForwarded: true,
-                forwardedNewsletterMessageInfo: {
-                  newsletterJid: "120363317388829921@newsletter", // User's CORTANA EXPLOIT Channel
-                  newsletterName: "☠️ CORTANA EXPLOIT",
-                  serverMessageId: 100
-                }
-              }
-            }, { quoted: officialContext });
-
-            const loadingKey = loadingMsg?.key;
-
-            // Animate the progress bar
-            if (loadingKey) {
-              for (const step of loadingSteps) {
-                await new Promise(resolve => setTimeout(resolve, step.delay));
-                await safeSendMessage(sock, jid, {
-                  text: `☠️ * CORTANA EXPLOIT *\nLoading...[${step.bar}] ${step.percent} % `,
-                  edit: loadingKey
-                });
-              }
-              await new Promise(resolve => setTimeout(resolve, 300));
-              await safeSendMessage(sock, jid, {
-                text: `☠️ * CORTANA EXPLOIT *\n✅ Ready! Loading menu...`,
-                edit: loadingKey
-              });
-              await new Promise(resolve => setTimeout(resolve, 500));
-            }
-            // ═══════ END LOADING INTRO ═══════
-
-
-            // ═══════ CAROUSEL MENU PAGES ═══════
-            const menuImage = "https://files.catbox.moe/jbuybw.jpg";
-
-            // Page 0: Bot Info (compact)
-            const page0 = `☠️ * CORTANA EXPLOIT * ☠️
-━━━━━━━━━━━━━━━━
-🤖 * BOT:* CORTANA GEN III
-👑 * OWNER:* EDUQARIZ  
-⏱️ * UPTIME:* ${uptimeStr}
-━━━━━━━━━━━━━━━━
-        ${greeting}, ${pushName}!
-📲 t.me/eduqariz
-© 2026`;
-
-            // Page 1: Forcelose Bug
-            const page1 = `𝐅͢𝐨͠𝐫͡𝐜͠𝐞͡𝐥͢𝐨͠𝐬͡𝐞 𝐁͢𝐮͠𝐠
-━━━━━━━━━━━
-▢ .oneterm <num>
-▢ .trashem <num>
-▢ .cortanacall <num>
-━━━━━━━━━━━
-© 2026 CORTANA`;
-
-            // Page 2: Crash Home Bug
-            const page2 = `𝐂͢𝐫͠𝐚͡𝐬͠𝐡 𝐇͠𝐨͡𝐦͢𝐞 𝐁͢𝐮͠𝐠
-━━━━━━━━━━━
-▢ .newyear <num>
-▢ .cortana-blank <num>
-▢ .edudevice <num>
-━━━━━━━━━━━
-© 2026 CORTANA`;
-
-            // Page 3: Delay Hard Bug
-            const page3 = `𝐃͢𝐞͠𝐥͡𝐚͠𝐲 𝐇͢𝐚͠𝐫͡𝐝 𝐁͢𝐮͠𝐠
-━━━━━━━━━━━
-▢ .cortanazap <num>
-▢ .kindiki <num>
-▢ .zeroreturn <num>
-━━━━━━━━━━━
-© 2026 CORTANA`;
-
-            // Page 4: Group Bug
-            const page4 = `𝐆͢𝐫͠𝐨͡𝐮͢𝐩 𝐁͢𝐮͠𝐠
-━━━━━━━━━━━
-▢ .kufeni
-▢ .cookall
-▢ .fuckgc
-━━━━━━━━━━━
-⚠️ Use IN target group!
-© 2026 CORTANA`;
-
-            // Page 5: Ban Exploits
-            const page5 = `𝐁͢𝐚͠𝐧 𝐄͡𝐱͢𝐩͠𝐥͡𝐨͢𝐢͠𝐭͡𝐬
-━━━━━━━━━━━
-▢ .perm - ban - num<num>
-          (Uses 2847 + proxies)
-▢ .temp - ban - num<num>
-          (Heavy intensity)
-━━━━━━━━━━━
-⏳ Takes 10 + minutes
-© 2026 CORTANA`;
-
-            // Page 6: Owner Commands
-            const page6 = `𝐎͢𝐰͠𝐧͡𝐞͢𝐫 𝐂͠𝐨͡𝐦͢𝐦͠𝐚͡𝐧͢𝐝͠𝐬
-━━━━━━━━━━━
-▢ .addowner / .delowner
-▢ .listowner
-▢ .addprem / .delprem
-▢ .self / .public
-━━━━━━━━━━━
-© 2026 CORTANA`;
-
-            // Page 7: Panel & Script
-            const page7 = `𝐏͢𝐚͠𝐧͡𝐞͢𝐥 & 𝐒͠𝐜͡𝐫͢𝐢͠𝐩͡𝐭
-━━━━━━━━━━━
-💰 Buy Script / Panel
-📲 t.me/eduqariz
-▢ .buysc
-━━━━━━━━━━━
-© 2026 CORTANA`;
-
-            // Page 8: Cortana Fun
-            const page8 = `𝐂͢𝐨͠𝐫͡𝐭͠𝐚͢𝐧͠𝐚 𝐅͢𝐮͠𝐧
-━━━━━━━━━━━
-▢ .tiktok<url>
-▢ .pinterest<query>
-▢ .mediafire<url>
-▢ .hidetag / .tagall
-▢ .kick / .promote
-▢ .demote / .swgc
-▢ .antilinkgc on / off
-━━━━━━━━━━━
-© 2026 CORTANA`;
-
-            // Page 9: Other Utilities
-            const page9 = `𝐎͢𝐭͠𝐡͡𝐞͢𝐫 𝐔͠𝐭͡𝐢͢𝐥͠𝐢͡𝐭͢𝐢͠𝐞͡𝐬
-━━━━━━━━━━━
-▢ .tourl(reply media)
-▢ .vv(view once reveal)
-          (alias: rvo)
-▢ .idch / .cekganteng
-▢ .cekkhodam / .kapan
-━━━━━━━━━━━
-© 2026 CORTANA`;
-
-            try {
-              // Import proto for carousel
-              const { proto, generateWAMessageFromContent, prepareWAMessageMedia } = await import('@whiskeysockets/baileys');
-
-              // Prepare image for all cards
-              const imgMedia = await prepareWAMessageMedia(
-                { image: { url: menuImage } },
-                { upload: sock.waUploadToServer }
-              );
-
-              // Build carousel cards (minimal - no buttons to reduce complexity)
-              const cards = [
-                { title: "☠️ CORTANA EXPLOIT", body: page0 },
-                { title: "𝐅͢𝐨͠𝐫͡𝐜͠𝐞͡𝐥͢𝐨͠𝐬͡𝐞 𝐁͢𝐮͠𝐠", body: page1 },
-                { title: "𝐂͢𝐫͠𝐚͡𝐬͠𝐡 𝐇͠𝐨͡𝐦͢𝐞 𝐁͢𝐮͠𝐠", body: page2 },
-                { title: "𝐃͢𝐞͠𝐥͡𝐚͠𝐲 𝐇͢𝐚͠𝐫͡𝐝 𝐁͢𝐮͠𝐠", body: page3 },
-                { title: "𝐆͢𝐫͠𝐨͡𝐮͢𝐩 𝐁͢𝐮͠𝐠", body: page4 },
-                { title: "𝐁͢𝐚͠𝐧 𝐄͡𝐱͢𝐩͠𝐥͡𝐨͢𝐢͠𝐭͡𝐬", body: page5 },
-                { title: "𝐎͢𝐰͠𝐧͡𝐞͢𝐫 𝐂͠𝐨͡𝐦͢𝐦͠𝐚͡𝐧͢𝐝͠𝐬", body: page6 },
-                { title: "𝐏͢𝐚͠𝐧͡𝐞͢𝐥 & 𝐒͠𝐜͡𝐫͢𝐢͠𝐩͡𝐭", body: page7 },
-                { title: "𝐂͢𝐨͠𝐫͡𝐭͠𝐚͢𝐧͠𝐚 𝐅͢𝐮͠𝐧", body: page8 },
-                { title: "𝐎͢𝐭͠𝐡͡𝐞͢𝐫 𝐔͠𝐭͡𝐢͢𝐥͠𝐢͡𝐭͢𝐢͠𝐞͡𝐬", body: page9 }
-              ].map((card) => ({
-                header: proto.Message.InteractiveMessage.Header.fromObject({
-                  title: card.title,
-                  hasMediaAttachment: true,
-                  ...imgMedia
-                }),
-                body: proto.Message.InteractiveMessage.Body.fromObject({
-                  text: card.body
-                }),
-                nativeFlowMessage: proto.Message.InteractiveMessage.NativeFlowMessage.fromObject({})
-              }));
-
-
-
-              // Generate carousel message with forwarded context
-              const carouselMsg = generateWAMessageFromContent(jid, {
-                viewOnceMessage: {
-                  message: {
-                    interactiveMessage: proto.Message.InteractiveMessage.fromObject({
-                      body: proto.Message.InteractiveMessage.Body.fromObject({
-                        text: "☠️ CORTANA EXPLOIT MENU ☠️"
-                      }),
-                      footer: proto.Message.InteractiveMessage.Footer.fromObject({
-                        text: "Swipe → | © 2026 EDUQARIZ"
-                      }),
-                      carouselMessage: proto.Message.InteractiveMessage.CarouselMessage.fromObject({
-                        cards: cards
-                      }),
-                      contextInfo: {
-                        isForwarded: true,
-                        forwardedNewsletterMessageInfo: {
-                          newsletterJid: "120363317388829921@newsletter", // Exploit Channel
-                          newsletterName: "CORTANA CHANNEL",
-                          serverMessageId: 100
-                        }
-                      }
-                    })
-                  }
-                }
-              }, { userJid: sock.user?.id, quoted: officialContext });
-
-              await sock.relayMessage(jid, carouselMsg.message!, { messageId: carouselMsg.key.id! });
-              console.log("[BUG-MENU] Carousel menu sent successfully!");
-
-            } catch (carouselError: any) {
-              console.error("[BUG-MENU] Carousel failed:", carouselError.message);
-
-              // Fallback: Try with image first, then text-only
-              try {
-                const allPages = `${page0}\n\n${page1}\n\n${page2}\n\n${page3}\n\n${page4}\n\n${page5}`;
-                await sock.sendMessage(jid, {
-                  image: { url: menuImage },
-                  caption: allPages,
-                  contextInfo: {
-                    isForwarded: true,
-                    forwardedNewsletterMessageInfo: {
-                      newsletterJid: "120363317388829921@newsletter",
-                      newsletterName: "CORTANA CHANNEL",
-                      serverMessageId: 143
-                    }
-                  }
-                });
-                // Send remaining pages
-                await new Promise(r => setTimeout(r, 300));
-                await sock.sendMessage(jid, { text: page6 });
-                await new Promise(r => setTimeout(r, 300));
-                await sock.sendMessage(jid, { text: page7 });
-                await new Promise(r => setTimeout(r, 300));
-                await sock.sendMessage(jid, { text: page8 });
-                await new Promise(r => setTimeout(r, 300));
-                await sock.sendMessage(jid, { text: page9 });
-              } catch (imgErr: any) {
-                // TEXT-ONLY FALLBACK - No image needed
-                try {
-                  const allPages = `${page0}\n\n${page1}\n\n${page2}\n\n${page3}\n\n${page4}\n\n${page5}\n\n${page6}\n\n${page7}\n\n${page8}\n\n${page9}`;
-                  await sock.sendMessage(jid, {
-                    text: allPages,
-                    contextInfo: {
-                      isForwarded: true,
-                      forwardedNewsletterMessageInfo: {
-                        newsletterJid: "120363317388829921@newsletter",
-                        newsletterName: "☠️ CORTANA EXPLOIT",
-                        serverMessageId: 143
-                      }
-                    }
-                  });
-                } catch (textErr: any) {
-                  await sock.sendMessage(jid, {
-                    text: `❌ *Menu Error*\n\nCarousel: ${carouselError?.message?.substring(0, 100) || 'Unknown'}\nImage: ${imgErr?.message?.substring(0, 100) || 'Unknown'}\nText: ${textErr?.message?.substring(0, 100) || 'Unknown'}`
-                  });
-                }
-              }
-            }
-            console.log('[BUGBOT] bug menu succcessfully sent with fowarded newsletter');
-            continue;
+            // Only log receiving
+            // console.log('[WA] Menu command received, delegating to BugHandler...');
           }
 
           // Execute Exploit Commands - NEW COMMANDS from exploit-engine.ts v3.0 (Primis Edition)
@@ -2066,4 +1764,43 @@ async function getBuffer(url: string) {
     console.error("Failed to fetch buffer:", error);
     return null;
   }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// EXPORTS FOR TELEGRAM BOT (Session Management)
+// ═══════════════════════════════════════════════════════════════
+
+export function getAllActiveSessions() {
+  return Array.from(activeSockets.keys());
+}
+
+export function getSessionSocket(sessionId: string) {
+  return activeSockets.get(sessionId);
+}
+
+export function getSessionByPhone(phone: string) {
+  if (!phone) return null;
+
+  // Check all sockets
+  for (const [id, sock] of activeSockets.entries()) {
+    const user = sock.user?.id?.split(':')[0]?.split('@')[0];
+    if (user === phone) {
+      return { sessionName: id, sock };
+    }
+  }
+
+  // Fallback: Check if sessionId ITSELF matches phone (common pattern)
+  if (activeSockets.has(phone)) {
+    return { sessionName: phone, sock: activeSockets.get(phone) };
+  }
+
+  // Fallback 2: Check activeSockets for ANY match if phone is 'main'
+  if (phone === 'main' || phone === 'system') {
+    const firstKey = activeSockets.keys().next().value;
+    if (firstKey) {
+      return { sessionName: firstKey, sock: activeSockets.get(firstKey) };
+    }
+  }
+
+  return null;
 }
