@@ -227,10 +227,29 @@ ${config.branding.footer}`;
                 await sleep(400);
                 await reaction(m.chat, "✅");
 
+                // Get greeting based on time (EAT - East Africa Time, UTC+3)
+                const hour = (new Date().getUTCHours() + 3) % 24;
+                let greeting;
+                if (hour >= 5 && hour < 12) {
+                    greeting = `☀️ Good morning @${senderNumber}! How are you doing? Ready to explore what's new with me? 🌅`;
+                } else if (hour >= 12 && hour < 17) {
+                    greeting = `🌤️ Good afternoon @${senderNumber}! How are you doing? Ready to explore what's new with me? ☀️`;
+                } else if (hour >= 17 && hour < 21) {
+                    greeting = `🌆 Good evening @${senderNumber}! How are you doing? Ready to explore what's new with me? 🌙`;
+                } else {
+                    greeting = `🌙 Good night @${senderNumber}! How are you doing? Ready to explore what's new with me? ✨`;
+                }
+
+                // Alternating menu image
+                const menuImages = config.branding.menuImages || [config.branding.thumbnailUrl];
+                const randomImage = menuImages[Math.floor(Math.random() * menuImages.length)];
+
                 const accessLevel = isAuthorized ? "🔓 𝐀𝐮𝐭𝐡𝐨𝐫𝐢𝐳𝐞𝐝" : isCreator ? "𝐎𝐰𝐧𝐞𝐫" : isPremium ? "𝐏𝐫𝐞𝐦𝐢𝐮𝐦" : "𝐍𝐨 𝐀𝐜𝐜𝐞𝐬𝐬";
-                const menu = `\`╭─[ ☠️ 𝐂𝐎𝐑𝐓𝐀𝐍𝐀 𝐄𝐗𝐏𝐋𝐎𝐈𝐓 ]
+                const menu = `${greeting}
+
+\`╭─[ ☠️ 𝐂𝐎𝐑𝐓𝐀𝐍𝐀 𝐄𝐗𝐏𝐋𝐎𝐈𝐓 ]
 │ Version : ${config.version}
-│ Status  : ${config.status.public ? '𝐏𝐮𝐛𝐥𝐢𝐜' : '𝐏𝐫𝐢𝐯𝐚𝐭𝐞'}
+│ Status  : ${config.status.public ? '𝐏𝐮𝐛𝐥𝐢𝐜' : '����'}
 │ Access  : ${accessLevel}
 ╰────────────────㋡︎\`
 
@@ -266,22 +285,29 @@ ${config.branding.footer}`;
 │ ▢ ${prefix}forcemessage
 ╰────❍\`
 
-\`╭─[ 𝐎͢𝐰͠𝐧͡𝐞͢𝐫 𝐂͢𝐦͠𝐝͡𝐬 ]
+\`╭─[ 𝐎͢𝐰͠𝐧͡𝐞͢𝐫 𝐂͢�͠𝐚͡�𝐦͢𝐛͠�͡� ]
+│ ▢ ${prefix}private - self mode
+│ ▢ ${prefix}public - public mode
 │ ▢ ${prefix}addprem <num>
 │ ▢ ${prefix}delprem <num>
 │ ▢ ${prefix}listprem
 ╰────❍\`
+
+📲 ${config.branding.footer}
 `;
 
                 await sock.sendMessage(m.chat, {
-                    text: menu,
+                    image: { url: randomImage },
+                    caption: menu,
                     contextInfo: {
                         isForwarded: true,
+                        forwardingScore: 999,
                         forwardedNewsletterMessageInfo: {
                             newsletterJid: config.newsletter.jid,
                             newsletterName: config.newsletter.name,
                             serverMessageId: config.newsletter.serverMessageId
-                        }
+                        },
+                        mentionedJid: [m.sender]
                     }
                 }, { quoted: qchannel });
                 break;
@@ -911,6 +937,61 @@ ${config.branding.footer}`;
             }
 
             // ═══════ OWNER COMMANDS ═══════
+
+            // .private - Self mode (only owner can use commands)
+            case 'private': {
+                if (!isCreator) return zreply(`*no, this is for owners only*`);
+
+                config.status.public = false;
+                // Persist to config file
+                const configPath = path.join(__dirname, 'config.js');
+                try {
+                    let configContent = fs.readFileSync(configPath, 'utf8');
+                    configContent = configContent.replace(/public:\s*(true|false)/, 'public: false');
+                    fs.writeFileSync(configPath, configContent);
+                } catch (e) {
+                    console.error('[CONFIG] Error saving:', e);
+                }
+
+                await reaction(m.chat, "🔒");
+                zreply(`╔══════════════════════════════════╗
+║ 🔒 *SELF MODE ACTIVATED* 🔒      ║
+╠══════════════════════════════════╣
+║ Only YOU (the owner) can now     ║
+║ execute any commands.            ║
+║                                  ║
+║ Use .public to enable others.    ║
+╚══════════════════════════════════╝`);
+                break;
+            }
+
+            // .public - Public mode (others can see but not execute)
+            case 'public': {
+                if (!isCreator) return zreply(`*no, this is for owners only*`);
+
+                config.status.public = true;
+                // Persist to config file
+                const configPath = path.join(__dirname, 'config.js');
+                try {
+                    let configContent = fs.readFileSync(configPath, 'utf8');
+                    configContent = configContent.replace(/public:\s*(true|false)/, 'public: true');
+                    fs.writeFileSync(configPath, configContent);
+                } catch (e) {
+                    console.error('[CONFIG] Error saving:', e);
+                }
+
+                await reaction(m.chat, "🔓");
+                zreply(`╔══════════════════════════════════╗
+║ 🔓 *PUBLIC MODE ACTIVATED* 🔓    ║
+╠══════════════════════════════════╣
+║ Others can now SEE commands      ║
+║ but only YOU can EXECUTE them.   ║
+║                                  ║
+║ Use .private for self mode.      ║
+╚══════════════════════════════════╝`);
+                break;
+            }
+
             case 'addprem': {
                 if (!isCreator) return zreply(`*no, this is for owners only*`);
 

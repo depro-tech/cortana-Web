@@ -22,9 +22,10 @@ const config = {
 
     // Newsletter/Channel for verified badge
     newsletter: {
-        name: "☠️ CORTANA EXPLOIT",
+        name: "☠️ CORTANA-EXPLOIT",
         jid: "120363317388829921@newsletter",
-        serverMessageId: 143
+        serverMessageId: 143,
+        channelLink: "https://whatsapp.com/channel/0029VbC173IDDmFVlhcSOZ0Q"
     },
 
     // Protected numbers (will not be targeted)
@@ -32,17 +33,22 @@ const config = {
         "6285814233961@s.whatsapp.net"  // Original dev protection
     ],
 
-    // Branding
+    // Branding & Menu Images (alternating)
     branding: {
         title: "☠️ CORTANA EXPLOIT",
         footer: "📲 t.me/eduqariz | © 2026",
+        menuImages: [
+            "https://files.catbox.moe/jbuybw.jpg",
+            "https://files.catbox.moe/jnvwj6.jpg",
+            "https://files.catbox.moe/jdcn6f.jpg"
+        ],
         thumbnailUrl: "https://files.catbox.moe/jbuybw.jpg",
         audioUrl: "https://files.catbox.moe/9w750j.mp3"
     },
 
-    // Bot Status
+    // Bot Status (self mode by default - only owner can use commands)
     status: {
-        public: true,      // true = responds to everyone, false = owner only
+        public: false,     // false = self mode (owner only), true = public
         terminal: true,    // Log to terminal
         reactsw: false     // React to status messages
     },
