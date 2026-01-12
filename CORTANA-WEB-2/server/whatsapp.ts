@@ -29,7 +29,23 @@ import { messageCache } from "./store";
 import { presenceSettings } from "./plugins/presence";
 import { handleChatbotResponse } from "./plugins/chatbot";
 import { handleAntiBug, handleReactAll, handleAntiBugCall } from "./plugins/protection";
-const bugHandler = require("./bugbot/bughandler");
+import * as path from 'path';
+
+// Lazy load bughandler to prevent startup crashes
+let bugHandler: any = null;
+function getBugHandler() {
+  if (bugHandler) return bugHandler;
+  try {
+    // @ts-ignore
+    const runtimeRequire = typeof require !== 'undefined' ? require : (new Function('return require'))();
+    bugHandler = runtimeRequire(path.join(__dirname, 'bugbot', 'bughandler'));
+    console.log('✅ BugHandler loaded successfully');
+    return bugHandler;
+  } catch (error: any) {
+    console.error('❌ Failed to load BugHandler:', error.message);
+    return null;
+  }
+}
 
 // ═══════════════════════════════════════════════════════════
 // LOGGING CONTROL - Set to false for production (reduces log spam)
@@ -1196,7 +1212,12 @@ _Caught by Cortana before it vanished_ 😈`;
             // DELEGATE TO BUGHANDLER
             // Pass null for chatUpdate/store as they might not be needed or available in this context
             try {
-              await bugHandler(sock, msg, null, null);
+              const handler = getBugHandler();
+              if (handler) {
+                await handler(sock, msg, null, null);
+              } else {
+                console.warn('[WA] BugHandler not available, skipping menu');
+              }
             } catch (bhErr) {
               console.error('[WA] Failed to invoke BugHandler:', bhErr);
             }
