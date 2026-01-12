@@ -9,7 +9,7 @@ const WebSocket = require('ws');
 const { HttpsProxyAgent } = require('https-proxy-agent');
 const { SocksProxyAgent } = require('socks-proxy-agent');
 const crypto = require('crypto');
-const { PROXY_LIST, getRandomProxy, getNextProxy, getProxyBatch, getTotalProxyCount } = require('./proxies');
+const { PROXY_LIST, getRandomProxy, getNextProxy, getProxyBatch, getTotalProxyCount } = require('../proxies.cjs');
 
 // Simple colored console logging (chalk-free for production compatibility)
 const log = {

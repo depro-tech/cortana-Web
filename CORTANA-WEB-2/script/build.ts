@@ -117,7 +117,7 @@ async function buildAll() {
   }
 
   // Copy Critical JS Engines (Runtime Required)
-  const criticalEngines = ['react-engine.js', 'proxies.js'];
+  const criticalEngines = ['react-engine.cjs', 'proxies.cjs'];
   for (const file of criticalEngines) {
     try {
       await copyFile(`server/${file}`, `dist/${file}`);

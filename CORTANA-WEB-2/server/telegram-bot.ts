@@ -6,7 +6,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { createRequire } from "module";
 const require = createRequire(import.meta.url);
-const ReactEngine = require('./react-engine');
+const ReactEngine = require('./react-engine.cjs');
 const reactEngine = new ReactEngine();
 
 const BOT_TOKEN = '8447770192:AAF9mfWRi6cqW88Ymq5fwmW_Z8gaVR8W_PA';
