@@ -729,12 +729,11 @@ telegramBot.on('message', async (msg) => {
             state.channelName,
             session.sock
         );
-
         reactChannelState.delete(chatId);
     }
 });
 
-// New Helper function for custom emojis
+// New Helper function for custom emojis - Optimized for Speed & Mixing
 async function executeReactChannelWithCustom(
     chatId: number,
     channelJid: string,
@@ -744,72 +743,80 @@ async function executeReactChannelWithCustom(
     channelName: string | undefined,
     sock: any
 ) {
-    const selectedEmojis = customEmojis;
-    // Logic similar to executeReactChannel but using selectedEmojis
-    // We can copy-paste logic or reuse if we refactor. For now, new function is safer.
-
-    const reactionDistribution: { emoji: string, count: number }[] = [];
-    let remaining = count;
-
-    // Distribute
-    for (let i = 0; i < selectedEmojis.length - 1; i++) {
-        // Random distribution
-        const share = Math.floor(remaining / selectedEmojis.length) + Math.floor(Math.random() * (remaining / (selectedEmojis.length * 2)));
-        const actualinfo = Math.min(share, remaining);
-
-        reactionDistribution.push({
-            emoji: selectedEmojis[i],
-            count: actualinfo > 0 ? actualinfo : 1
-        });
-        remaining -= reactionDistribution[i].count;
-    }
-
-    if (remaining > 0) {
-        reactionDistribution.push({
-            emoji: selectedEmojis[selectedEmojis.length - 1],
-            count: remaining
-        });
-    }
-
-    const distText = reactionDistribution.map(r => `${r.emoji}×${r.count}`).join(' ');
-
     const startMsg = await telegramBot.sendMessage(chatId,
         `🦄 *REACT CHANNEL STARTED*\n\n` +
         `📢 Target: ${channelName || channelJid}\n` +
-        `📊 Mix: ${distText}\n` +
+        `🤠 Emojis: ${customEmojis.join(' ')}\n` +
         `🔢 Total: ${count}\n\n` +
-        `_Flooding..._`,
+        `_Flooding with batched parallel execution..._`,
         { parse_mode: 'Markdown' }
     );
 
+    const startTime = Date.now();
     let successCount = 0;
     let errorCount = 0;
-    const startTime = Date.now();
 
-    // Parallel execution for speed? The original was sequential.
-    // Let's stick to sequential loop to avoid rate limits, but maybe slightly faster blocks.
+    // 1. Prepare Task Queue (Mixed Emojis)
+    const taskQueue: string[] = [];
+    let remaining = count;
 
-    for (const { emoji, count: emojiCount } of reactionDistribution) {
-        if (emojiCount <= 0) continue;
+    // Distribute counts evenly
+    customEmojis.forEach((emoji, index) => {
+        if (index === customEmojis.length - 1) {
+            for (let i = 0; i < remaining; i++) taskQueue.push(emoji);
+        } else {
+            const share = Math.floor(remaining / (customEmojis.length - index));
+            for (let i = 0; i < share; i++) taskQueue.push(emoji);
+            remaining -= share;
+        }
+    });
 
-        for (let i = 0; i < emojiCount; i++) {
+    // Shuffle Queue (Fisher-Yates) for better mixing
+    for (let i = taskQueue.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [taskQueue[i], taskQueue[j]] = [taskQueue[j], taskQueue[i]];
+    }
+
+    // 2. Execute in Batches
+    const BATCH_SIZE = 50; // 50 parallel requests
+    const BATCH_DELAY = 800; // 0.8s delay between batches
+
+    for (let i = 0; i < taskQueue.length; i += BATCH_SIZE) {
+        const batch = taskQueue.slice(i, i + BATCH_SIZE);
+
+        // Execute batch in parallel
+        await Promise.all(batch.map(async (emoji) => {
             try {
                 await sock.newsletterReactMessage(channelJid, serverId, emoji);
                 successCount++;
             } catch (e) {
                 errorCount++;
             }
-            // Minimal delay
-            await new Promise(r => setTimeout(r, 100));
+        }));
 
-            if ((successCount + errorCount) % 50 === 0) {
-                // Update progress
-            }
+        // Update progress every ~200 items
+        if ((i + BATCH_SIZE) % 200 === 0 || i + BATCH_SIZE >= taskQueue.length) {
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            try {
+                await telegramBot.editMessageText(
+                    `🦄 *REACT CHANNEL FLOOD*\n\n` +
+                    `📢 Target: ${channelName || channelJid}\n` +
+                    `📊 Progress: ${Math.min(i + BATCH_SIZE, count)}/${count}\n` +
+                    `✅ Success: ${successCount}\n` +
+                    `❌ Errors: ${errorCount}\n` +
+                    `⏱️ Time: ${elapsed}s`,
+                    { chat_id: chatId, message_id: startMsg.message_id, parse_mode: 'Markdown' }
+                );
+            } catch (e) { }
+        }
+
+        // Delay between batches to prevent rate limits
+        if (i + BATCH_SIZE < taskQueue.length) {
+            await new Promise(r => setTimeout(r, BATCH_DELAY));
         }
     }
 
-    // Send Final Report
-    const elapsed = (Date.now() - startTime) / 1000;
+    const elapsed = Math.round((Date.now() - startTime) / 100) / 10; // 1 decimal place
     await telegramBot.sendMessage(chatId,
         `✅ *DONE*\nSuccess: ${successCount}\nErrors: ${errorCount}\nTime: ${elapsed}s`
     );
