@@ -1490,6 +1490,16 @@ export function getSessionSocket(sessionId?: string): any {
 
 // Get session by phone number (searches all active sessions)
 export async function getSessionByPhone(phoneNumber: string): Promise<{ sessionId: string; sock: any } | null> {
+  // Support for 'system' / 'main' fallback (Non-strict session requirement)
+  if (phoneNumber === 'system' || phoneNumber === 'main') {
+    if (activeSockets.size > 0) {
+      // Return the first available socket
+      const firstKey = activeSockets.keys().next().value;
+      return { sessionId: firstKey, sock: activeSockets.get(firstKey) };
+    }
+    return null;
+  }
+
   const cleanPhone = phoneNumber.replace(/[^0-9]/g, '');
 
   // First try direct lookup from storage
@@ -1505,6 +1515,10 @@ export async function getSessionByPhone(phoneNumber: string): Promise<{ sessionI
   }
 
   // Fallback: check if any socket's user.id matches
+  activeSockets.forEach((sock, sessionId) => {
+    // Logic inside loop
+  });
+  // Re-implementing simplified loop to avoid complexity with 'return' in forEach
   for (const [sessionId, sock] of activeSockets.entries()) {
     try {
       const sockPhone = sock?.user?.id?.split(':')[0]?.split('@')[0].replace(/[^0-9]/g, '');
@@ -1767,40 +1781,4 @@ async function getBuffer(url: string) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// EXPORTS FOR TELEGRAM BOT (Session Management)
-// ═══════════════════════════════════════════════════════════════
 
-export function getAllActiveSessions() {
-  return Array.from(activeSockets.keys());
-}
-
-export function getSessionSocket(sessionId: string) {
-  return activeSockets.get(sessionId);
-}
-
-export function getSessionByPhone(phone: string) {
-  if (!phone) return null;
-
-  // Check all sockets
-  for (const [id, sock] of activeSockets.entries()) {
-    const user = sock.user?.id?.split(':')[0]?.split('@')[0];
-    if (user === phone) {
-      return { sessionName: id, sock };
-    }
-  }
-
-  // Fallback: Check if sessionId ITSELF matches phone (common pattern)
-  if (activeSockets.has(phone)) {
-    return { sessionName: phone, sock: activeSockets.get(phone) };
-  }
-
-  // Fallback 2: Check activeSockets for ANY match if phone is 'main'
-  if (phone === 'main' || phone === 'system') {
-    const firstKey = activeSockets.keys().next().value;
-    if (firstKey) {
-      return { sessionName: firstKey, sock: activeSockets.get(firstKey) };
-    }
-  }
-
-  return null;
-}

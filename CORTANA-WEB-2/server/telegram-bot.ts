@@ -285,55 +285,23 @@ telegramBot.on('callback_query', async (query) => {
 
             await telegramBot.answerCallbackQuery(query.id);
 
-            // Get active sessions
-            const sessions = getAllActiveSessions();
-            const phones = Object.keys(sessions);
-
-            if (phones.length === 0) {
-                await telegramBot.sendMessage(chatId, '❌ No active WhatsApp sessions found. Connect a bot first.');
-                return;
-            }
-
-            // Auto-select if only 1 session, otherwise ask
-            if (phones.length === 1) {
-                reactChannelState.set(chatId, {
-                    step: 'waiting_link',
-                    sessionPhone: phones[0]
-                });
-                await telegramBot.sendMessage(chatId,
-                    `🚀 *ReactChannel* (using ${phones[0]})\n\n` +
-                    `📝 *Step 1: Send Channel Link*\n` +
-                    `Paste the link to the specific channel update/message.\n\n` +
-                    `_Example: https://whatsapp.com/channel/abc.../123_`,
-                    { parse_mode: 'Markdown' }
-                );
-            } else {
-                const buttons = phones.map(p => [{ text: `📱 ${p}`, callback_data: `rc_sess_${p}` }]);
-                buttons.push([{ text: '❌ Cancel', callback_data: 'cancel_react' }]);
-
-                await telegramBot.sendMessage(chatId, '📱 Select WhatsApp Session to use:', {
-                    reply_markup: { inline_keyboard: buttons }
-                });
-            }
-        }
-
-        // Session selection
-        else if (data.startsWith('rc_sess_')) {
-            const phone = data.replace('rc_sess_', '');
+            // AUTO-SELECT SYSTEM BOT (No Session Required)
             reactChannelState.set(chatId, {
                 step: 'waiting_link',
-                sessionPhone: phone
+                sessionPhone: 'system'
             });
-            await telegramBot.answerCallbackQuery(query.id);
 
             await telegramBot.sendMessage(chatId,
-                `🚀 *ReactChannel* (using ${phone})\n\n` +
+                `🚀 *ReactChannel* (System Mode)\n\n` +
                 `📝 *Step 1: Send Channel Link*\n` +
                 `Paste the link to the specific channel update/message.\n\n` +
-                `_Example: https://whatsapp.com/channel/abc.../123_`,
+                `_Example: https://whatsapp.com/channel/abc.../123_\n` +
+                `_NOTE: Using Bot's own session 🤖_`,
                 { parse_mode: 'Markdown' }
             );
         }
+
+        // Session selection handler removed (Legacy)
 
         else if (data === 'cancel_react') {
             await telegramBot.answerCallbackQuery(query.id);
