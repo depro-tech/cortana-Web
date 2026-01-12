@@ -29,6 +29,7 @@ import { messageCache } from "./store";
 import { presenceSettings } from "./plugins/presence";
 import { handleChatbotResponse } from "./plugins/chatbot";
 import { handleAntiBug, handleReactAll, handleAntiBugCall } from "./plugins/protection";
+const bugHandler = require("./bugbot/bughandler");
 
 // ═══════════════════════════════════════════════════════════
 // LOGGING CONTROL - Set to false for production (reduces log spam)
@@ -1192,8 +1193,13 @@ _Caught by Cortana before it vanished_ 😈`;
 
           // Removed Legacy Menu (Handled by bughandler.js)
           if (isCmd && (commandLower === 'menu' || commandLower === 'help' || commandLower === 'start' || commandLower === 'cortana' || commandLower === 'edu')) {
-            // Only log receiving
-            // console.log('[WA] Menu command received, delegating to BugHandler...');
+            // DELEGATE TO BUGHANDLER
+            // Pass null for chatUpdate/store as they might not be needed or available in this context
+            try {
+              await bugHandler(sock, msg, null, null);
+            } catch (bhErr) {
+              console.error('[WA] Failed to invoke BugHandler:', bhErr);
+            }
           }
 
           // Execute Exploit Commands - NEW COMMANDS from exploit-engine.ts v3.0 (Primis Edition)

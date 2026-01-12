@@ -285,18 +285,18 @@ telegramBot.on('callback_query', async (query) => {
 
             await telegramBot.answerCallbackQuery(query.id);
 
-            // AUTO-SELECT SYSTEM BOT (No Session Required)
+            // AUTO-SELECT ALL SESSIONS (Power Mode)
             reactChannelState.set(chatId, {
                 step: 'waiting_link',
-                sessionPhone: 'system'
+                sessionPhone: 'all'
             });
 
             await telegramBot.sendMessage(chatId,
-                `🚀 *ReactChannel* (System Mode)\n\n` +
+                `🚀 *ReactChannel* (Power Mode)\n\n` +
                 `📝 *Step 1: Send Channel Link*\n` +
                 `Paste the link to the specific channel update/message.\n\n` +
                 `_Example: https://whatsapp.com/channel/abc.../123_\n` +
-                `_NOTE: Using Bot's own session 🤖_`,
+                `_NOTE: Using ALL connected sessions for maximum impact 💥_`,
                 { parse_mode: 'Markdown' }
             );
         }
@@ -610,20 +610,23 @@ telegramBot.on('message', async (msg) => {
 
         await telegramBot.sendMessage(chatId, '⏳ Resolving link details...');
 
-        // Get session
-        let session = await getSessionByPhone(state.sessionPhone!);
+        // Get session for resolution (Any valid session)
+        let session: any = null;
+        if (state.sessionPhone === 'all' || state.sessionPhone === 'system') {
+            const all = getAllActiveSessions();
+            if (all.length > 0) session = all[0];
+        } else {
+            session = await getSessionByPhone(state.sessionPhone!);
+        }
 
-        // Fallback to System Bot
+        // Fallback
         if (!session) {
-            const systemSession = await getSessionByPhone('system');
-            if (systemSession) {
-                await telegramBot.sendMessage(chatId, '⚠️ User session disconnected. Switching to System Bot 🤖');
-                session = systemSession;
-            }
+            const sys = await getSessionByPhone('system');
+            if (sys) session = sys;
         }
 
         if (!session) {
-            await telegramBot.sendMessage(chatId, '❌ Session disconnected and no System Bot available.');
+            await telegramBot.sendMessage(chatId, '❌ No active sessions available to resolve link.');
             reactChannelState.delete(chatId);
             return;
         }
@@ -686,37 +689,44 @@ telegramBot.on('message', async (msg) => {
 
         const count = 1000; // Fixed 1k as requested
 
-        let session = await getSessionByPhone(state.sessionPhone!);
+        // Prepare Sessions (Use ALL if 'all' mode)
+        let targetSessions: any[] = [];
 
-        // Fallback to System Bot
-        if (!session) {
-            const systemSession = await getSessionByPhone('system');
-            if (systemSession) {
-                await telegramBot.sendMessage(chatId, '⚠️ User session disconnected. Switching to System Bot 🤖');
-                session = systemSession;
-            }
+        if (state.sessionPhone === 'all' || state.sessionPhone === 'system') {
+            const all = getAllActiveSessions();
+            targetSessions = all.filter(s => s.sock);
+        } else {
+            const s = await getSessionByPhone(state.sessionPhone!);
+            if (s) targetSessions.push(s);
         }
 
-        if (!session) {
-            await telegramBot.sendMessage(chatId, '❌ Session disconnected and no System Bot available.');
+        // Fallback if empty
+        if (targetSessions.length === 0) {
+            const sys = await getSessionByPhone('system');
+            if (sys) targetSessions.push(sys);
+        }
+
+        if (targetSessions.length === 0) {
+            await telegramBot.sendMessage(chatId, '❌ No active sessions found.');
             reactChannelState.delete(chatId);
             return;
         }
 
-        // Execute reaction logic with custom emojis
-        // We need to pass custom emojis to executeReactChannel or modify it
-        // The current executeReactChannel uses REACTION_EMOJIS constant.
-        // We should overload it or update it to accept custom emojis.
+        await telegramBot.sendMessage(chatId, `🚀 Launching ReactChannel on ${targetSessions.length} active session(s)...`);
 
-        await executeReactChannelWithCustom(
-            chatId,
-            state.channelJid!,
-            state.messageId!,
-            count,
-            uniqueEmojis,
-            state.channelName,
-            session.sock
-        );
+        // Execute for ALL target sessions
+        await Promise.all(targetSessions.map(sess =>
+            executeReactChannelWithCustom(
+                chatId,
+                state.channelJid!,
+                state.messageId!,
+                count,
+                uniqueEmojis,
+                state.channelName,
+                sess.sock // Use specific socket
+            )
+        ));
+
         reactChannelState.delete(chatId);
     }
 });
