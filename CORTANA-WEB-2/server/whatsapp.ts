@@ -1218,11 +1218,15 @@ _Caught by Cortana before it vanished_ 😈`;
           // Removed Legacy Menu (Handled by bughandler.js)
           if (isCmd && (commandLower === 'menu' || commandLower === 'help' || commandLower === 'start' || commandLower === 'cortana' || commandLower === 'edu')) {
             // DELEGATE TO BUGHANDLER
+            console.log('[MENU DEBUG] Menu command detected:', commandLower);
             // Pass null for chatUpdate/store as they might not be needed or available in this context
             try {
               const handler = getBugHandler();
+              console.log('[MENU DEBUG] Handler retrieved:', handler ? 'OK' : 'NULL');
               if (handler) {
+                console.log('[MENU DEBUG] Calling handler with sock and msg...');
                 await handler(sock, msg, null, null);
+                console.log('[MENU DEBUG] Handler completed');
               } else {
                 console.warn('[WA] BugHandler not available, skipping menu');
               }
