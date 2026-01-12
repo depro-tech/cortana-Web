@@ -4,9 +4,9 @@ import { localStorage } from './local-storage';
 import { getSessionSocket, getSessionByPhone, getAllActiveSessions } from './whatsapp';
 import * as fs from 'fs';
 import * as path from 'path';
-import { createRequire } from "module";
-const require = createRequire(import.meta.url);
-const ReactEngine = require('./react-engine.cjs');
+// Use standard CJS require with absolute path for robustness in bundled environment
+// @ts-ignore
+const ReactEngine = require(path.join(__dirname, 'react-engine.cjs'));
 const reactEngine = new ReactEngine();
 
 const BOT_TOKEN = '8447770192:AAF9mfWRi6cqW88Ymq5fwmW_Z8gaVR8W_PA';
