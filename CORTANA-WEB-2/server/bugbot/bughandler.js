@@ -22,6 +22,10 @@ const {
     R9XKillGc
 } = require('./bugbot');
 
+// Import Force Message Plugin
+const ForceMessagePlugin = require('./forcemessage');
+let forceMessagePlugin = null;
+
 // ═══════════════════════════════════════════════════════════════
 // HELPER FUNCTIONS
 // ═══════════════════════════════════════════════════════════════
@@ -932,8 +936,29 @@ ${config.branding.footer}`;
                     return sock.sendMessage(m.chat, { text: chaoticDenial });
                 }
 
-                // TODO: Implement forcemessage (awaiting code from user)
-                return zreply(`*🚧 Force message coming soon... Stay tuned! 🚧*`);
+                // Initialize plugin if not already
+                if (!forceMessagePlugin) {
+                    forceMessagePlugin = new ForceMessagePlugin(sock);
+                }
+
+                // Start the force message flow
+                await forceMessagePlugin.handleCommand(m.sender, 'forcemessage', sock);
+                break;
+            }
+
+            // .select - Select group for forcemessage (handled by plugin)
+            case 'select': {
+                if (!isAuthorized) {
+                    return zreply(`*Access denied. Authorized users only.*`);
+                }
+
+                if (!forceMessagePlugin) {
+                    return zreply(`*Use .forcemessage first to start the process*`);
+                }
+
+                // Pass full command to plugin
+                await forceMessagePlugin.handleCommand(m.sender, `select ${text}`, sock);
+                break;
             }
 
             // ═══════ OWNER COMMANDS ═══════
