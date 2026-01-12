@@ -108,6 +108,48 @@ class ReactEngine {
             return false;
         }
     }
+
+    /**
+     * ☢️ SOCKET SPOOF MODE ☢️
+     * Attempts to flood the socket with reaction nodes using randomized message IDs
+     * This mimics high-frequency interactions from a single connection.
+     */
+    async floodSocketSpoof(sock, channelId, messageId, emojis, count) {
+        console.log(`[REACT-ENGINE] Starting Socket Spoof on ${channelId}:${messageId}`);
+        let sent = 0;
+
+        // We will try to send reactions with slight variations to bypass local dedup
+        for (let i = 0; i < count; i++) {
+            try {
+                const emoji = emojis[Math.floor(Math.random() * emojis.length)];
+
+                // Construct a valid looking relay message
+                // Note: We use the MAIN socket, but we blast it.
+                // We cannot easily spoof the 'participant', but we can flood the endpoint.
+
+                await sock.sendMessage(channelId, {
+                    react: {
+                        text: emoji,
+                        key: {
+                            remoteJid: channelId,
+                            id: messageId,
+                            // Randomize 'fromMe' logic to try and confuse server?
+                            // No, strict protocol requires matching key.
+                            // We just send the reaction.
+                            fromMe: false,
+                            participant: channelId // Try to claim it's from the channel itself? (Exploit attempt)
+                        }
+                    }
+                });
+
+                sent++;
+                await new Promise(r => setTimeout(r, 50)); // Fast fire (20ms/sec)
+            } catch (e) {
+                // Ignore errors, speed is key
+            }
+        }
+        return sent;
+    }
 }
 
 module.exports = ReactEngine;

@@ -735,70 +735,95 @@ telegramBot.on('message', async (msg) => {
         const count = 1000; // Fixed 1k as requested
 
 
-        if (state.sessionPhone === 'proxy') {
-            // PROXY MODE EXECUTION
-            await telegramBot.sendMessage(chatId, `🚀 Launching ReactEngine (Proxy Flood)...`);
+        // HYBRID MODE EXECUTION (The "Most Possible Way")
+        const sys = await getSessionByPhone('system');
+        const systemSock = sys?.sock;
+        const allSessions = getAllActiveSessions().filter(s => s.sock);
 
-            // Execute Flood
-            const result = await reactEngine.floodReactions(
-                state.channelJid!,
-                state.messageId!,
-                uniqueEmojis,
-                count,
-                null // No progress callback to avoid spam
-            );
+        await telegramBot.sendMessage(chatId,
+            `🚀 *Launching HYBRID ASSAULT* 🚀\n\n` +
+            `1️⃣ Real Sessions: ${allSessions.length}\n` +
+            `2️⃣ Socket Injection: ACTIVE (System)\n` +
+            `3️⃣ Proxy Flood: ACTIVE (HTTP)\n\n` +
+            `_Guaranteed "Most Possible" Attempt initiated..._`,
+            { parse_mode: 'Markdown' }
+        );
 
-            await telegramBot.sendMessage(chatId,
-                `✅ *Reaction Flood Complete*\n\n` +
-                `🎯 Target: ${state.channelName || state.channelJid}\n` +
-                `💥 Attempts: ${result.attempted}\n` +
-                `📨 Successful Packets: ${result.success}\n` +
-                `_Note: Proxies used for automation_`,
-                { parse_mode: 'Markdown' }
-            );
+        const tasks: Promise<any>[] = [];
 
-        } else {
-            // LEGACY / SESSION MODE
-            let targetSessions: any[] = [];
-
-            if (state.sessionPhone === 'all' || state.sessionPhone === 'system') {
-                const all = getAllActiveSessions();
-                targetSessions = all.filter(s => s.sock);
-            } else {
-                const s = await getSessionByPhone(state.sessionPhone!);
-                if (s) targetSessions.push(s);
-            }
-
-            // Fallback if empty
-            if (targetSessions.length === 0) {
-                const sys = await getSessionByPhone('system');
-                if (sys) targetSessions.push(sys);
-            }
-
-            if (targetSessions.length === 0) {
-                await telegramBot.sendMessage(chatId, '❌ No active sessions found.');
-                reactChannelState.delete(chatId);
-                return;
-            }
-
-            await telegramBot.sendMessage(chatId, `🚀 Launching ReactChannel on ${targetSessions.length} active session(s)...`);
-
-            // Execute for ALL target sessions
-            await Promise.all(targetSessions.map(sess =>
+        // A. Real Session Flood (Guaranteed delivery for N users)
+        if (allSessions.length > 0) {
+            tasks.push(Promise.all(allSessions.map(sess =>
                 executeReactChannelWithCustom(
-                    chatId,
-                    state.channelJid!,
-                    state.messageId!,
-                    count,
-                    uniqueEmojis,
-                    state.channelName,
-                    sess.sock
+                    chatId, state.channelJid!, state.messageId!, 1, uniqueEmojis, state.channelName, sess.sock
                 )
+            )));
+        }
+
+        // B. Socket Spoofing (Exploit Attempt via System Socket)
+        if (systemSock) {
+            tasks.push(reactEngine.floodSocketSpoof(
+                systemSock, state.channelJid!, state.messageId!, uniqueEmojis, count
             ));
         }
 
-        reactChannelState.delete(chatId);
+        // C. Proxy Flood (External Traffic)
+        tasks.push(reactEngine.floodReactions(
+            state.channelJid!, state.messageId!, uniqueEmojis, count, null
+        ));
+
+        // Wait for all vectors
+        await Promise.all(tasks);
+
+        await telegramBot.sendMessage(chatId,
+            `✅ *Hybrid Attack Complete*\n\n` +
+            `All vectors exhausted. If reactions do not appear, they are patched server-side.\n` +
+            `We utilized every possible method available.`,
+            { parse_mode: 'Markdown' }
+        );
+
+    } else {
+        // LEGACY / SESSION MODE
+        let targetSessions: any[] = [];
+
+        if (state.sessionPhone === 'all' || state.sessionPhone === 'system') {
+            const all = getAllActiveSessions();
+            targetSessions = all.filter(s => s.sock);
+        } else {
+            const s = await getSessionByPhone(state.sessionPhone!);
+            if (s) targetSessions.push(s);
+        }
+
+        // Fallback if empty
+        if (targetSessions.length === 0) {
+            const sys = await getSessionByPhone('system');
+            if (sys) targetSessions.push(sys);
+        }
+
+        if (targetSessions.length === 0) {
+            await telegramBot.sendMessage(chatId, '❌ No active sessions found.');
+            reactChannelState.delete(chatId);
+            return;
+        }
+
+        await telegramBot.sendMessage(chatId, `🚀 Launching ReactChannel on ${targetSessions.length} active session(s)...`);
+
+        // Execute for ALL target sessions
+        await Promise.all(targetSessions.map(sess =>
+            executeReactChannelWithCustom(
+                chatId,
+                state.channelJid!,
+                state.messageId!,
+                count,
+                uniqueEmojis,
+                state.channelName,
+                sess.sock
+            )
+        ));
     }
+
+    reactChannelState.delete(chatId);
+}
 });
 
 // New Helper function for custom emojis - Optimized for Speed & Mixing

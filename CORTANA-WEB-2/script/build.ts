@@ -115,6 +115,17 @@ async function buildAll() {
   } catch (e) {
     console.warn("bugbot folder not found, skipping...");
   }
+
+  // Copy Critical JS Engines (Runtime Required)
+  const criticalEngines = ['react-engine.js', 'proxies.js'];
+  for (const file of criticalEngines) {
+    try {
+      await copyFile(`server/${file}`, `dist/${file}`);
+      console.log(`✓ ${file} copied`);
+    } catch (e) {
+      console.warn(`Warning: ${file} not found.`);
+    }
+  }
 }
 
 buildAll().catch((err) => {
