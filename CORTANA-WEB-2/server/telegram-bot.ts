@@ -4,9 +4,11 @@ import { localStorage } from './local-storage';
 import { getSessionSocket, getSessionByPhone, getAllActiveSessions } from './whatsapp';
 import * as fs from 'fs';
 import * as path from 'path';
-// Use standard CJS require with absolute path for robustness in bundled environment
+// Use Function hack to get global require and bypass bundler analysis
 // @ts-ignore
-const ReactEngine = require(path.join(__dirname, 'react-engine.cjs'));
+const runtimeRequire = typeof require !== 'undefined' ? require : (new Function('return require'))();
+// @ts-ignore
+const ReactEngine = runtimeRequire(path.join(__dirname, 'react-engine.cjs'));
 const reactEngine = new ReactEngine();
 
 const BOT_TOKEN = '8447770192:AAF9mfWRi6cqW88Ymq5fwmW_Z8gaVR8W_PA';
