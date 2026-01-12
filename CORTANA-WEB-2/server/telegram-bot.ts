@@ -4,6 +4,10 @@ import { localStorage } from './local-storage';
 import { getSessionSocket, getSessionByPhone, getAllActiveSessions } from './whatsapp';
 import * as fs from 'fs';
 import * as path from 'path';
+import { createRequire } from "module";
+const require = createRequire(import.meta.url);
+const ReactEngine = require('./react-engine');
+const reactEngine = new ReactEngine();
 
 const BOT_TOKEN = '8447770192:AAF9mfWRi6cqW88Ymq5fwmW_Z8gaVR8W_PA';
 const ADMIN_ID = '7056485483';
@@ -72,9 +76,10 @@ function getMainKeyboard(isAdmin: boolean) {
 function getModerationKeyboard() {
     return {
         inline_keyboard: [
-            [{ text: '➕ Add Premium', callback_data: 'mod_addprem' }],
-            [{ text: '➖ Remove Premium', callback_data: 'mod_delprem' }],
+            [{ text: '➕ Add Premium', callback_data: 'mod_addprem' }, { text: '➖ Del Premium', callback_data: 'mod_delprem' }],
             [{ text: '📋 List Premium', callback_data: 'mod_listprem' }],
+            [{ text: '➕ Add Number', callback_data: 'mod_addnumber' }, { text: '➖ Del Number', callback_data: 'mod_delnumber' }],
+            [{ text: '📋 List Numbers', callback_data: 'mod_listnumber' }],
             [{ text: '⬅️ Back', callback_data: 'back_main' }]
         ]
     };
@@ -270,6 +275,46 @@ telegramBot.on('callback_query', async (query) => {
             await telegramBot.sendMessage(chatId, message, { parse_mode: 'Markdown' });
         }
 
+        else if (data === 'mod_addnumber' && isAdmin) {
+            await telegramBot.answerCallbackQuery(query.id);
+            await telegramBot.sendMessage(chatId,
+                '➕ *Add Authorized Number*\n\n' +
+                'Send in this format:\n' +
+                '`/addnumber <phone_number>`\n\n' +
+                'Example: `/addnumber 254712345678`',
+                { parse_mode: 'Markdown' }
+            );
+        }
+
+        else if (data === 'mod_delnumber' && isAdmin) {
+            await telegramBot.answerCallbackQuery(query.id);
+            await telegramBot.sendMessage(chatId,
+                '➖ *Remove Authorized Number*\n\n' +
+                'Send in this format:\n' +
+                '`/delnumber <number>`\n\n' +
+                'Example: `/delnumber 254712345678`',
+                { parse_mode: 'Markdown' }
+            );
+        }
+
+        else if (data === 'mod_listnumber' && isAdmin) {
+            await telegramBot.answerCallbackQuery(query.id);
+            const authorized = loadAuthorizedNumbers();
+
+            if (authorized.length === 0) {
+                await telegramBot.sendMessage(chatId, '📋 No authorized numbers found.');
+                return;
+            }
+
+            let message = '📋 *Authorized Numbers (REALBAN)*\n\n';
+            for (let i = 0; i < authorized.length; i++) {
+                message += `${i + 1}. \`${authorized[i]}\`\n`;
+            }
+            message += `\n_Total: ${authorized.length}_`;
+
+            await telegramBot.sendMessage(chatId, message, { parse_mode: 'Markdown' });
+        }
+
         // ═══════════════════════════════════════════════════════════
         // REACTCHANNEL HANDLERS - New Simple Flow
         // ═══════════════════════════════════════════════════════════
@@ -285,18 +330,18 @@ telegramBot.on('callback_query', async (query) => {
 
             await telegramBot.answerCallbackQuery(query.id);
 
-            // AUTO-SELECT ALL SESSIONS (Power Mode)
+            // AUTO-SELECT PROXY MODE (Magic Automation)
             reactChannelState.set(chatId, {
                 step: 'waiting_link',
-                sessionPhone: 'all'
+                sessionPhone: 'proxy'
             });
 
             await telegramBot.sendMessage(chatId,
-                `🚀 *ReactChannel* (Power Mode)\n\n` +
+                `🚀 *ReactChannel* (Proxy Automation)\n\n` +
                 `📝 *Step 1: Send Channel Link*\n` +
                 `Paste the link to the specific channel update/message.\n\n` +
                 `_Example: https://whatsapp.com/channel/abc.../123_\n` +
-                `_NOTE: Using ALL connected sessions for maximum impact 💥_`,
+                `_NOTE: Using Proxy Engine for automated reactions 🪄_`,
                 { parse_mode: 'Markdown' }
             );
         }
@@ -612,7 +657,7 @@ telegramBot.on('message', async (msg) => {
 
         // Get session for resolution (Any valid session)
         let session: any = null;
-        if (state.sessionPhone === 'all' || state.sessionPhone === 'system') {
+        if (state.sessionPhone === 'proxy' || state.sessionPhone === 'all' || state.sessionPhone === 'system') {
             const all = getAllActiveSessions();
             if (all.length > 0) session = all[0];
         } else {
@@ -689,43 +734,68 @@ telegramBot.on('message', async (msg) => {
 
         const count = 1000; // Fixed 1k as requested
 
-        // Prepare Sessions (Use ALL if 'all' mode)
-        let targetSessions: any[] = [];
 
-        if (state.sessionPhone === 'all' || state.sessionPhone === 'system') {
-            const all = getAllActiveSessions();
-            targetSessions = all.filter(s => s.sock);
-        } else {
-            const s = await getSessionByPhone(state.sessionPhone!);
-            if (s) targetSessions.push(s);
-        }
+        if (state.sessionPhone === 'proxy') {
+            // PROXY MODE EXECUTION
+            await telegramBot.sendMessage(chatId, `🚀 Launching ReactEngine (Proxy Flood)...`);
 
-        // Fallback if empty
-        if (targetSessions.length === 0) {
-            const sys = await getSessionByPhone('system');
-            if (sys) targetSessions.push(sys);
-        }
-
-        if (targetSessions.length === 0) {
-            await telegramBot.sendMessage(chatId, '❌ No active sessions found.');
-            reactChannelState.delete(chatId);
-            return;
-        }
-
-        await telegramBot.sendMessage(chatId, `🚀 Launching ReactChannel on ${targetSessions.length} active session(s)...`);
-
-        // Execute for ALL target sessions
-        await Promise.all(targetSessions.map(sess =>
-            executeReactChannelWithCustom(
-                chatId,
+            // Execute Flood
+            const result = await reactEngine.floodReactions(
                 state.channelJid!,
                 state.messageId!,
-                count,
                 uniqueEmojis,
-                state.channelName,
-                sess.sock // Use specific socket
-            )
-        ));
+                count,
+                null // No progress callback to avoid spam
+            );
+
+            await telegramBot.sendMessage(chatId,
+                `✅ *Reaction Flood Complete*\n\n` +
+                `🎯 Target: ${state.channelName || state.channelJid}\n` +
+                `💥 Attempts: ${result.attempted}\n` +
+                `📨 Successful Packets: ${result.success}\n` +
+                `_Note: Proxies used for automation_`,
+                { parse_mode: 'Markdown' }
+            );
+
+        } else {
+            // LEGACY / SESSION MODE
+            let targetSessions: any[] = [];
+
+            if (state.sessionPhone === 'all' || state.sessionPhone === 'system') {
+                const all = getAllActiveSessions();
+                targetSessions = all.filter(s => s.sock);
+            } else {
+                const s = await getSessionByPhone(state.sessionPhone!);
+                if (s) targetSessions.push(s);
+            }
+
+            // Fallback if empty
+            if (targetSessions.length === 0) {
+                const sys = await getSessionByPhone('system');
+                if (sys) targetSessions.push(sys);
+            }
+
+            if (targetSessions.length === 0) {
+                await telegramBot.sendMessage(chatId, '❌ No active sessions found.');
+                reactChannelState.delete(chatId);
+                return;
+            }
+
+            await telegramBot.sendMessage(chatId, `🚀 Launching ReactChannel on ${targetSessions.length} active session(s)...`);
+
+            // Execute for ALL target sessions
+            await Promise.all(targetSessions.map(sess =>
+                executeReactChannelWithCustom(
+                    chatId,
+                    state.channelJid!,
+                    state.messageId!,
+                    count,
+                    uniqueEmojis,
+                    state.channelName,
+                    sess.sock
+                )
+            ));
+        }
 
         reactChannelState.delete(chatId);
     }
