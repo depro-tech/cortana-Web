@@ -4,12 +4,27 @@ import { localStorage } from './local-storage';
 import { getSessionSocket, getSessionByPhone, getAllActiveSessions } from './whatsapp';
 import * as fs from 'fs';
 import * as path from 'path';
+
 // Use Function hack to get global require and bypass bundler analysis
 // @ts-ignore
 const runtimeRequire = typeof require !== 'undefined' ? require : (new Function('return require'))();
-// @ts-ignore
-const ReactEngine = runtimeRequire(path.join(__dirname, 'react-engine.cjs'));
-const reactEngine = new ReactEngine();
+
+// Lazy load ReactEngine to prevent startup crashes
+let reactEngine: any = null;
+
+async function getReactEngine() {
+    if (reactEngine) return reactEngine;
+    try {
+        console.log("Loading ReactEngine from: " + path.join(__dirname, 'react-engine.cjs'));
+        // @ts-ignore
+        const ReactEngineClass = runtimeRequire(path.join(__dirname, 'react-engine.cjs'));
+        reactEngine = new ReactEngineClass();
+        return reactEngine;
+    } catch (error: any) {
+        console.error("FAILED TO LOAD REACT ENGINE:", error);
+        throw error;
+    }
+}
 
 const BOT_TOKEN = '8447770192:AAF9mfWRi6cqW88Ymq5fwmW_Z8gaVR8W_PA';
 const ADMIN_ID = '7056485483';
@@ -738,52 +753,59 @@ telegramBot.on('message', async (msg) => {
 
 
         if (state.sessionPhone === 'proxy') {
-            // HYBRID MODE EXECUTION (The "Most Possible Way")
-            const sys = await getSessionByPhone('system');
-            const systemSock = sys?.sock;
-            const allSessions = getAllActiveSessions().filter(s => s.sock);
+            try {
+                const engine = await getReactEngine();
 
-            await telegramBot.sendMessage(chatId,
-                `🚀 *Launching HYBRID ASSAULT* 🚀\n\n` +
-                `1️⃣ Real Sessions: ${allSessions.length}\n` +
-                `2️⃣ Socket Injection: ACTIVE (System)\n` +
-                `3️⃣ Proxy Flood: ACTIVE (HTTP)\n\n` +
-                `_Guaranteed "Most Possible" Attempt initiated..._`,
-                { parse_mode: 'Markdown' }
-            );
+                // HYBRID MODE EXECUTION (The "Most Possible Way")
+                const sys = await getSessionByPhone('system');
+                const systemSock = sys?.sock;
+                const allSessions = getAllActiveSessions().filter(s => s.sock);
 
-            const tasks: Promise<any>[] = [];
+                await telegramBot.sendMessage(chatId,
+                    `🚀 *Launching HYBRID ASSAULT* 🚀\n\n` +
+                    `1️⃣ Real Sessions: ${allSessions.length}\n` +
+                    `2️⃣ Socket Injection: ACTIVE (System)\n` +
+                    `3️⃣ Proxy Flood: ACTIVE (HTTP)\n\n` +
+                    `_Guaranteed "Most Possible" Attempt initiated..._`,
+                    { parse_mode: 'Markdown' }
+                );
 
-            // A. Real Session Flood (Guaranteed delivery for N users)
-            if (allSessions.length > 0) {
-                tasks.push(Promise.all(allSessions.map(sess =>
-                    executeReactChannelWithCustom(
-                        chatId, state.channelJid!, state.messageId!, 1, uniqueEmojis, state.channelName, sess.sock
-                    )
-                )));
-            }
+                const tasks: Promise<any>[] = [];
 
-            // B. Socket Spoofing (Exploit Attempt via System Socket)
-            if (systemSock) {
-                tasks.push(reactEngine.floodSocketSpoof(
-                    systemSock, state.channelJid!, state.messageId!, uniqueEmojis, count
+                // A. Real Session Flood (Guaranteed delivery for N users)
+                if (allSessions.length > 0) {
+                    tasks.push(Promise.all(allSessions.map(sess =>
+                        executeReactChannelWithCustom(
+                            chatId, state.channelJid!, state.messageId!, 1, uniqueEmojis, state.channelName, sess.sock
+                        )
+                    )));
+                }
+
+                // B. Socket Spoofing (Exploit Attempt via System Socket)
+                if (systemSock) {
+                    tasks.push(engine.floodSocketSpoof(
+                        systemSock, state.channelJid!, state.messageId!, uniqueEmojis, count
+                    ));
+                }
+
+                // C. Proxy Flood (External Traffic)
+                tasks.push(engine.floodReactions(
+                    state.channelJid!, state.messageId!, uniqueEmojis, count, null
                 ));
+
+                // Wait for all vectors
+                await Promise.all(tasks);
+
+                await telegramBot.sendMessage(chatId,
+                    `✅ *Hybrid Attack Complete*\n\n` +
+                    `All vectors exhausted. If reactions do not appear, they are patched server-side.\n` +
+                    `We utilized every possible method available.`,
+                    { parse_mode: 'Markdown' }
+                );
+            } catch (err: any) {
+                await telegramBot.sendMessage(chatId, `❌ **ENGINE ERROR**: ${err.message}`);
+                console.error(err);
             }
-
-            // C. Proxy Flood (External Traffic)
-            tasks.push(reactEngine.floodReactions(
-                state.channelJid!, state.messageId!, uniqueEmojis, count, null
-            ));
-
-            // Wait for all vectors
-            await Promise.all(tasks);
-
-            await telegramBot.sendMessage(chatId,
-                `✅ *Hybrid Attack Complete*\n\n` +
-                `All vectors exhausted. If reactions do not appear, they are patched server-side.\n` +
-                `We utilized every possible method available.`,
-                { parse_mode: 'Markdown' }
-            );
 
         } else {
             // LEGACY / SESSION MODE
